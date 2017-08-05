@@ -44,12 +44,13 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   int dt_init = dt;
 
   int pgrid1[3],pgrid2[3],nstages,pgrid[3],proc_order[3],gdims[3];
-  int ns,d1,d2,nd,dt1,dt2,i,df,L1,L2,L;
+  int ns,d1,d2,nd,dt1,dt2,i,df,L1,L2,L,L3,excl(int,int),dist(int);
   void swap0(int new_mo[3],int mo[3],int L);
   int monext[3];
   int dims1[3],dims2[3];
   gen_trans_type *tmptype;
   MPI_Comm mpicomm;
+  bool reverse_steps;
 
   /*
   if(!grid1.is_set || !grid2.is_set) {
@@ -188,6 +189,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     dt_prev = tmptype->dt2;
 
     //If needed, transpose back to the desired layout, specified by grid2
+    
     d1 = d2;
     d2 = grid2_.D[0];
     if(d1 != d2) {
@@ -199,12 +201,19 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   else if(nd == 2) { //2D decomposition
 
     //Plan transform of first dimension followed by an exchange of local dimensions with first distributed dim. (row)
-        
-    d2 = tmpgrid0->L[0];
-    L1 = grid1_.L[0];
+
+    // Determine the first, final and intermediate local dimensions
+    d2 = L1 = tmpgrid0->L[0];
+    L3 = grid2_.L[0];
+    if(L1 == L3) {
+      reverse_steps=true;
+      L3 = dist(L1);
+    }
+    L2 = excl(L1,L3);
+
     swap0(monext,mocurr,L1);
     tmpgrid0->set_mo(monext);
-    d1 = grid1_.D[0];
+    d1 = L2;
     /*
     switch(L1) {
     case 0: 
@@ -238,7 +247,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       gdims[L1] = (gdims[L1]-1)*2;
     tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
-    printf("New grid, D=%d %d\n",tmpgrid1->D[0],tmpgrid1->D[1]);
+    //    printf("New grid, D=%d %d\n",tmpgrid1->D[0],tmpgrid1->D[1]);
 
     //    for(i=0; i < 3; i++) {
       //      tmpgrid1->ldims[i] = tmpgrid1->gdims[i]/tmpgrid1->pgrid[i];
@@ -253,7 +262,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
     //Plan transform of second dimension followed by an exchange of local dimensions with second distributed dim. (column)
     L = d2 = d1;
-    d1 = grid1_.D[1];
+    d1 = L3;
     for(i=0;i<3;i++) {
       mocurr[i] = monext[i];
     }
@@ -311,10 +320,13 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	return;
       }
 
+    if(reverse_steps) {
+
     d1 = tmpgrid1->D[1];
     df = grid2_.D[1];
+
+    cout << "Return steps" << endl;
     if(d1 != df) {
-      cout << "Return steps" << endl;
       // Exchange D1 with L0
       d2 = L1 = tmpgrid1->L[0];
       pgrid[d1] = 1;
@@ -378,8 +390,9 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	delete tmpgrid0;	
       }
     }
+    }
 
-    for(i=0;i<3;i++)
+      for(i=0;i<3;i++)
       if(pgrid[i] != grid2_.pgrid[i]) {
 	cout << "Error in transform3D: processor grids dont match" <<endl;
 	return;
@@ -391,6 +404,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	iseq = false;
 	break;
       }
+
     if(!iseq) { //If not in the final memory ordering
       tmpgrid0 = new grid(grid2_);
       prev_stage = curr_stage;
@@ -424,6 +438,29 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::~transform3D()
   delete grid1,grid2;
 }
 
+int excl(int a,int b)
+{
+  if(a*b == 0) {
+    if(max(a,b) == 1)
+      return(2);
+    else
+      return(1);
+  }
+  else
+    return(0);
+}
+
+int dist(int a)
+{
+  switch(a) {
+  case 0:
+  case 1:
+    return(2);
+  case 2:
+    return(0);
+  }
+}
+
 template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2, const gen_trans_type *type,int d, bool inplace_) 
 {
   lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
@@ -435,7 +472,7 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     printf("Error in transplan: dimensions dont match %d, %d, %d\n",gr1.ldims[d],gr2.ldims[d],d);
     return;
   }
-  prec = type->prec;
+  stage_prec = prec = type->prec;
   trans_dim = d; 
   trans_type = (trans_type1D<Type1,Type2> *) type;
   dt1 = type->dt1;
@@ -556,7 +593,7 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
 
   dt1 = trans_type->dt1;
   dt2 = trans_type->dt2;
-  prec = trans_type->prec;
+  stage_prec = prec = trans_type->prec;
   kind = TRANS_ONLY;
   trans_dim = d;
   inplace = inplace_;
@@ -637,10 +674,20 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
 
 }
 
-template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d,bool inplace_) : transplan<Type1,Type2>(gr1,intergrid,type,d,inplace_), MPIplan<Type2>(intergrid,gr2,mpicomm,d1,d2)  
+template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d,bool inplace_)   
 {
   double *C = new double[1024];
-  transplan<Type1,Type2>::kind = TRANSMPI;
+  kind = TRANSMPI;
+  trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,inplace_);
+  stage_prec = trplan->prec;
+  mpiplan = new MPIplan<Type2>(intergrid,gr2,mpicomm,d1,d2,stage_prec);
+  is_set = true;
+  inplace = inplace_;
+  dt1 = trplan->dt1;
+  dt2 = trplan->dt2;
+  memcpy(dims1,trplan->dims1,3*sizeof(int));
+  memcpy(dims2,mpiplan->dims2,3*sizeof(int));
+
   //  is_trans = is_mpi = true;
 }
 
@@ -652,7 +699,7 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
 }
 */
 
-template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm_,int d1_,int d2_)  
+template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm_,int d1_,int d2_, int prec_)  
 {
   int i,d3,l;
 
@@ -675,6 +722,8 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
     cout << "Error in MPIplan constr.: proc. grid dimensions dont match" << gr1.pgrid << gr2.pgrid << endl;
     return;
   }
+
+  stage_prec = prec = prec_;
 
   if(p >1) {
 
@@ -713,26 +762,23 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
   // int comm_coords[3];
   //memcpy(comm_coords,gr1.grid_id_cart,3*sizeof(int));
 
-  double *B = new double[1024];
-
   SndStrt[0] = 0;
   RcvStrt[0] = 0;
+
   int sz=sizeof(Type)/4;
   //int rank;
   for(int j=0; j< p-1;j++) {
     //    comm_coords[l] = j;
     //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-    SndCnts[j] = gr2.sz[l][j][d2] * dims1[d1] *dims1[d3] * sz;
-    RcvCnts[j] = dims2[d2] * gr1.sz[l][j][d1] *dims1[d3] * sz;
+    SndCnts[j] = gr2.sz[l][j][d2] * dims1[d3] *dims1[d1] * sz;
+    RcvCnts[j] = dims2[d2] * gr1.sz[l][j][d1] *dims2[d3] * sz;
     SndStrt[j+1] = SndStrt[j] + SndCnts[j];
     RcvStrt[j+1] = RcvStrt[j] + RcvCnts[j];
   }
   //  comm_coords[l] = p-1;
   //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-  SndCnts[p-1] = gr2.sz[l][p-1][d2] * dims1[d1]*dims1[d3] * sz;
-  RcvCnts[p-1] = dims2[d2] * gr1.sz[l][p-1][d1]*dims1[d3] * sz;
-
-  double *A = new double[1024];
+  SndCnts[p-1] = gr2.sz[l][p-1][d2] * dims1[d3]*dims1[d1] * sz;
+  RcvCnts[p-1] = dims2[d2] * gr1.sz[l][p-1][d1]*dims2[d3] * sz;
 
   grid1 = new grid(gr1);
   grid2 = new grid(gr2);
@@ -744,8 +790,6 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
   //  is_trans = false;
   kind = MPI_ONLY;
   mpicomm = mpicomm_;
-
-  double *D = new double[1024];
 
 }
 

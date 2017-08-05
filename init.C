@@ -515,6 +515,7 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
 
       MPI_Comm_rank(mpicomm[0],myid);
       MPI_Comm_rank(mpicomm[1],myid+1);
+      printf("%d: myid=%d %d\n",taskid,myid[0],myid[1]);
       //int tmp;
       //MPI_Comm_size(mpicomm[0],&tmp);
       //      printf("grid: Size of mpicomm[0]=%d\n",tmp);
@@ -657,7 +658,7 @@ void grid::InitPencil()
 	//st[i][p][j] = st[i][p-1][j] + size;
 	//sz[i][p][j] = size;
 	en[i][p-1][j] = data;
-	sz[i][p-1][j] = data - st[0][p-1][j];
+	sz[i][p-1][j] = data - st[i][p-1][j];
       }
       //      en[proc-1][i] = data;
       //sz[proc-1][i] = data -st[proc-1][i];

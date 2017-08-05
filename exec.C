@@ -11,11 +11,16 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
   char *buf[2],*var[2],*buf_in,*buf_out;
   int next,curr,dt_1,dt_2,nextvar,stage_cnt=0;
 
+  int taskid;
+  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
+
+
   next = 1; curr = 0;
   buf[curr] = buf_in = (char *) in;
   buf_out = (char *) out;
   dt_1 = dt1;
   nextvar = 0;
+
   for(stage *curr_stage=Stages;curr_stage != NULL;curr_stage = curr_stage->next) {
     printf("stage %d, kind=%d\n",stage_cnt++,curr_stage->kind);
   
@@ -29,10 +34,12 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
     }
 */
 
+/*
     if(!curr_stage->is_set) {
       cout << "Error in transform3D::exec: stage is not set up" << endl;
       return;
     }
+*/
 
     if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
@@ -45,7 +52,8 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
 	else if(!(st->inplace || (!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1)) {
-	  var[nextvar] = new char[size2*dt_2*prec];
+	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+	  var[nextvar] = new char[size2*dt_2*st->stage_prec];
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -62,7 +70,8 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2 > size1) {
-	  var[nextvar] = new char[size2*dt_1*prec];
+	  var[nextvar] = new char[size2*dt_1*curr_stage->stage_prec];
+	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -80,7 +89,8 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1*dt_1) {
-	  var[nextvar] = new char[size2*dt_2*prec];
+	  var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -109,7 +119,7 @@ void stage::myexec(char *in,char *out)
   case TRANS_ONLY: 
     if(dt1 == REAL)
       if(dt2 == REAL)
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  transplan<float,float> *st=(transplan<float,float> *) this;
 	  st->exec(in,out);
 	}
@@ -118,7 +128,7 @@ void stage::myexec(char *in,char *out)
 	  st->exec(in,out);
 	}
       else
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  transplan<float,mycomplex> *st=(transplan<float,mycomplex> *) this;
 	  st->exec(in,out);
 	}
@@ -128,7 +138,7 @@ void stage::myexec(char *in,char *out)
 	}
     else
       if(dt2 == REAL)
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  transplan<mycomplex,float> *st=(transplan<mycomplex,float> *) this;
 	  st->exec(in,out);
 	}
@@ -137,7 +147,7 @@ void stage::myexec(char *in,char *out)
 	  st->exec(in,out);
 	}
       else
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  transplan<mycomplex,mycomplex> *st=(transplan<mycomplex,mycomplex> *) this;
 	  st->exec(in,out);
 	}
@@ -150,7 +160,7 @@ void stage::myexec(char *in,char *out)
     
   case MPI_ONLY:
     if(dt1 == REAL)
-      if(prec == 1) {
+      if(stage_prec == 4) {
 	MPIplan<float> *st=(MPIplan<float> *) this;
 	st->exec(in,out);
       }
@@ -159,7 +169,7 @@ void stage::myexec(char *in,char *out)
 	st->exec(in,out);
       }
     else
-      if(prec == 1) {
+      if(stage_prec == 4) {
 	MPIplan<mycomplex> *st=(MPIplan<mycomplex> *) this;
 	st->exec(in,out);
       }
@@ -172,7 +182,7 @@ void stage::myexec(char *in,char *out)
   case TRANSMPI:
     if(dt1 == REAL)
       if(dt2 == REAL)
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  trans_MPIplan<float,float> *st=(trans_MPIplan<float,float> *) (transplan<float,float> *) this;
 	  st->exec(in,out);
 	}
@@ -181,7 +191,7 @@ void stage::myexec(char *in,char *out)
 	  st->exec(in,out);
 	}
       else
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  trans_MPIplan<float,mycomplex> *st=(trans_MPIplan<float,mycomplex> *) (transplan<float,mycomplex> *) this;
 	  st->exec(in,out);
 	}
@@ -191,7 +201,7 @@ void stage::myexec(char *in,char *out)
 	}
     else
       if(dt2 == REAL)
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  trans_MPIplan<mycomplex,float> *st=(trans_MPIplan<mycomplex,float> *) (transplan<mycomplex,float> *) this;
 	  st->exec(in,out);
 	}
@@ -200,7 +210,7 @@ void stage::myexec(char *in,char *out)
 	  st->exec(in,out);
 	}
       else
-	if(prec == 1) {
+	if(stage_prec == 4) {
 	  trans_MPIplan<mycomplex,mycomplex> *st=(trans_MPIplan<mycomplex,mycomplex> *)  (transplan<mycomplex,mycomplex> *) this;
 	  st->exec(in,out);
 	}
@@ -900,23 +910,26 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 
   int j,istart[numtasks][3],iend[numtasks][3],d[3];
 
-  for(i=0;i<numtasks;i++) {
-    for(j=0;j<3;j++)
-      istart[i][j] = grid1->st[comm_id][i][j]; iend[i][j] = grid1->en[comm_id][i][j];
+  for(i=0;i<numtasks;i++)
+    for(j=0;j<3;j++) {
+      istart[i][j] = 0;
+      iend[i][j] = dims1[j];
+      //      istart[i][j] = grid1->st[comm_id][i][j]; iend[i][j] = grid1->en[comm_id][i][j];
     }
   for(j=0;j<numtasks;j++) {
-    istart[j][d1] = grid2->st[comm_id][j][d1]; iend[j][d1] = grid2->en[comm_id][j][d1];
+    istart[j][d2] = grid2->st[comm_id][j][d2]; iend[j][d2] = grid2->en[comm_id][j][d2];
   }    
+
 
   for(i=0;i<3;i++)
     d[i] = dims1[mo1[i]];
   
   for(i=0;i < numtasks;i++) {
     p1 = sendbuf + *(SndStrt+i)/sizeof(Type);
-    for(z=istart[mo1[2]][i];z < iend[mo1[2]][i];z++)
-      for(y=istart[mo1[1]][i];y< iend[mo1[1]][i];y++) {
-	p0 = src+d[0]*(z*d[1]+y) +istart[mo1[0]][i];
-	for(x=istart[mo1[0]][i];x < iend[mo1[0]][i];x++)
+    for(z=istart[i][mo1[2]];z < iend[i][mo1[2]];z++)
+      for(y=istart[i][mo1[1]];y< iend[i][mo1[1]];y++) {
+	p0 = src+d[0]*(z*d[1]+y) +istart[i][mo1[0]];
+	for(x=istart[i][mo1[0]];x < iend[i][mo1[0]];x++)
 	  *p1++ = *p0++;;
       }
   }
@@ -929,14 +942,16 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   int j,istart[numtasks][3],iend[numtasks][3],isize[numtasks][3],d[3];
 
-  for(i=0;i<numtasks;i++) {
-    for(j=0;j<3;j++)
-      isize[i][j] = grid2->sz[comm_id][i][j];
-      istart[i][j] = grid2->st[comm_id][i][j]; iend[i][j] = grid2->en[comm_id][i][j];
+  for(i=0;i<numtasks;i++) 
+    for(j=0;j<3;j++) {
+      istart[i][j] = 0;
+      isize[i][j] = iend[i][j] = dims1[j];
+      //       isize[i][j] = grid2->sz[comm_id][i][j];
+      //istart[i][j] = grid2->st[comm_id][i][j]; iend[i][j] = grid2->en[comm_id][i][j];
     }
   for(j=0;j<numtasks;j++) {
-    isize[j][d2] = grid1->sz[comm_id][j][d2];
-    istart[j][d2] = grid1->st[comm_id][j][d2]; iend[j][d2] = grid1->en[comm_id][j][d2];
+    isize[j][d1] = grid1->sz[comm_id][j][d1];
+    istart[j][d1] = grid1->st[comm_id][j][d1]; iend[j][d1] = grid1->en[comm_id][j][d1];
   }    
   for(i=0;i<3;i++)
     d[i] = dims2[mo2[i]];
@@ -945,10 +960,10 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
     for(i=0;i < numtasks;i++) {
       p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-      for(z=istart[mo2[2]][i];z < iend[mo2[2]][i];z++)
-	for(y=istart[mo2[1]][i];y < iend[mo2[1]][i];y++) {
-	  p0 = dest + d[0]*(z*d[1]+y) + istart[mo2[0]][i];
-	  for(x=istart[mo2[0]][i];x < iend[mo2[0]][i];x++)
+      for(z=istart[i][mo2[2]];z < iend[i][mo2[2]];z++)
+	for(y=istart[i][mo2[1]];y < iend[i][mo2[1]];y++) {
+	  p0 = dest + d[0]*(z*d[1]+y) + istart[i][mo2[0]];
+	  for(x=istart[i][mo2[0]];x < iend[i][mo2[0]];x++)
 	    *p0++ = *p1++;
 	}
     }
@@ -968,15 +983,15 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   //out = (Type2 *) out_;
   int *tmpdims;
 
-  tmpdims = transplan<Type1,Type2>::grid2->ldims;
+  tmpdims = trplan->grid2->ldims;
 
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
   pack_sendbuf_trans(sendbuf,in);
-  tmpdims = MPIplan<Type2>::grid2->ldims;
+  tmpdims = mpiplan->grid2->ldims;
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
-  MPI_Alltoallv(sendbuf,MPIplan<Type2>::SndCnts,MPIplan<Type2>::SndStrt,MPI_REAL,recvbuf,MPIplan<Type2>::RcvCnts,MPIplan<Type2>::RcvStrt,MPI_REAL,MPIplan<Type2>::mpicomm);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->mpicomm);
   delete [] sendbuf;
-  MPIplan<Type2>::unpack_recvbuf((Type2 *) out,recvbuf);
+  mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
   delete [] recvbuf;
 
 }
@@ -985,51 +1000,59 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 {
   int i,nt,x,y,z,l;
 
-  int d1 = MPIplan<Type2>::d1;
-  int d2 = MPIplan<Type2>::d2;
-  int *dims1 = MPIplan<Type2>::dims1;
-  int *mo1 = MPIplan<Type2>::mo1;
+  int d1 = mpiplan->d1;
+  int d2 = mpiplan->d2;
+  int *dims1 = mpiplan->dims1;
+  int *mo1 = mpiplan->mo1;
   int d[3],*tmpdims;
   Type2 *p1,*p0,*buf;
 
-  nt = MPIplan<Type2>::numtasks;
-  int *SndStrt = MPIplan<Type2>::SndStrt;
+  nt = mpiplan->numtasks;
+  int *SndStrt = mpiplan->SndStrt;
   int j,istart[nt][3],iend[nt][3];
-  int comm_id = MPIplan<Type2>:: comm_id;
+  int comm_id = mpiplan-> comm_id;
 
-  for(i=0;i<nt;i++) {
-    for(j=0;j<3;j++)
-      istart[i][j] = MPIplan<Type2>::grid1->st[comm_id][i][j]; 
-      iend[i][j] = MPIplan<Type2>::grid1->en[comm_id][i][j];
-    }
+  for(i=0;i<nt;i++) 
+    for(j=0;j<3;j++) {
+      istart[i][j] = 0;
+      iend[i][j] = dims1[j];
+      //      istart[i][j] = mpiplan->grid1->st[comm_id][i][j]; 
+      //iend[i][j] = mpiplan->grid1->en[comm_id][i][j];
+  }
   for(j=0;j<nt;j++) {
-    istart[j][d1] = MPIplan<Type2>::grid2->st[comm_id][j][d1]; iend[j][d1] = MPIplan<Type2>::grid2->en[comm_id][j][d1];
+    istart[j][d2] = mpiplan->grid2->st[comm_id][j][d2]; iend[j][d2] = mpiplan->grid2->en[comm_id][j][d2];
   }    
 
-  tmpdims = transplan<Type1,Type2>::grid2->ldims;
+  for(i=0;i<nt;i++) 
+    for(j=0;j<3;j++) {
+      printf("%d: iend[%d][%d]=%d\n",mpiplan->taskid,i,j,iend[i][j]);
+      printf("%d: grid1.en[%d][%d]=%d\n",mpiplan->taskid,i,j,mpiplan->grid1->en[comm_id][i][j]);
+      printf("%d: grid2.en[%d][%d]=%d\n",mpiplan->taskid,i,j,mpiplan->grid2->en[comm_id][i][j]);
+    }
+  tmpdims = trplan->grid2->ldims;
 
-  if(transplan<Type1,Type2>::inplace) 
+  if(trplan->inplace) 
     buf = (Type2 *) src;
   else
     buf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 
   // Optimize in the future
-  transplan<Type1,Type2>::exec(src,(char *) buf);
+  trplan->exec(src,(char *) buf);
   
   for(i=0;i<3;i++)
     d[i] = dims1[mo1[i]];
   
   for(i=0;i < nt;i++) {
     p1 = sendbuf + *(SndStrt+i)/sizeof(Type2);
-    for(z=istart[mo1[2]][i];z < iend[mo1[2]][i];z++)
-      for(y=istart[mo1[1]][i];y< iend[mo1[1]][i];y++) {
-	p0 = buf+d[0]*(z*d[1]+y) +istart[mo1[0]][i];
-	for(x=istart[mo1[0]][i];x < iend[mo1[0]][i];x++)
+    for(z=istart[i][mo1[2]];z < iend[i][mo1[2]];z++)
+      for(y=istart[i][mo1[1]];y< iend[i][mo1[1]];y++) {
+	p0 = buf+d[0]*(z*d[1]+y) +istart[i][mo1[0]];
+	for(x=istart[i][mo1[0]];x < iend[i][mo1[0]];x++)
 	  *p1++ = *p0++;;
       }
   }
 
-  if(!transplan<Type1,Type2>::inplace) 
+  if(!trplan->inplace) 
     delete [] buf;
 }
 

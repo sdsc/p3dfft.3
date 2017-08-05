@@ -200,51 +200,56 @@ class grid;
 template <class Type1,class Type2> class Plantype;
 
 
-
 class stage {
   //  friend class transform3D;
  protected :
-  int prec;
-  int mo1[3],mo2[3];
+  //  int mo1[3],mo2[3];
  public :
+  int stage_prec;
   bool inplace;
   int dt1,dt2;
   int dims1[3],dims2[3];
-  bool is_set;
+  //  bool is_set;
   //  bool is_trans = false;
   //bool is_mpi = false;
   stage *next;
   int kind;
   stage() {next = NULL;};
-  void myexec(char *in,char *out);
+   void myexec(char *in,char *out);
 };
 
-template <class Type> class MPIplan  : public stage {
+
+template <class Type> class MPIplan : public stage {
   //    frien class transform3D;
     //    friend class stage;
  protected:
+  int prec;
   int numtasks,taskid;
   grid *grid1,*grid2;
   MPI_Comm mpicomm;
   int *SndCnts,*RcvCnts,*SndStrt,*RcvStrt;
   int d1,d2,du; // Dimension ranks: from local, to local, and unchanged
   int comm_id; //which communicator is this? 0=row, 1=column etc
+  int mo1[3],mo2[3];
 
   void pack_sendbuf(Type *sendbuf,Type *in);
   void unpack_recvbuf(Type *out,Type * recvbuf);
+  bool is_set;
 
  public :
 
-  MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2);
+  MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2, int prec);
   MPIplan() {};
   ~MPIplan();
   void exec(char *in,char *out);
-};
+  template <class Type1,class Type2> friend class trans_MPIplan;
+  };
 
-template <class Type1,class Type2>   class transplan : public stage { 
+template <class Type1,class Type2>   class transplan : public stage {
 
  protected:
 
+  int prec;
   Plantype<Type1,Type2> *plan;
 #ifdef ESSL
   double *work1,double *work2;
@@ -253,14 +258,14 @@ template <class Type1,class Type2>   class transplan : public stage {
   int N,m,istride,idist,ostride,odist,isign;
   int *inembed,*onembed;
   unsigned fft_flag;
+  int mo1[3],mo2[3];
 
   int trans_dim;  // Rank of dimension of the transform
   //  trans_type1D<Type1,Type2> 
 
-
-
   public :
 
+  bool is_set;
   long lib_plan;
   trans_type1D<Type1,Type2> *trans_type;
   transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d, bool inplace_);
@@ -272,21 +277,34 @@ template <class Type1,class Type2>   class transplan : public stage {
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
   long find_plan(trans_type1D<Type1,Type2> *type);
   void exec(char *in,char *out);
-};
 
-template <class Type1,class Type2>   class trans_MPIplan : public transplan<Type1,Type2>, public MPIplan<Type2> { 
+  template <class Type1,class Type2> friend class trans_MPIplan;
+
+  };
+
+template <class Type1,class Type2>   class trans_MPIplan : public stage {
+  
 
  private : 
 
   void pack_sendbuf_trans(Type2 *sendbuf,char *in);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
+  
 
   public :
+
+  bool is_set;
+  transplan<Type1,Type2>* trplan;
+  MPIplan<Type2>* mpiplan;
 
   trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_,bool inplace_);
   ~trans_MPIplan();
   void exec(char *in,char *out);
+
+  template <class Type1,class Type2> friend class transplan;
+  template <class Type> friend class MPIplan;
   };
+
 
 class grid {
  private :
