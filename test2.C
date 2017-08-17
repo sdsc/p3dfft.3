@@ -38,8 +38,8 @@ main(int argc,char **argv)
     gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
-  p1 = floor(sqrt(nprocs));
-  p2 = nprocs / p1;
+  p1 = 1;
+  p2 = nprocs;
   pgrid1[0] = 1;
   pgrid1[1] = p1;
   pgrid1[2] = p2;

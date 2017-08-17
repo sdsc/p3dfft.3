@@ -3,22 +3,23 @@
 
 void swap0(int newmo[3],int mo[3],int L)
 {
-  int i;
+  int i,j;
   for(i=0; i< 3; i++)
     newmo[i] = mo[i];
 
-  if(newmo[0] == L)
+  if(newmo[L] == 0)
     return;
-  if(newmo[1] == L) {
-    newmo[1] = newmo[0];
-    newmo[0] = L;
+  if(newmo[L] == 1) {
+    for(j=0;j<3;j++)
+      if(newmo[j] == 0)
+	break;
+    newmo[j] = 1;
+    newmo[L] = 0;
     return;
   }
-  // [2]=L
-
-  for(i=1; i >=0; i--)
-    newmo[i+1] = newmo[i];
-  newmo[0] = L;
+  // [L]=2
+  for(i=0;i<3;i++)
+    newmo[i] = (newmo[i] +1)%3;
 
   /*
   if(newmo[L] !=0) {

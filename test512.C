@@ -10,7 +10,7 @@ double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
 {
-  int N=128;
+  int N=512;
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];

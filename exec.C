@@ -1,6 +1,9 @@
 #include "p3dfft.h"
 
 int arcmp(int *A,int *B,int N);
+void inv_mo(int mo[3],int imo[3]);
+static int cnt_pack=0;
+static int cnt_trans=0;
 
 template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in,Type2 *out,int OW)
 //void transform3D::exec(char *in,char *out,int OW)
@@ -235,6 +238,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   Type2 *out;
   Type2 *buf=NULL;
   bool alloc=false;
+  void swap0(int newmo[3],int mo[3],int L);
 
   in = (Type1 *) in_;
   out = (Type2 *) out_;
@@ -264,7 +268,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
     }
   */
 
-  if(mo2[0] == L) {
+  if(mo2[L] == 0) {
 
     if(!arcmp(mo1,mo2,3)) {
       memcpy(mocurr,mo1,3*sizeof(int));
@@ -292,21 +296,24 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   }
   else { //If first dimension is not the one to be transformed, need to reorder first, combined with transform
     //mocurr = mo1;
-    memcpy(mocurr,mo1,3*sizeof(int));
-    if(mo1[0] != L) {
+    //    memcpy(mocurr,mo1,3*sizeof(int));
+    swap0(mocurr,mo1,L);
+	  /*    if(mo1[0] != L) {
       mocurr[0] = mo1[L];
       mocurr[L] = mo1[0];
     }
+	  */
+
   //    Try to organize so out of place transpose is used, if possible
-    if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
+    //    if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
       buf = new Type2[dims2[0]*dims2[1]*dims2[2]];
       alloc = true;
-    }
-    else
-      buf = out;
+      //}
+      //else
+      //buf = out;
     reorder_trans(in,buf,mo1,mocurr,dims1);   
-  }
-  if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
+    // }
+    //if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
     int currdims[3],i;
     for(i=0; i < 3;i++)
       currdims[mocurr[i]] = dims2[mo2[i]];
@@ -678,7 +685,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_in
   rel_change(mo1,mo2,mc);
 
   int pad = CACHEPAD/sizeof(Type);
-  switch(mc1[0]) {
+  switch(mc[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
@@ -909,6 +916,10 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
   Type *p1,*p0;
 
   int j,istart[numtasks][3],iend[numtasks][3],d[3];
+  int imo1[3],imo2[3];
+
+  //  inv_mo(mo1,imo1);
+  //inv_mo(mo2,imo2);
 
   for(i=0;i<numtasks;i++)
     for(j=0;j<3;j++) {
@@ -922,30 +933,37 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 
 
   for(i=0;i<3;i++)
-    d[i] = dims1[mo1[i]];
+    d[i] = dims1[imo1[i]];
   
   for(i=0;i < numtasks;i++) {
-    p1 = sendbuf + *(SndStrt+i)/sizeof(Type);
-    for(z=istart[i][mo1[2]];z < iend[i][mo1[2]];z++)
-      for(y=istart[i][mo1[1]];y< iend[i][mo1[1]];y++) {
-	p0 = src+d[0]*(z*d[1]+y) +istart[i][mo1[0]];
-	for(x=istart[i][mo1[0]];x < iend[i][mo1[0]];x++)
+    p1 = sendbuf + *(SndStrt+i)*4/sizeof(Type);
+    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
+      for(y=istart[i][imo1[1]];y< iend[i][imo1[1]];y++) {
+	p0 = src+d[0]*(z*d[1]+y) +istart[i][imo1[0]];
+	for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
 	  *p1++ = *p0++;;
       }
   }
+
 }
 
 template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbuf)
 {
-  int i,x,y,z;
-  Type *p1,*p0;
+  int i,ii,x,y,z,k,x2,y2,z2;
+  Type *p1,*p0,*pin,*pin1,*pout,*pout1;
 
   int j,istart[numtasks][3],iend[numtasks][3],isize[numtasks][3],d[3];
+  int xstart,xend,ystart,yend,zstart,zend;
+  int xsize,ysize,zsize;
+  int imo1[3],imo2[3];
+
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
 
   for(i=0;i<numtasks;i++) 
     for(j=0;j<3;j++) {
       istart[i][j] = 0;
-      isize[i][j] = iend[i][j] = dims1[j];
+      isize[i][j] = iend[i][j] = dims2[j];
       //       isize[i][j] = grid2->sz[comm_id][i][j];
       //istart[i][j] = grid2->st[comm_id][i][j]; iend[i][j] = grid2->en[comm_id][i][j];
     }
@@ -953,27 +971,230 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
     isize[j][d1] = grid1->sz[comm_id][j][d1];
     istart[j][d1] = grid1->st[comm_id][j][d1]; iend[j][d1] = grid1->en[comm_id][j][d1];
   }    
+  /*
+  for(i=0;i<numtasks;i++) 
+    for(j=0;j<3;j++) {
+      printf("%d: istart[%d][%d]=%d\n",taskid,i,j,istart[i][j]);
+      printf("%d: iend[%d][%d]=%d\n",taskid,i,j,iend[i][j]);
+      printf("%d: grid1.en[%d][%d]=%d\n",taskid,i,j,grid1->en[comm_id][i][j]);
+      printf("%d: grid2.en[%d][%d]=%d\n",taskid,i,j,grid2->en[comm_id][i][j]);
+      printf("%d: dims2[%d]=%d\n",taskid,i,dims2[i]);
+    }
+  */
+
   for(i=0;i<3;i++)
-    d[i] = dims2[mo2[i]];
+    d[i] = dims2[imo2[i]];
 
   if(mo1[0] == mo2[0] && mo1[1] == mo2[1] && mo1[2] == mo2[2]) 
 
     for(i=0;i < numtasks;i++) {
-      p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-      for(z=istart[i][mo2[2]];z < iend[i][mo2[2]];z++)
-	for(y=istart[i][mo2[1]];y < iend[i][mo2[1]];y++) {
-	  p0 = dest + d[0]*(z*d[1]+y) + istart[i][mo2[0]];
-	  for(x=istart[i][mo2[0]];x < iend[i][mo2[0]];x++)
+      p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+      for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
+	for(y=istart[i][imo1[1]];y < iend[i][imo1[1]];y++) {
+	  p0 = dest + d[0]*(z*d[1]+y) + istart[i][imo1[0]];
+	  for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
 	    *p0++ = *p1++;
 	}
     }
   else {
     int mc[3];
-    rel_change(mo1,mo2,mc);
-    // ... 
-  }
+    rel_change(imo1,imo2,mc);
 
+    //    printf("mo1=%d %d %d, mo2=%d %d %d, mc=%d %d %d\n",mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],mc[0],mc[1],mc[2]);
+    
+    switch(mc[0]) {
+    case 1:
+      switch(mc[1]) {
+      case 0: //1,0,2
+	for(i=0;i < numtasks;i++) {
+	  p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  xsize = isize[i][imo1[0]];
+	  ysize = isize[i][imo1[1]];
+	  zsize = isize[i][imo1[2]];
+	  for(z=0;z < zsize;z++) 
+	    for(y=0;y < ysize;y++) {
+	      pout = p0 + d[0]*d[1]*z +y;
+	      for(x=0;x < xsize;x++) {
+		*pout = *p1++;
+		pout += d[0];
+	      }
+	    }
+	}
+	
+	break;
+	
+      case 2: //1,2,0
+	int nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(nb31 < 1) nb31 = 1;
+	int nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(nb13 < 1) nb13 = 1;
+
+	for(i=0;i < numtasks;i++) {
+	  p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  xsize = isize[i][imo1[0]];
+	  ysize = isize[i][imo1[1]];
+	  zsize = isize[i][imo1[2]];
+
+	  for(z=0;z<zsize;z+=nb31) { 
+	    z2 = min(zsize,z+nb31);
+
+	    for(x=0;x < xsize;x+=nb13) {
+	      x2 = min(xsize,x+nb13);
+	      
+	      for(k=z;k<z2;k++) {
+		pin1 = p1 + xsize*ysize*k+ x;
+		pout1 = p0 + k +x*d[0];
+		for(y=0;y < ysize;y++) {
+		  pin = pin1;
+		  pout = pout1;
+		  //		  printf("%d: y,z=%d %d, x from %d to %d\n",taskid,y,k,x,x2);
+		  for(ii=x;ii<x2;ii++) {
+		    *pout = *pin++;
+		    pout += d[0];
+		  }
+		  pin1 += xsize;
+		  pout1+= d[0]*d[1];
+		}
+	      }
+	    }
+	  }
+	}
+	
+	break;
+      }
+      
+      break;
+    case 2:
+      switch(mc[1]) {
+      case 1: //2,1,0
+	int nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(nb31 < 1) nb31 = 1;
+	int nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(nb13 < 1) nb13 = 1;
+	
+	for(i=0;i < numtasks;i++) {
+	  p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  xsize = isize[i][imo1[0]];
+	  ysize = isize[i][imo1[1]];
+	  zsize = isize[i][imo1[2]];
+
+	  for(z=0;z<zsize;z+=nb31) { 
+	    z2 = min(zsize,z+nb31);
+	    for(x=0;x < xsize;x+=nb13) {
+	      x2 = min(xsize,x+nb13);
+	      
+	      for(k=z;k<z2;k++) {
+		pin1 = p1 + xsize*ysize*k + x;
+		pout1 = p0 + k + x*d[0]*d[1];
+		for(y=0;y < ysize;y++) {
+		  pin = pin1;
+		  pout = pout1 + y*d[0];
+		  for(ii=x;ii<x2;ii++) {
+		    *pout = *pin++;
+		    pout += d[0]*d[1];
+		  }
+		  pin1 += xsize;
+		}
+	      }
+	    }
+	  }
+	}
+	
+	break;
+      case 0: //2,0,1
+	int nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(nb32 < 1) nb32 = 1;
+	int nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(nb23 < 1) nb23 = 1;
+	
+	for(i=0;i < numtasks;i++) {
+	  p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  /*
+	  xstart = istart[i][imo1[0]];
+	  xend = iend[i][imo1[0]];
+	  ystart = istart[i][imo1[1]];
+	  yend = iend[i][imo1[1]];
+	  zstart = istart[i][imo1[2]];
+	  zend = iend[i][imo1[2]];
+	  */
+	  xsize = isize[i][imo1[0]];
+	  ysize = isize[i][imo1[1]];
+	  zsize = isize[i][imo1[2]];
+	  for(z=0;z<zsize;z+=nb32) { 
+	    z2 = min(zsize,z+nb32);
+	    for(y=0;y < ysize;y+=nb23) {
+	      y2 = min(ysize,y+nb23);
+	      for(k=z;k<z2;k++) {
+		pin = p1 + xsize*(k*ysize + y);
+		pout1 = p0 + k + y*d[0]*d[1];
+		for(j=y;j<y2;j++) {
+		  // pin = pin1;
+		  pout = pout1;
+		  for(x=0;x < xsize;x++) {
+		    *pout = *pin++;
+		    pout += d[0];
+		  }
+		  pout1+=d[0]*d[1];
+		  //pin1 += xsize;
+		}
+	      }
+	    }
+	  }
+	}
+	
+	break;
+      }
+      break;
+    case 0: //0,2,1
+      if(mc[1] == 2) {
+	int nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(nb32 < 1) nb32 = 1;
+	int nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(nb23 < 1) nb23 = 1;
+	
+	for(i=0;i < numtasks;i++) {
+	  p1 = recvbuf + *(RcvStrt+i)*4/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  xsize = isize[i][imo1[0]];
+	  ysize = isize[i][imo1[1]];
+	  zsize = isize[i][imo1[2]];
+	  /*
+	  xstart = istart[i][imo1[0]];
+	  xend = iend[i][imo1[0]];
+	  ystart = istart[i][imo1[1]];
+	  yend = iend[i][imo1[1]];
+	  zstart = istart[i][imo1[2]];
+	  zend = iend[i][imo1[2]];
+	  */
+	  for(z=0;z<zsize;z+=nb32) { 
+	    z2 = min(zsize,z+nb32);
+	    for(y=0;y < ysize;y+=nb23) {
+	      y2 = min(ysize,y+nb23);
+	      for(k=z;k<z2;k++) {
+		pin = p1 + xsize*(k*ysize+ y);
+		pout1 = p0 + d[0]*(k + y*d[1]);
+		for(j=y;j<y2;j++) {
+		  //pin = pin1;
+		  pout = pout1;
+		  for(x=0;x < xsize;x++) {
+		    *pout++ = *pin++;
+		  }
+		  pout1 += d[0]*d[1];
+		  //pin1 += xsize;
+		}
+	      }
+	    }
+	  }
+	}
+      }        
+    }
+  }
 }
+
 
 // Perform transform followed by transpose (MPI exchange)
 template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *in,char *out) {
@@ -993,8 +1214,33 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   delete [] sendbuf;
   mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
   delete [] recvbuf;
-
+  char str[80];
+  sprintf(str,"transmpi.out%d",cnt_trans++);
+  int imo2[3];
+  inv_mo(mpiplan->mo2,imo2);
+  write_buf((Type2 *) out,str,tmpdims,imo2);
 }
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::write_buf(Type2 *buf,char *label,int sz[3],int mo[3]) {
+  int i,j,k;
+  FILE *fp;
+  char str[80],filename[80];
+  complex_double *p=(complex_double *) buf;
+
+  strcpy(filename,label);
+  sprintf(str,".%d",mpiplan->taskid);
+  strcat(filename,str);
+  fp=fopen(filename,"w");
+  for(k=0;k<sz[mo[2]];k++)
+    for(j=0;j<sz[mo[1]];j++)
+      for(i=0;i<sz[mo[0]];i++) {
+	if(abs(*p) > 1.e-7) {
+	  fprintf(fp,"(%d %d %d) %lg %lg\n",i,j,k,p->real(),p->imag());
+	}
+	p++;
+      }
+  fclose(fp); 
+}
+
 
 template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf_trans(Type2 *sendbuf,char *src)
 {
@@ -1004,13 +1250,17 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   int d2 = mpiplan->d2;
   int *dims1 = mpiplan->dims1;
   int *mo1 = mpiplan->mo1;
+  int *mo2 = mpiplan->mo2;
   int d[3],*tmpdims;
   Type2 *p1,*p0,*buf;
+  int imo1[3],imo2[3];
 
   nt = mpiplan->numtasks;
   int *SndStrt = mpiplan->SndStrt;
   int j,istart[nt][3],iend[nt][3];
   int comm_id = mpiplan-> comm_id;
+
+  inv_mo(mo1,imo1);
 
   for(i=0;i<nt;i++) 
     for(j=0;j<3;j++) {
@@ -1023,12 +1273,6 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
     istart[j][d2] = mpiplan->grid2->st[comm_id][j][d2]; iend[j][d2] = mpiplan->grid2->en[comm_id][j][d2];
   }    
 
-  for(i=0;i<nt;i++) 
-    for(j=0;j<3;j++) {
-      printf("%d: iend[%d][%d]=%d\n",mpiplan->taskid,i,j,iend[i][j]);
-      printf("%d: grid1.en[%d][%d]=%d\n",mpiplan->taskid,i,j,mpiplan->grid1->en[comm_id][i][j]);
-      printf("%d: grid2.en[%d][%d]=%d\n",mpiplan->taskid,i,j,mpiplan->grid2->en[comm_id][i][j]);
-    }
   tmpdims = trplan->grid2->ldims;
 
   if(trplan->inplace) 
@@ -1036,18 +1280,24 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   else
     buf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 
+  char str[80];
+  sprintf(str,"pack_send_trans.in%d",cnt_pack);
+  //  inv_mo(mo2,imo2);
   // Optimize in the future
+  write_buf((Type2 *) src,str,dims1,imo1);
   trplan->exec(src,(char *) buf);
+  sprintf(str,"pack_send_trans.out%d",cnt_pack++);
+  write_buf(buf,str,tmpdims,imo1);
   
   for(i=0;i<3;i++)
-    d[i] = dims1[mo1[i]];
+    d[i] = dims1[imo1[i]];
   
   for(i=0;i < nt;i++) {
-    p1 = sendbuf + *(SndStrt+i)/sizeof(Type2);
-    for(z=istart[i][mo1[2]];z < iend[i][mo1[2]];z++)
-      for(y=istart[i][mo1[1]];y< iend[i][mo1[1]];y++) {
-	p0 = buf+d[0]*(z*d[1]+y) +istart[i][mo1[0]];
-	for(x=istart[i][mo1[0]];x < iend[i][mo1[0]];x++)
+    p1 = sendbuf + *(SndStrt+i)*4/sizeof(Type2);
+    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
+      for(y=istart[i][imo1[1]];y< iend[i][imo1[1]];y++) {
+	p0 = buf+d[0]*(z*d[1]+y) +istart[i][imo1[0]];
+	for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
 	  *p1++ = *p0++;;
       }
   }
@@ -1056,6 +1306,15 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
     delete [] buf;
 }
 
+void inv_mo(int mo[3],int imo[3])
+{
+  int i,j;
+  for(i=0;i<3;i++) 
+    for(j=0;j<3;j++) {
+      if(mo[i] == j)
+	imo[j] = i;
+    }
+}
 
 template class transform3D<float,float>;
 template class transform3D<double,double>;

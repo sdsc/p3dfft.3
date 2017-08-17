@@ -49,7 +49,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   int monext[3];
   int dims1[3],dims2[3];
   gen_trans_type *tmptype;
-  MPI_Comm mpicomm;
+  MPI_Comm mpicomm,splitcomm;
   bool reverse_steps;
 
   /*
@@ -214,6 +214,11 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     swap0(monext,mocurr,L1);
     tmpgrid0->set_mo(monext);
     d1 = L2;
+    if(d1 == grid1_.D[0])
+      splitcomm = grid1_.mpicomm[0];
+    else
+      splitcomm = grid1_.mpicomm[1];
+
     /*
     switch(L1) {
     case 0: 
@@ -256,13 +261,18 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     // tmpgrid1->set_mo(monext);
     printf("Calling init_tran_MPIsplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L1,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 
-    Stages = curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,grid1_.mpicomm[0],d1,d2,tmptype,L1,inpl,prec);
+    Stages = curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L1,inpl,prec);
     curr_stage->kind = TRANSMPI;
     //    curr_stage->MPI_plan = stage::MPIplan(tmpgrid0,tmpgrid1,grid1.mpicomm[0],d1,d2,dt_prev);
 
     //Plan transform of second dimension followed by an exchange of local dimensions with second distributed dim. (column)
     L = d2 = d1;
     d1 = L3;
+    if(d1 == grid1_.D[0])
+      splitcomm = grid1_.mpicomm[0];
+    else
+      splitcomm = grid1_.mpicomm[1];
+
     for(i=0;i<3;i++) {
       mocurr[i] = monext[i];
     }
@@ -284,7 +294,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
     prev_stage = curr_stage;
       printf("Calling init_trans_MPIplan, trans_dim=%d, gdims2=(%d %d %d),ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L,gdims[0],gdims[1],gdims[2],tmpgrid0->ldims[0],tmpgrid0->ldims[1],tmpgrid0->ldims[2],monext[0],monext[1],monext[2]);
-    curr_stage = init_trans_MPIplan(*tmpgrid1,*tmpgrid0,grid1_.mpicomm[1],d1,d2,tmptype,L,inpl,prec);
+    curr_stage = init_trans_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,tmptype,L,inpl,prec);
     curr_stage->kind = TRANSMPI;
 
     prev_stage->next = curr_stage;
@@ -329,13 +339,17 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     if(d1 != df) {
       // Exchange D1 with L0
       d2 = L1 = tmpgrid1->L[0];
+      if(d1 == grid1_.D[0])
+	splitcomm = grid1_.mpicomm[0];
+    else
+      splitcomm = grid1_.mpicomm[1];
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->P[1];
 
       tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
-      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,tmpgrid1->mpicomm[1],d1,d2,dt_prev,prec);
+      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
       prev_stage->next = curr_stage;
       delete tmpgrid1;
       L1 = d1;
@@ -350,13 +364,17 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	// Exchange L0 with D0
 	d2 = tmpgrid0->L[0];
 	d1 = tmpgrid0->D[0];
-	pgrid[d1] = 1;
+	if(d1 == grid1_.D[0])
+	  splitcomm = grid1_.mpicomm[0];
+        else
+          splitcomm = grid1_.mpicomm[1];
+        pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->P[0];
 	
 	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
-	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,tmpgrid0->mpicomm[0],d1,d2,dt_prev,prec);
+	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
 	prev_stage->next = curr_stage;
 	delete tmpgrid0;	
     }
@@ -365,13 +383,17 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     if(d1 != df) {
       // Again exchange D1 with L0
       d2 = L1 = tmpgrid1->L[0];
+      if(d1 == grid1_.D[0])
+	splitcomm = grid1_.mpicomm[0];
+      else
+	splitcomm = grid1_.mpicomm[1];
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->P[1];
 
       tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
-      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,tmpgrid1->mpicomm[1],d1,d2,dt_prev,prec);
+      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
       prev_stage->next = curr_stage;
       delete tmpgrid1;
       L1 = d1;

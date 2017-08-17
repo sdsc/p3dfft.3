@@ -672,9 +672,15 @@ void grid::InitPencil()
       i = proc_order[pdim++];
       myproc = grid_id[k];
       ldims[k] = sz[i][myproc][k];
+      if(myproc > 0)
+	glob_start[k] = en[i][myproc-1][k];
+      else
+	glob_start[k] = 0;
     }
-    else
+    else {
       ldims[k] = gdims[k];
+      glob_start[k] = 0;
+    }
 }
 
   /*

@@ -238,7 +238,7 @@ template <class Type> class MPIplan : public stage {
 
  public :
 
-  MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2, int prec);
+  MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2, int prec_);
   MPIplan() {};
   ~MPIplan();
   void exec(char *in,char *out);
@@ -300,9 +300,11 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_,bool inplace_);
   ~trans_MPIplan();
   void exec(char *in,char *out);
+  void write_buf(Type2 *buf,char *label,int sz[3],int mo[3]);
 
   template <class Type1,class Type2> friend class transplan;
   template <class Type> friend class MPIplan;
+
   };
 
 
