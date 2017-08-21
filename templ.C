@@ -1,5 +1,7 @@
 #include "p3dfft.h"
 
+void inv_mo(int mo[3],int imo[3]);
+
 template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_)
 {
 
@@ -69,13 +71,14 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       return;
     }
 
-
+  /*
     int tmp;
     MPI_Comm_size(grid1_.mpicomm[0],&tmp);
     printf("size of grid1_ mpicomm=%d\n",tmp);
   grid1 = new grid(grid1_);
     MPI_Comm_size(grid1->mpicomm[0],&tmp);
     printf("size of grid1 mpicomm=%d\n",tmp);
+  */
   grid2 = new grid(grid2_);
   inplace = inplace_;
   dt = dt_init;
@@ -101,9 +104,11 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
   if(nd == 1) {
     d1 = grid1_.D[0];
+    /*
     if(d1 < 2) d2 = d1+1;
     else d2=d1 - 1;
-    
+    */
+
     //  ! First plan local transforms in the 1st local dimensions
     L1 = grid1_.L[0];
     swap0(monext,mocurr,L1);
@@ -114,15 +119,25 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       gdims[i] = grid1_.gdims[i];
       proc_order[i] = grid1_.proc_order[i];
     }
-    L2 = grid1_.L[1];
+    L3 = grid2_.L[1];
+    if(L3 == L1)
+      L3 = grid2_.L[0];
+
+    L2 = excl(L1,L3);
     swap0(monext,mocurr,L2);
     
     tmptype = types1D[type->types[L1]];
     //    grid tmpgrid1 = newgrid(tmpgrid0,tmptype,d);
-    if(tmptype->dt1 < tmptype->dt2) // Real-to-complex
-      gdims[d1] = gdims[d1]/2+1;
-    else if(tmptype->dt2 < tmptype->dt1) // Complex-to-real
-      gdims[d1] = (gdims[d1]-1)*2;
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      gdims[L1] = gdims[L1]/2+1;
+      inpl = false;
+    }
+    else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
+      gdims[L1] = (gdims[L1]-1)*2;
+      inpl = false;
+    }
+    else
+      inpl = true;
     tmpgrid1 = new grid(gdims,pgrid1,proc_order,monext,mpicomm);
       
   //    grid tmpgrid1 = grid(tmpgrid0);
@@ -141,16 +156,22 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       proc_order[i] = tmpgrid1->proc_order[i];
     }
 
-
-    L1 = grid1_.L[1];
+    L1 = L2;
     L2 = d1;
+    d2 = L1;
     swap0(monext,mocurr,L2);
     pgrid[d1] = 1;
     pgrid[d2] = pgrid1[d1];
-    if(tmptype->dt1 < tmptype->dt2) // Real-to-complex
-      gdims[d1] = gdims[d1]/2+1;
-    else if(tmptype->dt2 < tmptype->dt1) // Complex-to-real
-      gdims[d1] = (gdims[d1]-1)*2;
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      gdims[L1] = gdims[L1]/2+1;
+      inpl = false;
+    }
+    else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
+      gdims[L1] = (gdims[L1]-1)*2;
+      inpl = false;
+    }
+    else
+      inpl = true;
 
     tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
@@ -175,16 +196,22 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
     L1 = d1;
     swap0(monext,mo2,L1);
-    if(tmptype->dt1 < tmptype->dt2) // Real-to-complex
-      gdims[d2] = gdims[d2]/2+1;
-    else if(tmptype->dt2 < tmptype->dt1) // Complex-to-real
-      gdims[d2] = (gdims[d2]-1)*2;
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      gdims[L1] = gdims[L1]/2+1;
+      inpl = false;
+    }
+    else if(tmptype->dt2 < tmptype->dt1)  { // Complex-to-real
+      gdims[L1] = (gdims[L1]-1)*2;
+      inpl = false;
+    }
+    else
+      inpl = true;
 
     tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
     prev_stage = curr_stage;
       printf("Calling init_transplan, trans_dim=%d\n",d1);
-    curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,d1,inpl,prec);
+    curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,d1,true,prec);
     prev_stage->next = curr_stage;
     dt_prev = tmptype->dt2;
 
@@ -281,7 +308,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     delete tmpgrid0;
     //Exchange columns with local dimension
     pgrid[d1] = 1;
-    pgrid[d2] = grid1_.P[1];
+    pgrid[d2] = tmpgrid1->pgrid[d1]; 
     //tmpgrid2.L[0] = d1;
     //tmpgrid2.D[1] = d2;
     tmptype = types1D[type->types[L]];
@@ -310,10 +337,17 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     //    tmpgrid1->set_mo(monext);
     tmptype = types1D[type->types[d1]];
     //    grid tmpgrid1 = newgrid(tmpgrid0,tmptype,d);
-    if(tmptype->dt1 < tmptype->dt2) // Real-to-complex
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
       gdims[d1] = gdims[d1]/2+1;
-    else if(tmptype->dt2 < tmptype->dt1) // Complex-to-real
+      inpl = false;
+    }
+    else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
       gdims[d1] = (gdims[d1]-1)*2;
+      inpl = false;
+    }
+    else
+      inpl = true;
+
     tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
     prev_stage = curr_stage;
@@ -344,7 +378,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     else
       splitcomm = grid1_.mpicomm[1];
       pgrid[d1] = 1;
-      pgrid[d2] = tmpgrid1->P[1];
+      pgrid[d2] = tmpgrid1->pgrid[d1];
 
       tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
@@ -369,7 +403,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
         else
           splitcomm = grid1_.mpicomm[1];
         pgrid[d1] = 1;
-	pgrid[d2] = tmpgrid0->P[0];
+	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
 	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 	
@@ -388,7 +422,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       else
 	splitcomm = grid1_.mpicomm[1];
       pgrid[d1] = 1;
-      pgrid[d2] = tmpgrid1->P[1];
+      pgrid[d2] = tmpgrid1->pgrid[d1];
 
       tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
@@ -402,7 +436,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	d2 = tmpgrid0->L[0];
 	d1 = tmpgrid0->D[0];
 	pgrid[d1] = 1;
-	pgrid[d2] = tmpgrid0->P[0];
+	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
 	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 	
@@ -567,15 +601,22 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     }
   }
   
-  int mc[3];    //,rel_change(int [3],int [3],int [3]);
-  rel_change(mo1,mo2,mc);
+  int i,mc[3],imo1[3],imo2[3],d1[3],d2[3];    //,rel_change(int [3],int [3],int [3]);
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  for(i=0;i<3;i++) {
+    d1[i] = dims1[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  rel_change(imo1,imo2,mc);
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2                                                          
-      m /= dims1[2]; // Need finer grain transform, to reuse cache     
+      m /= d2[2]; // Need finer grain transform, to reuse cache     
       break;
-    case 1:
+    case 2:
       m = 1;
       break;
     }
@@ -671,15 +712,22 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     }
   }
 
-  int mc[3];
-  rel_change(mo1,mo2,mc);
+  int i,mc[3],imo1[3],imo2[3],d1[3],d2[3];    //,rel_change(int [3],int [3],int [3]);
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  for(i=0;i<3;i++) {
+    d1[i] = dims1[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  rel_change(imo1,imo2,mc);
   switch(mc1[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2                                                          
-      m /= dims1[2]; // Need finer grain transform, to reuse cache     
+      m /= d1[2]; // Need finer grain transform, to reuse cache     
       break;
-    case 1:
+    case 2:
       m = 1;
       break;
     }
@@ -692,7 +740,6 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
       break;
     }
   }
-  double *C = new double[1024];
 
 }
 

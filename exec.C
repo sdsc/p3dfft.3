@@ -285,7 +285,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
       //Either find existing plan with suitable parameters, or create a new one
       plan = find_plan(N,m,inplace,dt1,dt2,prec,1,str1,1,str2,doplan);
       */
-      if(!trans_type->is_empty)
+      //      if(!trans_type->is_empty)
 	(*(trans_type->exec))(lib_plan,in,out);
     }
     else {
@@ -314,10 +314,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
     reorder_trans(in,buf,mo1,mocurr,dims1);   
     // }
     //if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
-    int currdims[3],i;
-    for(i=0; i < 3;i++)
+    int currdims[3],i,tmpdims[3];
+    for(i=0; i < 3;i++) 
+      tmpdims[i] = dims2[i];
+    for(i=0; i < 3;i++) 
       currdims[mocurr[i]] = dims2[mo2[i]];
-    reorder_out(buf,out,mocurr,mo2,currdims);
+    reorder_out(buf,out,mocurr,mo2,dims2);
     delete [] buf;
   }
 }
@@ -342,7 +344,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   Type2 *pout1,*p2,*ptran2,*pout;
   //  libplan plan;
 
-  rel_change(mo1,mo2,mc);
+  int imo1[3],imo2[3],d1[3],d2[3];
+
+
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  for(i=0;i<3;i++) {
+    d1[i] = dims1[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  rel_change(imo1,imo2,mc);
 
   printf("In reorder_trans, mc=%d %d %d\n",mc[0],mc[1],mc[2]); 
 
@@ -359,48 +371,48 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     //Either find existing plan with suitable parameters, or reate a new one
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
   
-      for(k=0;k <dims1[2];k++) {
-	p2 = pout = out +k*dims1[0]*dims1[1];
-	for(j=0;j < dims1[1];j++)
-	  for(i=0;i < dims1[0];i++) {
+      for(k=0;k <d1[2];k++) {
+	p2 = pout = out +k*d1[0]*dims1[1];
+	for(j=0;j < d1[1];j++)
+	  for(i=0;i < d1[0];i++) {
 	    *((Type1 *) pout) = *in++;
-	    pout += dims1[0];
+	    pout += d1[0];
 	  }	
-      if(!trans_type->is_empty)
+	//      if(!trans_type->is_empty)
 	(*(trans_type->exec))(plan,p2,p2);
       }
 
       break;
 
     case 2: //1,2,0
-      int nb31 = CACHE_BL / (sizeof(Type1)*dims1[0]*dims1[1]);
+      int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type1)*dims2[0]*dims1[1]);
+      int nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       //m = 1;
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
-      for(k=0;k <dims1[2];k+=nb31) {
-	k2 = min(k+nb31,dims1[2]);
-	for(i=0;i < dims1[0];i+=nb13) {
-	  i2 = min(i+nb13,dims1[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*dims1[0]*dims1[1];
-
-	    ptran2 = pout1 = out + kk*dims2[1];
-	    for(j=0;j < dims1[1];j++) {
-	      pin = pin1+i;
-	      pout = pout1+i*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1] +i;
+	    ptran2 =  out + kk*d2[0];
+	    pout = ptran2 +i*d2[0]*d2[1] ;
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1  ;
+	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
 		*((Type1 *) pout) = *pin++;
-		pout += dims2[0]*dims2[1];
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += dims1[0];
+	      pin1 += d1[0];
 	      pout1++;
 	    }
-	    if(!trans_type->is_empty)
+	    //	    if(!trans_type->is_empty)
 	      for(ii=i; ii < i2; ii++) {
 		(*(trans_type->exec))(plan,ptran2,ptran2);
-		ptran2+=dims2[0]*dims2[1];
+		ptran2+=d2[0]*d2[1];
 	      }
 	  }
 	}
@@ -413,109 +425,109 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      int nb31 = CACHE_BL / (sizeof(Type1)*dims1[0]*dims1[1]);
+      int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type1)*dims2[0]*dims2[1]);
+      int nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
       if(nb13 < 1) nb13 = 1;
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 
-      for(k=0;k <dims1[2];k+=nb31) {
-	k2 = min(k+nb31,dims1[2]);
-	for(i=0;i < dims1[0];i+=nb13) {
-	  i2 = min(i+nb13,dims1[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in + kk*dims1[0]*dims1[1];
+	    pin1 = in + kk*d1[0]*d1[1];
 	    pout1 = out + kk;
-	    for(j=0;j < dims1[1];j++) {
+	    for(j=0;j < d1[1];j++) {
 	      pin = pin1 + i;
-	      pout = pout1 + i * dims2[0]*dims2[1];
+	      pout = pout1 + i * d2[0]*d2[1];
 	      for(ii=i; ii < i2; ii++) {
 		*((Type1 *) pout) = *pin++;
-		pout += dims1[0]*dims2[1];
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += dims1[0];
-	      pout1 += dims2[0];
+	      pin1 += d1[0];
+	      pout1 += d2[0];
 	    }
 	  }
 	}
       }
-      if(!trans_type->is_empty)
+      //      if(!trans_type->is_empty)
 	(*(trans_type->exec))(plan,out,out);
       
       break;
     case 0: //2,0,1
-      int nb32 = CACHE_BL / (sizeof(Type1)*dims1[0]*dims1[1]);
+      int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type1)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
       if(nb23 < 1) nb23 = 1;
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 
-      for(k=0;k <dims1[2];k+=nb32) {
-	k2 = min(k+nb32,dims1[2]);
-	for(j=0;j < dims1[1];j+=nb23) {
-	  j2 = min(j+nb23,dims1[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = in +kk*dims1[0]*dims1[1] +j*dims1[0];
-	    pout1 = out +kk +j*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk +j*d2[0]*d2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
-	      for(i=0;i < dims1[0];i++) {
+	      for(i=0;i < d1[0];i++) {
 		*((Type1 *) pout) =  *pin++;
-		pout += dims2[1];
+		pout += d2[0];
 	      }
-	      pin1 += dims1[0];
-	      pout1 += dims2[0]*dims2[1];
+	      pin1 += d1[0];
+	      pout1 += d2[0]*d2[1];
 	    }
 	  }
 	}
       }
 
-      if(!trans_type->is_empty)
+      //      if(!trans_type->is_empty)
 	(*(trans_type->exec))(plan,out,out);
       break;
     }
     break;
   case 0: //0,2,1
     if(mc[1] == 2) {
-      int nb32 = CACHE_BL / (sizeof(Type1)*dims1[0]*dims1[1]);
+      int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type1)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
       if(nb23 < 1) nb23 = 1;
       //m = 1;
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 
-      for(k=0;k <dims1[2];k+=nb32) {
-	k2 = min(k+nb32,dims1[2]);
-	for(j=0;j < dims1[1];j+=nb23) {
-	  j2 = min(j+nb23,dims1[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*dims1[0]*dims1[1] +j*dims1[0];
-	    pout1 = out +kk*dims2[0] +j*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      ptran2 = pout = pout1;
-	      for(i=0;i < dims1[0];i++) 
+	      for(i=0;i < d1[0];i++) 
 		*((Type1 *) pout++) =  *pin++;
 	      if(trans_type->exec != NULL)
 		(*(trans_type->exec))(plan,ptran2,ptran2);
-	      pin += dims1[0];
-	      pout += dims2[0]*dims2[1];
+	      pin1 += d1[0];
+	      pout1 += d2[0]*d2[1];
 	    }
 	  }
 	}
       }      
     }
-    else if(!trans_type->is_empty)
+    //    else if(!trans_type->is_empty)
 
       //      plan = find_plan(N,m,(in==out),dt1,dt2,prec,1,str1,1,str2,doplan);
-      (*(trans_type->exec))(plan,in,out);
+    //      (*(trans_type->exec))(plan,in,out);
     
     break;
   }
   }
   else { // changing datatype in transform
-
+    printf("reorder_trans: changing datatypes - not implemented yet\n");
 
   }
 }
@@ -529,46 +541,55 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
   Type2 *pin,*pout,*pin1,*pout1;
+  int imo1[3],imo2[3],d1[3],d2[3];
 
-  rel_change(mo1,mo2,mc);
 
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  for(i=0;i<3;i++) {
+    d1[i] = dims_init[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  rel_change(imo1,imo2,mc);
   pin = in;
-  pout = pin+1;
-  *pout = *pin;
+  //  pout = pin+1;
+  //*pout = *pin;
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
-      for(k=0;k <dims_init[2];k++) {
-	pout = out +k*dims_init[0]*dims_init[1];
-	for(j=0;j < dims_init[1];j++)
-	  for(i=0;i < dims_init[0];i++) {
+      for(k=0;k <d1[2];k++) {
+	pout1 = out +k*d1[0]*d1[1];
+	for(j=0;j < d1[1];j++)
+	  pout = pout1 + j;
+	  for(i=0;i < d1[0];i++) {
 	    *(pout)  = *(pin++);
-	    pout += dims_init[0];
+	    pout += d2[0];
 	  }
       }
       break;
 
     case 2: //1,2,0
-      int nb31 = CACHE_BL / (sizeof(Type2)*dims_init[0]*dims_init[1]);
+      int nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type2)*dims2[0]*dims_init[1]);
+      int nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
-      for(k=0;k <dims_init[2];k+=nb31) {
-	k2 = min(k+nb31,dims_init[2]);
-	for(i=0;i < dims_init[0];i+=nb13) {
-	  i2 = min(i+nb13,dims_init[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*dims_init[0]*dims_init[1];
-	    pout1 = out + kk*dims2[1];
-	    for(j=0;j < dims_init[1];j++) {
-	      pin = pin1+i;
-	      pout = pout1+i*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1] +i;
+	    pout1 = out + kk*d2[1] +i*d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		pout += dims2[0]*dims2[1];
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += dims_init[0];
+	      pin1 += d1[0];
 	      pout1++;
 	    }
 	  }
@@ -582,26 +603,26 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      int nb31 = CACHE_BL / (sizeof(Type2)*dims_init[0]*dims_init[1]);
+      int nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type2)*dims2[0]*dims2[1]);
+      int nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
-      for(k=0;k <dims_init[2];k+=nb31) {
-	k2 = min(k+nb31,dims_init[2]);
-	for(i=0;i < dims_init[0];i+=nb13) {
-	  i2 = min(i+nb13,dims_init[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in + kk*dims_init[0]*dims_init[1];
-	    pout1 = out + kk;
-	    for(j=0;j < dims_init[1];j++) {
-	      pin = pin1 + i;
-	      pout = pout1 + i * dims2[0]*dims2[1];
+	    pin1 = in + kk*d1[0]*d1[1] +i;
+	    pout1 = out + kk + i * d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		pout += dims_init[0]*dims2[1];
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += dims_init[0];
-	      pout1 += dims2[0];
+	      pin1 += d1[0];
+	      pout1 += d2[0];
 	    }
 	  }
 	}
@@ -609,26 +630,24 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
       
       break;
     case 0: //2,0,1
-      int nb32 = CACHE_BL / (sizeof(Type2)*dims_init[0]*dims_init[1]);
+      int nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type2)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
       if(nb23 < 1) nb23 = 1;
-      for(k=0;k <dims_init[2];k+=nb32) {
-	k2 = min(k+nb32,dims_init[2]);
-	for(j=0;j < dims_init[1];j+=nb23) {
-	  j2 = min(j+nb23,dims_init[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = in +kk*dims_init[0]*dims_init[1] +j*dims_init[0];
-	    pout1 = out +kk +j*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1];
+	    pout1 = out +kk;
 	    for(jj=j; jj < j2; jj++) {
-	      pin = pin1;
-	      pout = pout1;
-	      for(i=0;i < dims_init[0];i++) {
+	      pin = pin1 +jj*d1[0];
+	      pout = pout1 +jj*d2[0]*d2[1];
+	      for(i=0;i < d1[0];i++) {
 		*pout = *pin++;
-		pout += dims2[1];
+		pout += d2[0];
 	      }
-	      pin1 += dims_init[0];
-	      pout1 += dims2[0]*dims2[1];
 	    }
 	  }
 	}
@@ -639,33 +658,33 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     break;
   case 0: //0,2,1
     if(mc[1] == 2) {
-      int nb32 = CACHE_BL / (sizeof(Type2)*dims_init[0]*dims_init[1]);
+      int nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type2)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
       if(nb23 < 1) nb23 = 1;
-      for(k=0;k <dims_init[2];k+=nb32) {
-	k2 = min(k+nb32,dims_init[2]);
-	for(j=0;j < dims_init[1];j+=nb23) {
-	  j2 = min(j+nb23,dims_init[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*dims_init[0]*dims_init[1] +j*dims_init[0];
-	    pout1 = out +kk*dims2[0] +j*dims2[0]*dims2[1];
+	    pin1 = in +kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
-	      for(i=0;i < dims_init[0];i++) 
+	      for(i=0;i < d1[0];i++) 
 		*pout++ = *pin++;
-	      pin += dims_init[0];
-	      pout += dims2[0]*dims2[1];
+	      pin += d1[0];
+	      pout += d2[0]*d2[1];
 	    }
 	  }
 	}
       }      
     }
     else
-      for(k=0;k<dims_init[2];k++)
-	for(j=0;j < dims_init[1];j++)
-	  for(i=0;i < dims_init[0];i++)
+      for(k=0;k<d1[2];k++)
+	for(j=0;j < d1[1];j++)
+	  for(i=0;i < d1[0];i++)
 	    *out++ = *in++;
     break;
   }
@@ -673,10 +692,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 
 }
 
-// Input: in[dims_init[mo1[0]]][dims_init[mo1[1]]][dims_init[mo1[2]]]
-// dims2[mo2[i]] = dims_init[mo1[i]]
+// Input: in[d1[mo1[0]]][d1[mo1[1]]][d1[mo1[2]]]
+// dims2[mo2[i]] = d1[mo1[i]]
 // Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
-template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_init[3])
+template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   Type *pin,*pin1,*pout,*pout1,*tmp;
@@ -689,54 +708,54 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_in
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
-      tmp = new Type[dims_init[0]+pad];
-      for(k=0;k <dims_init[2];k++) {
+      tmp = new Type[d1[0]+pad];
+      for(k=0;k <d1[2];k++) {
 	pout = tmp;
-	for(j=0;j < dims_init[1];j++) {
-	  for(i=0;i < dims_init[0];i++) 
+	for(j=0;j < d1[1];j++) {
+	  for(i=0;i < d1[0];i++) 
 	    *pout  = *in++;
 	  pout+= pad;//Cache shift
 	}
 	pin = tmp;
-	pout = out +k*dims_init[0]*dims_init[1];
-	for(j=0;j < dims_init[1];j++)
-	  for(i=0;i < dims_init[0];i++) {	    
+	pout = out +k*d1[0]*d1[1];
+	for(j=0;j < d1[1];j++)
+	  for(i=0;i < d1[0];i++) {	    
 	    *pout  = *pin++;
-	    pout += dims_init[0]+pad;
+	    pout += d1[0]+pad;
 	  }
 	delete [] tmp;
       }
       break;
 
     case 2: //1,2,0
-      int nb31 = CACHE_BL / (sizeof(Type)*dims_init[0]*dims_init[1]);
+      int nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type)*dims2[0]*dims_init[1]);
+      int nb13 = CACHE_BL / (sizeof(Type)*dims2[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
-      tmp = new Type[(dims_init[0]+1)*dims_init[1]*dims_init[2]];
+      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
-      for(k=0;k <dims_init[2];k++) 
-	for(j=0;j < dims_init[1];j++) {
-	  for(i=0;i < dims_init[0];i++) 
+      for(k=0;k <d1[2];k++) 
+	for(j=0;j < d1[1];j++) {
+	  for(i=0;i < d1[0];i++) 
 	    *pout  = *in++;
 	  pout++;//Cache shift
 	}
       
-      for(k=0;k <dims_init[2];k+=nb31) {
-	k2 = min(k+nb31,dims_init[2]);
-	for(i=0;i < dims_init[0];i+=nb13) {
-	  i2 = min(i+nb13,dims_init[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = tmp +kk*dims_init[0]*dims_init[1];
+	    pin1 = tmp +kk*d1[0]*d1[1];
 	    pout1 = out + kk*dims2[1];
-	    for(j=0;j < dims_init[1];j++) {
+	    for(j=0;j < d1[1];j++) {
 	      pin = pin1+i;
 	      pout = pout1+i*dims2[0]*dims2[1];
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
 		pout += dims2[0]*dims2[1];
 	      }
-	      pin1 += dims_init[0]+1;
+	      pin1 += d1[0]+1;
 	      pout1++;
 	    }
 	  }
@@ -751,34 +770,34 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_in
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      int nb31 = CACHE_BL / (sizeof(Type)*dims_init[0]*dims_init[1]);
+      int nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type)*dims2[0]*dims2[1]);
+      int nb13 = CACHE_BL / (sizeof(Type)*d2[0]*d2[1]);
       if(nb13 < 1) nb13 = 1;
-      tmp = new Type[(dims_init[0]+1)*dims_init[1]*dims_init[2]];
+      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
-      for(k=0;k <dims_init[2];k++) 
-	for(j=0;j < dims_init[1];j++) {
-	  for(i=0;i < dims_init[0];i++) 
+      for(k=0;k <d1[2];k++) 
+	for(j=0;j < d1[1];j++) {
+	  for(i=0;i < d1[0];i++) 
 	    *pout  = *in++;
 	  pout++;//Cache shift
 	}
 
-      for(k=0;k <dims_init[2];k+=nb31) {
-	k2 = min(k+nb31,dims_init[2]);
-	for(i=0;i < dims_init[0];i+=nb13) {
-	  i2 = min(i+nb13,dims_init[0]);
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = tmp + kk*dims_init[0]*dims_init[1];
+	    pin1 = tmp + kk*d1[0]*d1[1];
 	    pout1 = out + kk;
-	    for(j=0;j < dims_init[1];j++) {
+	    for(j=0;j < d1[1];j++) {
 	      pin = pin1 + i;
 	      pout = pout1 + i * dims2[0]*dims2[1];
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		pout += dims_init[0]*dims2[1];
+		pout += d1[0]*dims2[1];
 	      }
-	      pin1 += dims_init[0]+1;
+	      pin1 += d1[0]+1;
 	      pout1 += dims2[0];
 	    }
 	  }
@@ -789,34 +808,34 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_in
       
       break;
     case 0: //2,0,1
-      int nb32 = CACHE_BL / (sizeof(Type)*dims_init[0]*dims_init[1]);
+      int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
       int nb23 = CACHE_BL / (sizeof(Type)*dims2[0]*dims2[1]);
       if(nb23 < 1) nb23 = 1;
-      tmp = new Type[(dims_init[0]+1)*dims_init[1]*dims_init[2]];
+      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
-      for(k=0;k <dims_init[2];k++) 
-	for(j=0;j < dims_init[1];j++){
-	  for(i=0;i < dims_init[0];i++) 
+      for(k=0;k <d1[2];k++) 
+	for(j=0;j < d1[1];j++){
+	  for(i=0;i < d1[0];i++) 
 	    *pout  = *in++;
 	  pout++;//Cache shift
 	}
 
-      for(k=0;k <dims_init[2];k+=nb32) {
-	k2 = min(k+nb32,dims_init[2]);
-	for(j=0;j < dims_init[1];j+=nb23) {
-	  j2 = min(j+nb23,dims_init[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = tmp +kk*dims_init[0]*dims_init[1] +j*dims_init[0];
+	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
 	    pout1 = out +kk +j*dims2[0]*dims2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
-	      for(i=0;i < dims_init[0];i++) {
+	      for(i=0;i < d1[0];i++) {
 		*pout = *pin++;
 		pout += dims2[1];
 	      }
-	      pin1 += dims_init[0]+1;
+	      pin1 += d1[0]+1;
 	      pout1 += dims2[0]*dims2[1];
 	    }
 	  }
@@ -829,32 +848,32 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims_in
     break;
   case 0: //0,2,1
     if(mc[1] == 2) {
-      int nb32 = CACHE_BL / (sizeof(Type)*dims_init[0]*dims_init[1]);
+      int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
       int nb23 = CACHE_BL / (sizeof(Type)*dims2[0]*dims2[1]);
       if(nb23 < 1) nb23 = 1;
-      tmp = new Type[(dims_init[0]+1)*dims_init[1]*dims_init[2]];
+      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
-      for(k=0;k <dims_init[2];k++) 
-	for(j=0;j < dims_init[1];j++) {
-	  for(i=0;i < dims_init[0];i++) 
+      for(k=0;k <d1[2];k++) 
+	for(j=0;j < d1[1];j++) {
+	  for(i=0;i < d1[0];i++) 
 	    *pout  = *in++;
 	  pout++; //Cache shift
 	}
 
-      for(k=0;k <dims_init[2];k+=nb32) {
-	k2 = min(k+nb32,dims_init[2]);
-	for(j=0;j < dims_init[1];j+=nb23) {
-	  j2 = min(j+nb23,dims_init[1]);
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = tmp +kk*dims_init[0]*dims_init[1] +j*dims_init[0];
+	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
 	    pout1 = out +kk*dims2[0] +j*dims2[0]*dims2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
-	      for(i=0;i < dims_init[0];i++) 
+	      for(i=0;i < d1[0];i++) 
 		*pout++ = *pin++;
-	      pin += dims_init[0]+1;
+	      pin += d1[0]+1;
 	      pout += dims2[0]*dims2[1];
 	    }
 	  }

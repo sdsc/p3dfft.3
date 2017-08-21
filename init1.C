@@ -492,6 +492,12 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
     MPI_Cart_create(mpicomm_,nd,P,periodic,reorder,&mpi_comm_cart);
     MPI_Cart_coords(mpi_comm_cart,taskid,nd,grid_id_cart);
 
+    j=0;
+    for(i=0;i<3;i++) 
+      if(pgrid[i] == 1)
+	grid_id[i] = 0;
+      else
+	grid_id[i] = grid_id_cart[proc_order[j++]];
 
 
     int remain_dims[3];
@@ -533,17 +539,9 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
     //    MPI_Comm_free(&mpi_comm_cart);
   }
   else { //nd=1
-    grid_id_cart[0] = taskid;
     *mpicomm = mpicomm_;
     //    InitPencil1D();
   }
-  j=0;
-  for(i=0;i<3;i++) 
-    if(pgrid[i] == 1)
-      grid_id[i] = 0;
-    else
-      grid_id[i] = grid_id_cart[proc_order[j++]];
-
   InitPencil();
   is_set = true;
 }
@@ -629,83 +627,62 @@ void grid::InitPencil()
 {
   int i,j,k,pm,l,size,nl,nu,data,proc,li,myproc,pdim,ploc,p;
 
-  // First determine local dimension(s)
-  ploc=0;
-  for(k=0; k < 3; k++) {
-    for(i=0;i<nd;i++)
-      if(D[i] == k)
-	break;
-    if(i >= nd) {
-      L[ploc++] = k;
-      i = -1;
-    }
-  }
-      //      i = proc_order[pdim++];
-
-  // Distribute the dimension each communicator spans
-  for(i=0;i<nd;i++) {
-    j = D[i];
+  pdim=0;ploc=0;
+  for(j=0;j<3;j++) {
     data = gdims[j]; //[li];
-    proc = pgrid[j];
+    for(k=0;k<nd;k++)
+      if(D[k] == j) 
+	break;
+    if(k >= nd) {
+      L[ploc++] = j;
+      proc = 1;
+      k = 0;
+    }
+    else 
+      proc = pgrid[j];
+    
     size = data/proc;
     nu = data%proc;
     nl = proc-nu;
     
-    st[i][0][j] = 0;
-    sz[i][0][j] = size;
-    en[i][0][j] = size;
+    st[k][0][j] = 0;
+    sz[k][0][j] = size;
+    en[k][0][j] = size;
     for(p=1; p < nl; p++) {
-      st[i][p][j] = st[i][p-1][j] +size;
-      sz[i][p][j] = size;
-      en[i][p][j] = en[i][p-1][j] +size;
+      st[k][p][j] = st[k][p-1][j] +size;
+      sz[k][p][j] = size;
+      en[k][p][j] = en[k][p-1][j] +size;
     }
     size++;
     for(;p < proc; p++) {
-      st[i][p][j] = st[i][p-1][j] +sz[i][p-1][j];
-      sz[i][p][j] = size;
-      en[i][p][j] = en[i][p-1][j] +sz[i][p-1][j];
+      st[k][p][j] = st[k][p-1][j] +sz[k][p-1][j];
+      sz[k][p][j] = size;
+      en[k][p][j] = en[k][p-1][j] +sz[k][p-1][j];
     }
     //st[i][p][j] = st[i][p-1][j] + size;
     //sz[i][p][j] = size;
-    en[i][p-1][j] = data;
-    sz[i][p-1][j] = data - st[i][p-1][j];
-
-    // Assign local size for this spanning dimension
-    myproc = grid_id[j];
-    ldims[j] = sz[i][myproc][j];
-    glob_start[j] = st[i][myproc][j];
+    en[k][p-1][j] = data;
+    sz[k][p-1][j] = data - st[k][p-1][j];
   }
   //      en[proc-1][i] = data;
-      //sz[proc-1][i] = data -st[proc-1][i];
-      //      ldims[li] = sz[myid[li]][li];
+  //sz[proc-1][i] = data -st[proc-1][i];
+  //      ldims[li] = sz[myid[li]][li];
 
-  // Assign sizes for local dimensions
-  for(i=0;i<ploc;i++) {
-    k = L[i];
-    ldims[k] = gdims[k];
-    glob_start[k] = 0;
-    for(j=0;j<nd;j++) 
-      for(p=0;p<P[j];p++) {
-	sz[j][p][k] = en[j][p][k] = ldims[k];
-	st[j][p][k] = 0;
-      }
-  }
-
-  // Next, figure out local sizes for all remaining dimensions (non-local and non-spanning) 
-  for(i=0;i<nd;i++) {
-    k = D[i];
-    for(j=0;j<nd;j++)
-      if(j != i) { // non-spanning
-	l = D[j];
-	myproc = grid_id[l];
-	for(p=0;p<P[i];p++) {
-	  sz[i][p][l] = sz[j][myproc][l];
-	  st[i][p][l] = st[j][myproc][l];
-	  en[i][p][l] = en[j][myproc][l];
-	}
-      }	  
-  }
-
+  pdim =0;
+  for(k=0;k<3;k++) 
+    if(k == D[0] || k == D[1] || k == D[2]) {
+      i = proc_order[pdim++];
+      myproc = grid_id[k];
+      ldims[k] = sz[i][myproc][k];
+      if(myproc > 0)
+	glob_start[k] = en[i][myproc-1][k];
+      else
+	glob_start[k] = 0;
+    }
+    else {
+      ldims[k] = gdims[k];
+      glob_start[k] = 0;
+    }
 }
 
   /*

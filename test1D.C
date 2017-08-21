@@ -38,13 +38,8 @@ main(int argc,char **argv)
     gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
-  int pdims[2];
-  pdims[0]=pdims[1]=0;
-  MPI_Dims_create(nprocs,2,pdims);
-  //  p1 = floor(sqrt(nprocs));
-  //p2 = nprocs / p1;
-  p1 = pdims[0];
-  p2 = pdims[1];
+  p1 = 1;
+  p2 = nprocs;
   pgrid1[0] = 1;
   pgrid1[1] = p1;
   pgrid1[2] = p2;
@@ -100,7 +95,7 @@ main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
+    //    print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,0);
