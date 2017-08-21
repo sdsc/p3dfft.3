@@ -7,7 +7,7 @@ FF = mpif90
 #FFLAGS = -O3 
 AR = ar
 ARFLAGS = -v -r -u
-FFT_LIB = -L$(FFTWHOME)/lib -lfftw3 -lfftw3f
+FFT_LIB = -L$(HOME)/fftw-3.3.5/lib -lfftw3 -lfftw3f
 LDFLAGS= $(FFT_LIB) -lm
 # For FFTW use path to the installed FFTW library:
 # -L/usr/local/apps/fftw301s/lib -lfftw3f 
@@ -25,11 +25,13 @@ P3DFFT_LIB = libp3dfft.3.a
 
 FFT3DLIB = init.o plan.o exec.o templ.o
 
-all: lib test
+all: lib test1D test2D
 lib: $(FFT3DLIB)
 	$(AR) $(ARFLAGS) $(P3DFFT_LIB) $(FFT3DLIB)	
-test: $(FFT3DLIB) test1.o 
-	$(CPP) test1.o -L. -lp3dfft.3 $(LDFLAGS) 
+test1D: $(FFT3DLIB) test1D.o 
+	$(CPP) test1D.o -o test1D -L. -lp3dfft.3 $(LDFLAGS) 
+test2D: $(FFT3DLIB) test2D.o 
+	$(CPP) test2D.o -o test2D -L. -lp3dfft.3 $(LDFLAGS) 
 install: 
 	if(!(-e $(P3DFFT_ROOT))) mkdir $(P3DFFT_ROOT)
 	if (!(-e $(P3DFFT_ROOT)/lib)) mkdir $(P3DFFT_ROOT)/lib	
