@@ -28,7 +28,9 @@ void p3dfft_setup()
 
   int types_count=0;
 
+#ifdef DEBUG
   cout << "p3dfft_setup: adding Empty Type" << endl;
+#endif
   name = "Empty Type";
   p = new gen_trans_type(name,0);
   p->is_empty = true;
@@ -67,7 +69,9 @@ void p3dfft_setup()
   types_count++;
   */
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding R2C single type" << endl;
+#endif
 
   name = "Real-to-complex Fourier Transform, single precision";
 #ifdef FFTW
@@ -78,7 +82,9 @@ void p3dfft_setup()
   types_count++;
   
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding R2C double type" << endl;
+#endif
 
   name ="Real-to-complex Fourier Transform double precision";
 #ifdef FFTW
@@ -88,8 +94,9 @@ void p3dfft_setup()
   R2CFFT_D = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2R single type" << endl;
-
+#endif
   name = "Complex-to-real Fourier Transform, single precision";
 #ifdef FFTW
   p = new trans_type1D<mycomplex,float>(name,(long (*)(...) ) plan_c2r_s);
@@ -98,7 +105,9 @@ void p3dfft_setup()
   C2RFFT_S = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2R double type" << endl;
+#endif
 
   name = "Complex-to-real Fourier Transform, double precision";
 #ifdef FFTW
@@ -108,7 +117,9 @@ void p3dfft_setup()
   C2RFFT_D = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2C forward single type" << endl;
+#endif
 
   name = "Complex-to-complex Fourier Transform, forward transform, singple precision";
 #ifdef FFTW
@@ -119,7 +130,9 @@ void p3dfft_setup()
   CFFT_FORWARD_S = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2C forward double type" << endl;
+#endif
 
   name = "Complex-to-complex Fourier Transform, forward transform, double precision";
 #ifdef FFTW
@@ -131,7 +144,9 @@ void p3dfft_setup()
   CFFT_FORWARD_D = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2C backward single type" << endl;
+#endif
 
   name = "Complex-to-complex Fourier Transform, backward transform, single precision";
 #ifdef FFTW
@@ -142,7 +157,9 @@ void p3dfft_setup()
   CFFT_BACKWARD_S = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding C2C double backward type" << endl;
+#endif
 
   name = "Complex-to-complex Fourier Transform, backward transform, double precision";
 #ifdef FFTW
@@ -171,7 +188,9 @@ void p3dfft_setup()
   types1D.push_back(p);
   */
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding Cosine R2R single type" << endl;
+#endif
 
   name = "Real-valued Cosine Transform, single precision";
 #ifdef FFTW
@@ -181,7 +200,9 @@ void p3dfft_setup()
   COSTRAN_REAL_S = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding cosine R2R double type" << endl;
+#endif
 
   name = "Real-valued Cosine Transform, double precision";
 #ifdef FFTW
@@ -201,7 +222,9 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_cos_d);
   types1D.push_back(p);
   */
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding sine R2R single type" << endl;
+#endif
 
   name = "Real-valued Sine Transform, single precision";
 #ifdef FFTW
@@ -211,7 +234,9 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_cos_d);
   SINTRAN_REAL_S = types_count;
   types_count++;
 
+#ifdef DEBUG
   cout << "p3dft_setup: adding sine R2R double type" << endl;
+#endif
 
   name = "Real-valued Sine Transform, double precision";
 #ifdef FFTW
@@ -509,7 +534,9 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
 
       MPI_Comm_rank(mpicomm[0],myid);
       MPI_Comm_rank(mpicomm[1],myid+1);
+#ifdef DEBUG
       printf("%d: myid=%d %d\n",taskid,myid[0],myid[1]);
+#endif
       //int tmp;
       //MPI_Comm_size(mpicomm[0],&tmp);
       //      printf("grid: Size of mpicomm[0]=%d\n",tmp);

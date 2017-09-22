@@ -10,7 +10,7 @@ double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
 {
-  int N=128;
+  int N=256;
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
@@ -82,7 +82,7 @@ main(int argc,char **argv)
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
 
-  trans_f.exec(IN,OUT,0);
+  //  trans_f.exec(IN,OUT,0);
 
   double t=0.;
   double *FIN=new double[size1];
@@ -95,7 +95,7 @@ main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    //    print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
+    print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,0);
