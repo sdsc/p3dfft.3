@@ -1,5 +1,8 @@
+
 //#include "p3dfft.h"
 #include "templ.C"
+
+namespace p3dfft {
 
 void swap0(int newmo[3],int mo[3],int L)
 {
@@ -388,3 +391,5 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
 
 }
 
+
+}

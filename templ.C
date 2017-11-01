@@ -1,5 +1,7 @@
 #include "p3dfft.h"
 
+namespace p3dfft {
+
 void inv_mo(int mo[3],int imo[3]);
 
 template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_)
@@ -63,12 +65,12 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
   if((nd = grid1_.nd) != grid2_.nd) {
     printf("ERror in tran3D_plan: dimensions of grids don't match %d %d\n",nd,grid2_.nd);
-    return;
+    MPI_Abort(MPI_COMM_WORLD,0);
   }
   for(i=0; i < nd; i++)
     if(grid1_.P[i] != grid2_.P[i] || grid1_.proc_order[i] != grid2_.proc_order[i]) {
-      cout << "Error in transform3D: processor grids dont match" <<endl;
-      return;
+      printf("Error in transform3D: processor grids dont match: %d %d %d\n",i,grid1_.P[i],grid2_.P[i]); 
+      MPI_Abort(MPI_COMM_WORLD,0);
     }
 
   /*
@@ -183,7 +185,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
 
 #ifdef DEBUG
-      printf("Calling init_tran_MPIsplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
+      printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
 
       curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],inpl,prec);
@@ -887,7 +889,9 @@ template class transform3D<complex_double,complex_double>;
 
 int print_type3D(const trans_type3D *type)
 {
-  printf("trans_type3D %s values:\n",type->name);
+  printf("trans_type3D values:\n");
   cout << "dt1,dt2=" << type->dt1 << type->dt2 << "prec=" << type->prec << "types=" << type->types[0] << type->types[1] << type->types[2] << "is_set=" << type->is_set << endl;
  
+}
+
 }

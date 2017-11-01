@@ -1,15 +1,27 @@
 #include "p3dfft.h"
 #include <string.h>
 
+int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
+
+namespace p3dfft {
+
+using namespace std;
+
+
+vector<Plan *> Plans;
+vector<gen_trans_type *> types1D;
+vector<gen_transform3D *> stored_trans3D;
+vector<trans_type3D> types3D;
+vector<grid> stored_grids;
+
+  //  extern "C" {
 int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
-vector<Plan*> Plans;
-vector <gen_trans_type*> types1D;
-vector <gen_transform3D*> stored_trans3D;
+  // }
 
 int padd;
 
-void p3dfft_setup()
+void setup()
 {
   const char *name;
   int isign;
@@ -78,7 +90,7 @@ void p3dfft_setup()
   p = new trans_type1D<float,mycomplex>(name,(long (*)(...) ) plan_r2c_s);
 #endif
   types1D.push_back(p);
-  R2CFFT_S = types_count;
+  R2CFFT_S =  types_count;
   types_count++;
   
 
@@ -298,7 +310,8 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
 
 }
 
-void p3dfft_clean()
+
+void cleanup()
 {
   /*
   for(vector<gen_trans_type>::iterator it=types1D.begin();it < types1D.end();it++) {
@@ -312,11 +325,14 @@ void p3dfft_clean()
     */
 
    types1D.erase(types1D.begin(),types1D.end());
+   types3D.erase(types3D.begin(),types3D.end());
    Plans.erase(Plans.begin(),Plans.end());
-  
-
+   stored_grids.erase(stored_grids.begin(),stored_grids.end());
+   stored_trans3D.erase(stored_trans3D.begin(),stored_trans3D.end());
 }
+
   
+/*
 long plan_r2c_s(const int *n,int howmany,float *in,const int *inembed,int istride,int idist,mycomplex *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
 {
 #ifdef FFTW
@@ -356,6 +372,7 @@ long plan_c2c_d(const int *n,int howmany,complex_double *in,const int *inembed,i
   return((long) fftw_plan_many_dft(1,n,howmany,(fftw_complex *) in,inembed,istride,idist,(fftw_complex *) out,onembed,ostride,odist,isign,fft_flag));
 #endif
 }
+*/
 
 void exec_r2c_s(long plan,float *in,mycomplex *out)
 {
@@ -485,24 +502,6 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
   //  prec = prec_; dt = dt_;
   pm = max(P[0],P[1]);
   pm = max(pm,P[2]);
-  /*
-  st = new int[pm][3];
-  sz = new int[pm][3];
-  en = new int[pm][3];
-  */
-  st = new int**[nd];
-  sz = new int**[nd];
-  en = new int**[nd];
-  for(i=0;i<nd;i++) {
-    st[i] = new int*[P[i]];
-    sz[i] = new int*[P[i]];
-    en[i] = new int*[P[i]];
-    for(j=0; j < P[i]; j++) {
-      st[i][j] = new int[3];
-      sz[i][j] = new int[3];
-      en[i][j] = new int[3];
-    }
-  }
 
   MPI_Comm_rank(mpicomm_,&taskid);
   MPI_Comm_size(mpicomm_,&numtasks);
@@ -571,6 +570,26 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
     else
       grid_id[i] = grid_id_cart[proc_order[j++]];
 
+  /*
+  st = new int[pm][3];
+  sz = new int[pm][3];
+  en = new int[pm][3];
+
+  st = new int**[nd];
+  sz = new int**[nd];
+  en = new int**[nd];
+  */
+  for(i=0;i<nd;i++) {
+    st[i] = new int*[P[i]];
+    sz[i] = new int*[P[i]];
+    en[i] = new int*[P[i]];
+    for(j=0; j < P[i]; j++) {
+      st[i][j] = new int[3];
+      sz[i][j] = new int[3];
+      en[i][j] = new int[3];
+    }
+  }
+
   InitPencil();
   is_set = true;
 }
@@ -608,10 +627,11 @@ grid::grid(const grid &rhs)
       P[i] = rhs.P[i];
     }
     taskid = rhs.taskid;
-    
+    /*    
     st = new int**[nd];
     sz = new int**[nd];
     en = new int**[nd];
+    */
     for(i=0;i<nd;i++) {
       st[i] = new int*[P[i]];
       sz[i] = new int*[P[i]];
@@ -637,15 +657,20 @@ grid::~grid()
 {
   if(is_set) {
     for(int i=0;i < nd;i++) {
-      for(int j=0;j<P[i];j++)
-	delete st[i][j],sz[i][j],en[i][j];
+      for(int j=0;j<P[i];j++) {
+	delete [] st[i][j];
+	delete [] sz[i][j];
+	delete [] en[i][j];
+      }
       delete [] st[i];
       delete [] sz[i];
       delete [] en[i];
     }
+    /*
     delete [] st;
     delete [] sz;
     delete [] en;
+    */
     //    MPI_Comm_free(&mpi_comm_cart);
     //for(int i=0;i<nd;i++)
     // MPI_Comm_free(&mpicomm[i]);
@@ -713,7 +738,8 @@ void grid::InitPencil()
     glob_start[k] = 0;
     for(j=0;j<nd;j++) 
       for(p=0;p<P[j];p++) {
-	sz[j][p][k] = en[j][p][k] = ldims[k];
+	sz[j][p][k] = ldims[k];
+	en[j][p][k] = ldims[k];
 	st[j][p][k] = 0;
       }
   }
@@ -780,7 +806,7 @@ void grid::InitPencil1D()
 
 }
   */
-
+  
 /*
 variable::variable(const variable &rhs)
 {
@@ -857,11 +883,11 @@ template <class Type1,class Type2> trans_type1D<Type1,Type2>::trans_type1D(const
   doplan = plan.doplan;
   }
 */
-  
-trans_type3D::trans_type3D(int types_IDs[3],const char name_[]) 
+
+trans_type3D::trans_type3D(int types_IDs[3]) //,const char name_[]) 
 {
-  name = new char[sizeof(name_)+1];
-  strcpy(name,name_);
+  //  name = new char[sizeof(name_)+1];
+  //strcpy(name,name_);
   
   //  types = new trans_type1D[3];
   for(int i=0; i < 3; i++) {
@@ -874,16 +900,17 @@ trans_type3D::trans_type3D(int types_IDs[3],const char name_[])
   }
   dt1 = types1D[types[0]]->dt1;
   dt2 = types1D[types[2]]->dt2;
+  prec = types1D[types[0]]->prec;
   is_set = true;
 }
 
-trans_type3D::trans_type3D(gen_trans_type *types_[3],const char name_[]) 
+trans_type3D::trans_type3D(gen_trans_type *types_[3]) //st char name_[]) 
 {
-  name = new char[sizeof(name_)+1];
-  strcpy(name,name_);
+  //name = new char[sizeof(name_)+1];
+  //rcpy(name,name_);
   for(int i=0; i < 3; i++) {
     int j=0;
-    for(vector<gen_trans_type*>::iterator it=types1D.begin(); it < types1D.end(); it++,j++)
+    for(vector<gen_trans_type *>::iterator it=types1D.begin(); it < types1D.end(); it++,j++)
       if(types_[i] == *it)
 	break;
     if(j >= types1D.size())
@@ -892,12 +919,27 @@ trans_type3D::trans_type3D(gen_trans_type *types_[3],const char name_[])
   }  
   dt1 = types1D[types[0]]->dt1;
   dt2 = types1D[types[2]]->dt2;
+  prec = types1D[types[0]]->prec;
   is_set = true;
+
 }
+
+trans_type3D::trans_type3D(const trans_type3D &tr) {
+  //  name = new char[sizeof(tr.name)+1];
+  //strcpy(name,tr.name);
+  for(int i=0;i<3;i++) 
+    types[i] = tr.types[i];
+
+  dt1 = tr.dt1;
+  dt2 = tr.dt2;
+  is_set = true;
+  prec = tr.prec;
+} 
+
 
 trans_type3D::~trans_type3D()
 {
-  delete [] name;
+  //delete [] name;
 }
 
 
@@ -989,4 +1031,5 @@ template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(cons
       cout << "Error in trans_type1D: precisions don't match!" << endl;
   }
 
+}
 

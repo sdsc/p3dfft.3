@@ -1,7 +1,7 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW -DDEBUG 
+CPPFLAGS = -O0 -g -DFFTW -DDEBUG
 CC = mpicc
 FF = mpif90
 #FFLAGS = -O3 
@@ -23,11 +23,15 @@ P3DFFT_LIB = libp3dfft.3.a
 
 # ----------------
 
-FFT3DLIB = init.o plan.o exec.o templ.o
+FFT3DLIB = init.o plan.o exec.o templ.o wrap.o
 
-all: lib test1D test2D
+all: lib samples
 lib: $(FFT3DLIB)
 	$(AR) $(ARFLAGS) $(P3DFFT_LIB) $(FFT3DLIB)	
+samples: lib
+	cd C++; make
+	cd C; make
+	cd FORTRAN; make
 test1D: $(FFT3DLIB) test1D.o 
 	$(CPP) test1D.o -o test1D -L. -lp3dfft.3 $(LDFLAGS) 
 test2D: $(FFT3DLIB) test2D.o 
@@ -40,16 +44,14 @@ install:
 	cp p3dfft.mod $(P3DFFT_ROOT)/include
 
 
-init.o: init.C p3dfft.h
+init.o: init.C p3dfft.h 
 plan.o: plan.C templ.C p3dfft.h
 exec.o: exec.C p3dfft.h
 templ.o: templ.C p3dfft.h
-test1.o: test1.C p3dfft.h templ.o
+wrap.o: wrap.C p3dfft.h
 
 .C.o:   
 	$(CPP) -c $(CPPFLAGS) $(INCL) $<
-.c.o: 
-	$(CC) -c $(CFLAGS) *.c
 .F90.o:
 	$(FF) $(DFLAGS) -c $(FFLAGS) $(INCL) $<
 .F.o:

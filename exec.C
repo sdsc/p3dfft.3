@@ -1,7 +1,7 @@
 #include "p3dfft.h"
 
-int arcmp(int *A,int *B,int N);
-void inv_mo(int mo[3],int imo[3]);
+namespace p3dfft {
+
 static int cnt_pack=0;
 static int cnt_trans=0;
 
@@ -57,7 +57,7 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
 	else if(!(st->inplace) || (!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1) {
-	  //	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 	  var[nextvar] = new char[size2*dt_2*st->stage_prec];
 	  buf[next] = var[nextvar];
 	  nvar++;
@@ -76,7 +76,7 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2 > size1) {
 	  var[nextvar] = new char[size2*dt_1*curr_stage->stage_prec];
-	  //	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+      	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -95,7 +95,7 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1*dt_1) {
 	  var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
-	  // printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -251,6 +251,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   //  rel_change(mo1,mo2,mc);
   //int newL = mc[L];
 
+  int taskid;
+  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
+
+#ifdef DEBUG
+  printf("%d: In transplan::exec, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
+#endif
+
   if(mo1[L] == 0 || mo2[L] == 0) {
 
     if(!arcmp(mo1,mo2,3)) {
@@ -303,7 +310,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
   int imo1[3],imo2[3],d1[3],d2[3];
   int scheme;
+  
+  int taskid;
+  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
 
+#ifdef DEBUG
+  printf("%d: In transplan::reorder_trans, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
+#endif
 
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
@@ -328,7 +341,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   else {
     printf("Error in reorder_trans: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
     return;
-  }
+   }
 
   rel_change(imo1,imo2,mc);
 
@@ -1526,3 +1539,4 @@ template class transform3D<double,complex_double>;
 template class transform3D<mycomplex,mycomplex>;
 template class transform3D<complex_double,complex_double>;
 
+}

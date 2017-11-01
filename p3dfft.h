@@ -1,21 +1,31 @@
 //#ifndef P3DFFT
 //#define P3DFFT
-#include <iostream>
 #include "mpi.h"
-#include <vector>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <typeinfo>
-#include <complex>
+
 #ifdef FFTW
 #include "fftw3.h"
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
 #endif
+
+
+
+#ifdef __cplusplus
+
+#include <iostream>
+#include <vector>
+#include <typeinfo>
+#include <complex>
+
+
+namespace p3dfft {
+
 using namespace std;
 
-static int mytype,mpireal,mpicomplex;
-const int MAX_NS=50;
+int arcmp(int *A,int *B,int N);
+
 static int ls;
 
 static const int REAL=1;
@@ -25,7 +35,6 @@ static const int TRANS_ONLY=1;
 static const int MPI_ONLY=2;
 static const int TRANSMPI=3;
 
-extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 /*
 const int R2CFFT_S=0;
 const int R2CFFT_D=1;
@@ -49,9 +58,6 @@ const int SINTRAN_COMPLEX_D=15;
 //const int CHEB_COMPLEX_D=11;
 */
 
-
-const int CACHEPAD=32768;
-const int CACHE_BL=32768;
 #ifdef FFTW
 //typedef fftwf_complex complex;
 //typedef complex<float> mycomplex;
@@ -69,11 +75,14 @@ typedef complex<double> complex_double;
 #define type_complex typeid(mycomplex)
 #define type_complex_double typeid(complex_double)
 
-using namespace std;
+void setup();
+void cleanup();
 
-void p3dfft_setup();
-void p3dfft_clean();
+const int CACHEPAD=32768;
+const int CACHE_BL=32768;
+
 void rel_change(int *,int *,int *);
+void inv_mo(int mo[3],int imo[3]);
 
 void scheb_r(long,float *,float *);
 void dcheb_r(long,double *,double *);
@@ -277,6 +286,7 @@ template <class Type1,class Type2>   class transplan : public stage {
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
   long find_plan(trans_type1D<Type1,Type2> *type);
   void exec(char *in,char *out);
+  int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
   template <class Type1,class Type2> friend class trans_MPIplan;
 
@@ -300,13 +310,13 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_,bool inplace_);
   ~trans_MPIplan();
   void exec(char *in,char *out);
-  void write_buf(Type2 *buf,char *label,int sz[3],int mo[3]);
 
   template <class Type1,class Type2> friend class transplan;
   template <class Type> friend class MPIplan;
 
   };
 
+template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3]);
 
 class grid {
  private :
@@ -336,7 +346,7 @@ class grid {
   MPI_Comm mpi_comm_cart;
   MPI_Comm mpicomm[3]; //MPI communicators for each dimension 
   //  int (*st)[3],(*sz)[3],(*en)[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
-  int ***st,***sz,***en;  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
+  int **st[3],**sz[3],**en[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
   bool is_set;
   grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order[3],
 	    MPI_Comm mpicomm_);
@@ -425,6 +435,7 @@ template <class Type1,class Type2> class Plantype : public Plan
 
 
 class trans_type3D {
+ public :
   char *name;
   int dt1,dt2;
   int prec;
@@ -433,11 +444,10 @@ class trans_type3D {
 
   bool is_set;
   //  trans_type1D **types;
- protected :
   int types[3];
- public :
-  trans_type3D(gen_trans_type *types_[3],const char name_[]);
-  trans_type3D(int types_IDs[3],const char name_[]);
+  trans_type3D(gen_trans_type *types_[3]); //,const char name_[]="");
+  trans_type3D(int types_IDs[3]); // ,const char name_[]="");
+  trans_type3D(const trans_type3D &rhs);
   ~trans_type3D();
  template <class Type1,class Type2>    friend class transform3D;
  friend int print_type3D(const trans_type3D *);
@@ -461,6 +471,9 @@ class variable { // Do we need this?
 
 class gen_transform3D
 {
+ public:
+  int prec; // Precision
+  int dt1,dt2;   //Datatype before and after
 };
 
 template<class Type1,class Type2> class transform3D : public gen_transform3D
@@ -472,8 +485,6 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   bool inplace,is_set;
   grid *grid1,*grid2;
   //  int trans_type[7];
-  int prec; // Precision
-  int dt1,dt2;   //Datatype before and after
   friend class stage;
 
  public:
@@ -491,9 +502,6 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 
 //trans_type1D types1D[MAX_TYPES];
 
-extern vector<Plan*> Plans;
-extern vector <gen_trans_type*> types1D;
-extern vector <gen_transform3D*> stored_trans3D;
 
 //transform3D stored_trans3D[MAX_NS];
 
@@ -504,4 +512,103 @@ template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
 
 
-//#endif
+extern vector<Plan *> Plans;
+extern vector<gen_trans_type *> types1D;
+extern vector<gen_transform3D *> stored_trans3D;
+extern vector<trans_type3D> types3D;
+extern vector<grid> stored_grids;
+
+extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
+
+
+
+}
+
+#endif
+
+extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
+
+//#define Grid int
+#define Type3D int
+#define Type1D int
+#define Plan3D int
+#define Plan1D int
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct Grid_struct {
+  int taskid,numtasks;
+  int nd;  //number of dimensions the volume is split over
+  int gdims[3];  //Global dimensions
+  int mem_order[3];  //Memory ordering inside the data volume
+  int ldims[3];  //Local dimensions on THIS processor
+  int pgrid[3];  //Processor grid
+  int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
+  int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
+  int D[3];  //Ranks of Dimensions of physical grid split over rows and columns correspondingly
+  int L[3];  //Rank of Local dimension (p=1)
+  int grid_id[3];  //Position of this pencil/cube in the processor grid
+  int grid_id_cart[3];
+  int glob_start[3]; // Starting coords of this cube in the global grid
+  MPI_Comm mpi_comm_glob; // Global MPi communicator we are starting from
+  MPI_Comm mpi_comm_cart;
+  MPI_Comm mpicomm[3]; //MPI communicators for each dimension 
+} ;
+
+struct Grid_struct_fort {
+  int taskid;
+  int numtasks;
+  int nd;  //number of dimensions the volume is split over
+  int gdims[3];  //Global dimensions
+  int mem_order[3];  //Memory ordering inside the data volume
+  int ldims[3];  //Local dimensions on THIS processor
+  
+  int pgrid[3];  //Processor grid
+    int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
+  /*
+int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
+  int D[3];  //Ranks of Dimensions of physical grid split over rows and columns correspondingly
+  int L[3];  //Rank of Local dimension (p=1)
+  int grid_id[3];  //Position of this pencil/cube in the processor grid
+  int grid_id_cart[3];
+  int mpi_comm_cart;
+  int mpicomm[3]; //MPI communicators for each dimension 
+  */
+  int glob_start[3]; // Starting coords of this cube in the global grid
+  int mpi_comm_glob; // Global MPi communicator we are starting from
+} ;
+
+#ifdef __cplusplus
+}
+#endif
+
+
+typedef struct Grid_struct Grid;
+typedef struct Grid_struct_fort Grid_fort;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void p3dfft_setup();
+void p3dfft_cleanup();
+  Type3D p3dfft_init_3Dtype(int[3]); //,char *);
+Plan3D p3dfft_plan_3Dtrans_f(int *,int *,Type3D *,int *);
+Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int);
+  int p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *);
+  int find_grid(int [3],int [3],int [3],int [3],MPI_Comm);
+Grid *p3dfft_init_grid(int[3],int[3],int[3],int[3],MPI_Comm);
+  //void p3dfft_free_grid_f(Grid_fort *gr);
+void p3dfft_free_grid(Grid *gr);
+void p3dfft_inv_mo(int [3],int [3]);
+void p3dfft_write_buf(double *,char *,int [3],int [3]);
+void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *,int *);
+void p3dfft_exec_3Dtrans_single_f(Plan3D *,float *,float *,int *);
+void p3dfft_exec_3Dtrans_double(Plan3D,double *,double *,int);
+void p3dfft_exec_3Dtrans_single(Plan3D,float *,float *,int);
+#ifdef __cplusplus
+}
+#endif
+
+  
