@@ -3,14 +3,19 @@
 //#include "templ.C"
 //#include "exec.C"
 
+using namespace p3dfft;
+
   void init_wave(double *,int[3],int *,int[3]);
 void print_res(complex_double *,int *,int *,int *, int *);
   void normalize(complex_double *,long int,int *);
 double check_res(double*,double *,int *, int *);
+void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
 main(int argc,char **argv)
 {
-  int N=256;
+  using namespace p3dfft;
+
+  int N=128;
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
@@ -20,8 +25,8 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  void inv_mo(int[3],int[3]);
-  void write_buf(double *,char *,int[3],int[3],int);
+  //  void inv_mo(int[3],int[3]);
+  //void write_buf(double *,char *,int[3],int[3],int);
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -29,7 +34,7 @@ main(int argc,char **argv)
 
   cout << "P3DFFT++ test1. Running on " << nprocs << "cores" << endl;
 
-  p3dfft_setup();
+  setup();
 
   cout << "Passed p3dfft_setup" << endl;
   cout << "types1D[0]: dt1=" << types1D[0]->dt1 << endl;
@@ -75,8 +80,8 @@ main(int argc,char **argv)
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
-  trans_type3D type_rcc(type_ids1,"RCC"); 
-  trans_type3D type_ccr(type_ids2,"CCR"); 
+  trans_type3D type_rcc(type_ids1); 
+  trans_type3D type_ccr(type_ids2); 
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc,false);
   // Set up 3D transforms, including stages and plans, for backward trans.
@@ -123,7 +128,7 @@ main(int argc,char **argv)
     cout << "Transform time (avg/min/max): %lf %lf %lf" << gtavg/nprocs << gtmin << gtmax << endl;
 
   delete [] IN,OUT,FIN;
-  p3dfft_clean();
+  cleanup();
   MPI_Finalize();
 
 
@@ -221,6 +226,7 @@ double check_res(double *A,double *B,int *ldims, int *mo)
 
 
 }
+
 
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
   int i,j,k;

@@ -3,6 +3,8 @@
 //#include "templ.C"
 //#include "exec.C"
 
+using namespace p3dfft;
+
   void init_wave(double *,int[3],int *,int[3]);
 void print_res(complex_double *,int *,int *,int *, int *);
   void normalize(complex_double *,long int,int *);
@@ -10,7 +12,9 @@ double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
 {
-  int N=256;
+  using namespace p3dfft;
+
+  int N=128;
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
@@ -29,7 +33,7 @@ main(int argc,char **argv)
 
   cout << "P3DFFT++ test1. Running on " << nprocs << "cores" << endl;
 
-  p3dfft_setup();
+  setup();
 
   cout << "Passed p3dfft_setup" << endl;
   cout << "types1D[0]: dt1=" << types1D[0]->dt1 << endl;
@@ -68,8 +72,8 @@ main(int argc,char **argv)
   cout << "Initiating wave" << endl;
   printf("%d: grid1 sglobal starts: %d %d %d\n",myid,grid1.glob_start[0],grid1.glob_start[1],grid1.glob_start[2]);
   init_wave(IN,gdims,ldims,grid1.glob_start);
-  inv_mo(mem_order,imo1);
-  write_buf(IN,"Init",ldims,imo1,myid);
+  //  inv_mo(mem_order,imo1);
+  //write_buf(IN,"Init",ldims,imo1,myid);
 
   ldims = &grid2.ldims[0];
   long int size2 = ldims[0]*ldims[1]*ldims[2];
@@ -80,8 +84,8 @@ main(int argc,char **argv)
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
-  trans_type3D type_rcc(type_ids1,"RCC"); 
-  trans_type3D type_ccr(type_ids2,"CCR"); 
+  trans_type3D type_rcc(type_ids1); 
+  trans_type3D type_ccr(type_ids2); 
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc,false);
   // Set up 3D transforms, including stages and plans, for backward trans.
@@ -128,7 +132,7 @@ main(int argc,char **argv)
     cout << "Transform time (avg/min/max): %lf %lf %lf" << gtavg/nprocs << gtmin << gtmax << endl;
 
   delete [] IN,OUT,FIN;
-  p3dfft_clean();
+  cleanup();
   MPI_Finalize();
 
 
