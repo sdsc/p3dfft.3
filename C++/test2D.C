@@ -33,15 +33,24 @@ main(int argc,char **argv)
 
   cout << "P3DFFT++ test1. Running on " << nprocs << "cores" << endl;
 
+  // Set up work structures for P3DFFT
   setup();
+  // Set up transform types for 3D transform
+  int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
+  int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
-  cout << "Passed p3dfft_setup" << endl;
-  cout << "types1D[0]: dt1=" << types1D[0]->dt1 << endl;
+  trans_type3D type_rcc(type_ids1); 
+  trans_type3D type_ccr(type_ids2); 
+
+  //Set up global dimensions of the grid and processor and memory ordering. 
 
   for(i=0; i < 3;i++) {
     gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
+
+  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+
   int pdims[2];
   pdims[0]=pdims[1]=0;
   MPI_Dims_create(nprocs,2,pdims);
@@ -49,53 +58,76 @@ main(int argc,char **argv)
   //p2 = nprocs / p1;
   p1 = pdims[0];
   p2 = pdims[1];
+
+  // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
+
   pgrid1[0] = 1;
   pgrid1[1] = p1;
   pgrid1[2] = p2;
 
-  cout << "Initiating grid1" << endl;
+  // Initialize the initial grid
+
+  //  cout << "Initiating grid1" << endl;
   grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+
+  //Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local.
+
   pgrid2[0] =p1;
   pgrid2[1] = p2;
   pgrid2[2] = 1;
+
+  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
+
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
   gdims2[0] = gdims2[0]/2+1;
+
+  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
+
   int mem_order2[] = {2,1,0};
-  cout << "Initiating grid2" << endl;
+
+  // Initialize final grid configuration
+
+  //cout << "Initiating grid2" << endl;
   grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+
+  // Get the local grid dimensions
 
   int *ldims = &grid1.ldims[0];
   int size1 = ldims[0]*ldims[1]*ldims[2];
-  cout << "Allocating IN" << endl;
+
+  // Allocate initial and final arrays in physical space
+
+  //  cout << "Allocating IN" << endl;
   double *IN=new double[size1];
-  cout << "Initiating wave" << endl;
-  printf("%d: grid1 sglobal starts: %d %d %d\n",myid,grid1.glob_start[0],grid1.glob_start[1],grid1.glob_start[2]);
+  double *FIN=new double[size1];
+
+  //Initialize the IN array with a sine wave in 3D  
+
+  //  cout << "Initiating wave" << endl;
+  //printf("%d: grid1 sglobal starts: %d %d %d\n",myid,grid1.glob_start[0],grid1.glob_start[1],grid1.glob_start[2]);
   init_wave(IN,gdims,ldims,grid1.glob_start);
-  //  inv_mo(mem_order,imo1);
-  //write_buf(IN,"Init",ldims,imo1,myid);
+
+  //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims = &grid2.ldims[0];
   long int size2 = ldims[0]*ldims[1]*ldims[2];
-  cout << "allocating OUT" << endl;
+  //  cout << "allocating OUT" << endl;
   complex_double *OUT=new complex_double[size2];
   
-  // Set up transform types for 3D transform
-  int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
-  int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
-
-  trans_type3D type_rcc(type_ids1); 
-  trans_type3D type_ccr(type_ids2); 
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc,false);
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
 
+  // Warm-up: execute forward 3D transform
+
   trans_f.exec(IN,OUT,0);
 
   double t=0.;
-  double *FIN=new double[size1];
   Nglob = gdims[0]*gdims[1]*gdims[2];
+
+  // timing loop
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
@@ -132,6 +164,9 @@ main(int argc,char **argv)
     cout << "Transform time (avg/min/max): %lf %lf %lf" << gtavg/nprocs << gtmin << gtmax << endl;
 
   delete [] IN,OUT,FIN;
+
+  // Clean up P3DFFT++ structures
+
   cleanup();
   MPI_Finalize();
 

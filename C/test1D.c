@@ -31,7 +31,7 @@ main(int argc,char **argv)
   Grid *grid1,*grid2;
   int *glob_start,*glob_start2;
   double *OUT;
-  // Set up transform types for 3D transform
+
   int type_ids1[3];
   int type_ids2[3];
   Type3D type_rcc,type_ccr;
@@ -51,91 +51,86 @@ main(int argc,char **argv)
 
   printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
 
+  // Set up work structures for P3DFFT
+
   p3dfft_setup();
+
+  //Set up 2 transform types for 3D transforms
 
   type_ids1[0] = P3DFFT_R2CFFT_D;
   type_ids1[1] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[2] = P3DFFT_CFFT_FORWARD_D;
+
   type_ids2[0] = P3DFFT_C2RFFT_D;
   type_ids2[1] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[2] = P3DFFT_CFFT_BACKWARD_D;
+
+  //Now initialize 3D transforms (forward and backward) with these types
+
+  //  printf("Initializing type RCC\n");
+  type_rcc = p3dfft_init_3Dtype(type_ids1);
+  //printf("Initializing type CCR\n");
+  type_ccr = p3dfft_init_3Dtype(type_ids2);
+
+  //Set up global dimensions of the grid
 
   for(i=0; i < 3;i++) {
     gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
-  /*
-  pdims[0]=pdims[1]=0;
-  MPI_Dims_create(nprocs,2,pdims);
-  //  p1 = floor(sqrt(nprocs));
-  //p2 = nprocs / p1;
-  p1 = pdims[0];
-  p2 = pdims[1];
-  */
+
+  // Set up 1D decomposition for initial grid, i.e. slabs or planes, distributed in the second dimension
+
   pgrid1[0] = 1;
   pgrid1[1] = 1;
   pgrid1[2] = nprocs;
 
+  // Set up 1D processor grid for the final grid: slabsl distributed in 1st dimension
 
-  /*  grid1 = (Grid *) malloc(sizeof(Grid));
-  for(i=0; i < 3;i++) {
-    grid1->gdims[i] = gdims[i];
-    grid1->pgrid[i] = pgrid1[i];
-    grid1->proc_order[i] = proc_order[i];
-    grid1->mem_order[i] = mem_order[i];
-  }
-  grid1->mpi_comm_glob = MPI_COMM_WORLD;
-  */
- 
   pgrid2[0] = 1;
   pgrid2[1] = nprocs;
   pgrid2[2] = 1;
+
+  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
   gdims2[0] = gdims2[0]/2+1;
 
-  /*
-  grid2 = (Grid *) malloc(sizeof(Grid));
-  for(i=0; i < 3;i++) {
-    grid2->gdims[i] = gdims2[i];
-    grid2->pgrid[i] = pgrid2[i];
-    grid2->proc_order[i] = proc_order[i];
-    grid2->mem_order[i] = mem_order2[i];
-  }
-  grid2->mpi_comm_glob = MPI_COMM_WORLD;
-  */
+  //Initialize initial and final grids, based on the above information
 
-  printf("Initiating grid1\n");
-  
+  //  printf("Initiating grid1\n");  
   grid1 = p3dfft_init_grid(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
-
-  printf("Initiating grid2\n");
+  //  printf("Initiating grid2\n");
   grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
-  printf("Initializing type RCC\n");
-  type_rcc = p3dfft_init_3Dtype(type_ids1);
-  printf("Initializing type CCR\n");
-  type_ccr = p3dfft_init_3Dtype(type_ids2);
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-  printf("Plan rcc\n");
-  // Set up 3D transforms, including stages and plans, for forward trans.
+  //  printf("Plan rcc\n");
   trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,1);
 
-  // Set up 3D transforms, including stages and plans, for backward trans.
-  printf("Plan ccr\n");
+  //Now set up the backward transform
+
+  //  printf("Plan ccr\n");
   trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,1);
+
+  //Determine local array dimensions. 
 
   ldims = grid1->ldims;
   size1 = ldims[0]*ldims[1]*ldims[2];
-  printf("Allocating IN\n");
+  //  printf("Allocating IN\n");
   IN=(double *) malloc(sizeof(double)*size1);
+  FIN= (double *) malloc(sizeof(double) *size1);
 
-  printf("Initiating wave\n");
+  //Initialize the IN array with a sine wave in 3D
+
+  //  printf("Initiating wave\n");
   glob_start = grid1->glob_start;
   //  printf("%d: grid1 sglobal starts: %d %d %d\n",myid,glob_start[0],glob_start[1],glob_start[2]);
   init_wave(IN,gdims,ldims,glob_start);
   //inv_mo(mem_order,imo1);
   //write_buf(IN,"Init",ldims,imo1,myid);
+
+  //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2->ldims;
   glob_start2 = grid2->glob_start;
@@ -146,8 +141,9 @@ main(int argc,char **argv)
   // Warm-up run, forward transform
   p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
-  FIN= (double *) malloc(sizeof(double) *size1);
   Nglob = gdims[0]*gdims[1]*gdims[2];
+
+  // Timing loop
 
   for(i=0; i < Nrep;i++) {
     printf("Executing rcc\n");
@@ -182,9 +178,16 @@ main(int argc,char **argv)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
 
   free(IN); free(OUT); free(FIN);
+
+  // Clean up grid structures
+
   p3dfft_free_grid(grid1);
   p3dfft_free_grid(grid2);
+
+  // Clean up all P3DFFT++ data
+
   p3dfft_cleanup();
+
   MPI_Finalize();
 }
 

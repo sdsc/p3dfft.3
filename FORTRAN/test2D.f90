@@ -1,11 +1,11 @@
-! This file is part of P3DFFT library
+! This file is part of P3DFFT++ library
 !
-!    P3DFFT
+!    P3DFFT++
 !
 !    Software Framework for Scalable Fourier Transforms in Three Dimensions
 !
-!    Copyright (C) 2006-2014 Dmitry Pekurovsky
-!    Copyright (C) 2006-2014 University of California
+!    Copyright (C) 2017 Dmitry Pekurovsky
+!    Copyright (C) 2017 University of California
 !
 !    This program is free software: you can redistribute it and/or modify
 !    it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 !----------------------------------------------------------------------------
 
 ! This sample program illustrates the
-! use of P3DFFT library for highly scalable parallel 3D FFT.
+! use of P3DFFT++ library for highly scalable parallel 3D FFT.
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs forward transform, backward transform, and checks that
@@ -87,6 +87,8 @@
       gt=0.0
       gtcomm=0.0
 
+! Read input parameters from 'stdin' file
+
       if (proc_id.eq.0) then
          open (unit=3,file='stdin',status='old', &
                access='sequential',form='formatted', iostat=fstatus)
@@ -101,13 +103,17 @@
                 " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n
        endif
 
+! Broadcast parameters
+
       call MPI_Bcast(nx,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ny,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(nz,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(n,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ndim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
 
-!    nproc is devided into a iproc x jproc stencle
+! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+
+!    nproc is devided into a iproc x jproc stencil
 !
 
       if(ndim .eq. 1) then
@@ -142,23 +148,33 @@
          print *,'Using processor grid ',iproc,' x ',jproc
       endif
 
-      nxc = nx
-      nyc = ny
-      nzc = nz
-
 ! Set up work structures for P3DFFT
+
       call p3dfft_setup
+
+! Set up 2 transform types for 3D transforms
 
       type_ids1(1) = P3DFFT_R2CFFT_D;
       type_ids1(2) = P3DFFT_CFFT_FORWARD_D;
       type_ids1(3) = P3DFFT_CFFT_FORWARD_D;
+
       type_ids2(1) = P3DFFT_C2RFFT_D;
       type_ids2(2) = P3DFFT_CFFT_BACKWARD_D;
       type_ids2(3) = P3DFFT_CFFT_BACKWARD_D;
 
+! Now initialize 3D transforms (forward and backward) with these types
+!      print *,'Initializing type RCC'
+      type_rcc = p3dfft_init_3Dtype(type_ids1)
+!      print *,'Initializing type CCR'
+      type_ccr = p3dfft_init_3Dtype(type_ids2)
+
+! Set up global dimensions of the grid
+
       gdims(1)=nx
       gdims(2)=ny
       gdims(3)=nz
+
+! Set up processor order and memory ordering, as well as the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 
       do i=1,3
          proc_order(i) = i-1
@@ -166,59 +182,69 @@
          gdims2(i) = gdims(i)
       enddo
       gdims2(1) = gdims2(1)/2+1
+
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
+
       mem_order2(1) = 2
       mem_order2(2) = 1
       mem_order2(3) = 0
+
+! Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
       pgrid1(1) = 1
       pgrid1(2) = iproc
       pgrid1(3) = jproc
 
+! Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local. 
+
       pgrid2(1) = iproc
       pgrid2(2) = jproc
       pgrid2(3) = 1
 
+! Specify the default communicator for P3DFFT++. This can be different from your program default communicator if you wish to keep P3DFFT++ communications separate from yours
+
       mpicomm = MPI_COMM_WORLD
 
-      print *,'Initializing grid1'
+! Initialize initial and final grids, based on the above information
+
+!      print *,'Initializing grid1'
 
       grid1 = p3dfft_init_grid(ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
 
-      print *,'Initializing grid2'
+!      print *,'Initializing grid2'
 
       grid2 = p3dfft_init_grid(ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
-      print *,'Initializing type RCC'
-      type_rcc = p3dfft_init_3Dtype(type_ids1)
-      print *,'Initializing type CCR'
-      type_ccr = p3dfft_init_3Dtype(type_ids2)
 
-      print *,'Plan rcc'
-! Set up 3D transforms, including stages and plans, for forward trans.
+! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
+
+!      print *,'Plan rcc'
       trans_f = p3dfft_plan_3Dtrans_f(grid1,grid2,type_rcc,1)
 
-! Set up 3D transforms, including stages and plans, for backward trans.
-      print*,'Plan ccr'
+! Now set up the backward transform
+!      print*,'Plan ccr'
       trans_b = p3dfft_plan_3Dtrans_f(grid2,grid1,type_ccr,1)
 
-!      call intcpy(ldims,grid1%ldims,3)
-!      size1 = ldims(1)*ldims(2)*ldims(3)
+! Determine local array dimensions. These are defined taking into account memory ordering. 
+
       do i=1,3
          mydims(mem_order(i)+1) = ldims(i)
          mydims2(mem_order2(i)+1) = ldims2(i)
       enddo
+
+! Now allocate initial and final arrays in physical space (real-valued)
       allocate(BEG(mydims(1),mydims(2),mydims(3)))
       allocate(C(mydims(1),mydims(2),mydims(3)))
 
-      print *,'Initiating wave'
-!      call intcpy(glob_start,glob_start,3)
+! Initialize the BEG array with a sine wave in 3D
+
+!      print *,'Initiating wave'
       call init_wave(BEG,gdims,mydims,glob_start)
 
-!      call intcpy(ldims2,ldims,3) 
-!      call intcpy(glob_start2,glob_start,3)
-!      size2 = ldims2(1)*ldims2(2)*ldims2(3)
+! Now allocate the complex array for holding Fourier space data
+
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
-! Warm-up
+! Warm-up call to execute forward 3D FFT transform
       call p3dfft_3Dtrans_double_f(trans_f,BEG,AEND,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
@@ -227,8 +253,8 @@
       factor = 1.0d0/Nglob
 
       rtime1 = 0.0
-!
-! Repeat n times
+
+! Start the timing loop
 
       do  m=1,n
          if(proc_id .eq. 0) then
