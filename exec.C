@@ -57,7 +57,9 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
 	else if(!(st->inplace) || (!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1) {
+#ifdef DEBUG
 	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
 	  var[nextvar] = new char[size2*dt_2*st->stage_prec];
 	  buf[next] = var[nextvar];
 	  nvar++;
@@ -76,7 +78,9 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2 > size1) {
 	  var[nextvar] = new char[size2*dt_1*curr_stage->stage_prec];
+#ifdef DEBUG
       	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -95,7 +99,9 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
 	  buf[next] = buf_out;
 	else if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1*dt_1) {
 	  var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+#ifdef DEBUG
 	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
 	  buf[next] = var[nextvar];
 	  nvar++;
 	  nextvar = 1-nextvar;
@@ -546,17 +552,16 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	tmp = new Type1[d1[0]*d1[1]];
 
 	for(k=0;k <d1[2];k++) {
-	  pout = tmp +k*d1[0]*d1[1];
 	  pin = in + k*d1[0]*d1[1];
 	  for(j=0;j < d1[1];j++) {
-	    pout = tmp +k*d1[0]*d1[1] +j;
+	    pout = tmp +j;
 	    for(i=0;i < d1[0];i++) {
 	      *pout = *pin++;
 	      pout += d1[1];
 	    }	
 	  }
 	  //      if(!trans_type->is_empty)
-	  pout2 = out + k*d1[0]*d1[1];
+	  pout2 = out + k*d2[0]*d2[1];
 	  (*(trans_type->exec))(lib_plan,tmp,pout2);
 	}
 	delete [] tmp;
@@ -1530,13 +1535,5 @@ void inv_mo(int mo[3],int imo[3])
     }
 }
 
-template class transform3D<float,float>;
-template class transform3D<double,double>;
-template class transform3D<mycomplex,float>;
-template class transform3D<complex_double,double>;
-template class transform3D<float,mycomplex>;
-template class transform3D<double,complex_double>;
-template class transform3D<mycomplex,mycomplex>;
-template class transform3D<complex_double,complex_double>;
 
 }

@@ -515,12 +515,29 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3
 extern vector<Plan *> Plans;
 extern vector<gen_trans_type *> types1D;
 extern vector<gen_transform3D *> stored_trans3D;
+extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
 extern vector<grid> stored_grids;
 
 extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
+template class transform3D<float,float>;
+template class transform3D<double,double>;
+template class transform3D<mycomplex,float>;
+template class transform3D<complex_double,double>;
+template class transform3D<float,mycomplex>;
+template class transform3D<double,complex_double>;
+template class transform3D<mycomplex,mycomplex>;
+template class transform3D<complex_double,complex_double>;
 
+template class transplan<float,float>;
+template class transplan<double,double>;
+template class transplan<mycomplex,float>;
+template class transplan<complex_double,double>;
+template class transplan<float,mycomplex>;
+template class transplan<double,complex_double>;
+template class transplan<mycomplex,mycomplex>;
+template class transplan<complex_double,complex_double>;
 
 }
 
@@ -594,6 +611,8 @@ extern "C" {
 void p3dfft_setup();
 void p3dfft_cleanup();
   Type3D p3dfft_init_3Dtype(int[3]); //,char *);
+  int p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
+  int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int);
 Plan3D p3dfft_plan_3Dtrans_f(int *,int *,Type3D *,int *);
 Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int);
   int p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *);
@@ -603,6 +622,10 @@ Grid *p3dfft_init_grid(int[3],int[3],int[3],int[3],MPI_Comm);
 void p3dfft_free_grid(Grid *gr);
 void p3dfft_inv_mo(int [3],int [3]);
 void p3dfft_write_buf(double *,char *,int [3],int [3]);
+void p3dfft_exec_1Dtrans_double_f(int *,double *,double *);
+void p3dfft_exec_1Dtrans_single_f(int *,float *,float *);
+void p3dfft_exec_1Dtrans_double(int,double *,double *);
+void p3dfft_exec_1Dtrans_single(int,float *,float *);
 void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *,int *);
 void p3dfft_exec_3Dtrans_single_f(Plan3D *,float *,float *,int *);
 void p3dfft_exec_3Dtrans_double(Plan3D,double *,double *,int);
@@ -611,4 +634,5 @@ void p3dfft_exec_3Dtrans_single(Plan3D,float *,float *,int);
 }
 #endif
 
+//#include "templ.C"
   

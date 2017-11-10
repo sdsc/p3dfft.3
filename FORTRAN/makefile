@@ -1,11 +1,11 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW -DDEBUG 
+CPPFLAGS = -O0 -g -DFFTW 
 CC = mpicxx
 CFLAGS = -O0 -g -DFFTW
 FF = mpif90
-FFLAGS = -g -O0
+FFLAGS = -O0 -g
 AR = ar
 ARFLAGS = -v -r -u
 FFT_LIB = -L$(HOME)/fftw-3.3.5/lib -lfftw3 -lfftw3f
@@ -26,15 +26,19 @@ P3DFFT_LIB = libp3dfft.3.a
 
 .SUFFIXES: .f90 .mod
 
-all: test2D 
+all: test2D test_trans1D 
 test2D.o: test2D.f90 p3dfft++.mod
 wrap.o:   wrap.f90 p3dfft++.mod
 test2D: test2D.o wrap.o 
 	$(FF) test2D.o wrap.o -o test2D_f -L.. -lp3dfft.3 $(LDFLAGS) 
 
 test1D: test1D.o wrap.o
-	$(CPP) test1D.o wrap.o -o test1D_f -L.. -lp3dfft.3 $(LDFLAGS) 
+	$(FF) test1D.o wrap.o -o test1D_f -L.. -lp3dfft.3 $(LDFLAGS) 
 test1D.o: test1D.f90 p3dfft++.mod
+
+test_trans1D: test_trans1D.o wrap.o
+	$(FF) test_trans1D.o wrap.o -o test_trans1D_f -L.. -lp3dfft.3 $(LDFLAGS) 
+test_trans1D.o: test_trans1D.f90 p3dfft++.mod
 
 .C.o:   
 	$(CPP) -c $(CPPFLAGS) $(INCL) $<

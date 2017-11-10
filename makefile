@@ -1,7 +1,7 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW -DDEBUG
+CPPFLAGS = -O0 -g -DFFTW 
 CC = mpicc
 FF = mpif90
 #FFLAGS = -O3 
@@ -60,3 +60,6 @@ wrap.o: wrap.C p3dfft.h
 	$(FF) -c $(FFLAGS) $(INCL) $<
 clean:
 	/bin/rm $(FFT3DLIB)
+	cd C; make clean
+	cd C++; make clean
+	cd FORTRAN; make clean

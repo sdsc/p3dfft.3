@@ -9,14 +9,13 @@ using namespace p3dfft;
 void print_res(complex_double *,int *,int *,int *, int *);
   void normalize(complex_double *,long int,int *);
 double check_res(double*,double *,int *, int *);
-void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
 main(int argc,char **argv)
 {
   using namespace p3dfft;
 
-  int N=128;
-  int Nrep = 1;
+  int N=1024;
+  int Nrep = 10;
   int myid,nprocs;
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
@@ -25,36 +24,44 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  //  void inv_mo(int[3],int[3]);
-  //void write_buf(double *,char *,int[3],int[3],int);
+  void inv_mo(int[3],int[3]);
+  void write_buf(double *,char *,int[3],int[3],int);
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
-  cout << "P3DFFT++ test1. Running on " << nprocs << "cores" << endl;
+  if(myid == 0)
+    printf("P3DFFT++ test1. Running on %d cores. Grid size %d\n",nprocs,N);
 
   // Set up work structures for P3DFFT
   setup();
   // Set up transform types for 3D transform
-
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
   trans_type3D type_rcc(type_ids1); 
   trans_type3D type_ccr(type_ids2); 
 
- //Set up global dimensions of the grid and processor and memory ordering. 
+  //Set up global dimensions of the grid and processor and memory ordering. 
 
   for(i=0; i < 3;i++) {
     gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
 
-  // Define the initial processor grid as 2D slabs, distributed in the 3rd dimension 
+  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
-  p1 = 1;
-  p2 = nprocs;
+  int pdims[2];
+  pdims[0]=pdims[1]=0;
+  MPI_Dims_create(nprocs,2,pdims);
+  //  p1 = floor(sqrt(nprocs));
+  //p2 = nprocs / p1;
+  p1 = pdims[0];
+  p2 = pdims[1];
+
+  // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
+
   pgrid1[0] = 1;
   pgrid1[1] = p1;
   pgrid1[2] = p2;
@@ -64,7 +71,7 @@ main(int argc,char **argv)
   //  cout << "Initiating grid1" << endl;
   grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
 
-  // Define the final processor grid as slabs distributed in the second dimension. It could be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local.
+  //Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local.
 
   pgrid2[0] =p1;
   pgrid2[1] = p2;
@@ -75,11 +82,14 @@ main(int argc,char **argv)
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
   gdims2[0] = gdims2[0]/2+1;
- 
+
   // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
 
- int mem_order2[] = {2,1,0};
- //  cout << "Initiating grid2" << endl;
+  int mem_order2[] = {2,1,0};
+
+  // Initialize final grid configuration
+
+  //cout << "Initiating grid2" << endl;
   grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   // Get the local grid dimensions
@@ -98,8 +108,6 @@ main(int argc,char **argv)
   //  cout << "Initiating wave" << endl;
   //printf("%d: grid1 sglobal starts: %d %d %d\n",myid,grid1.glob_start[0],grid1.glob_start[1],grid1.glob_start[2]);
   init_wave(IN,gdims,ldims,grid1.glob_start);
-  //  inv_mo(mem_order,imo1);
-  //write_buf(IN,"Init",ldims,imo1,myid);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -150,11 +158,11 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  MPI_Reduce(&gtavg,&t,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-  MPI_Reduce(&gtmin,&t,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
-  MPI_Reduce(&gtmax,&t,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
-  if(myid = 0)
-    cout << "Transform time (avg/min/max): %lf %lf %lf" << gtavg/nprocs << gtmin << gtmax << endl;
+  MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
+  MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0)
+    printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
 
   delete [] IN,OUT,FIN;
 
@@ -258,7 +266,6 @@ double check_res(double *A,double *B,int *ldims, int *mo)
 
 
 }
-
 
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
   int i,j,k;

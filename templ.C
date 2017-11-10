@@ -9,7 +9,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
 #ifdef DEBUG
   cout << "In transform3D" << endl;
-  print_type3D(type);
+  <print_type3D(type);
 #endif
 
   int prec2,dt;
@@ -339,7 +339,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     return;
   }
 
-  cout << "Done transform3D planning" << endl;
+  //  cout << "Done transform3D planning" << endl;
   is_set = true;
   return;
 
@@ -460,26 +460,26 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
     return;
   }
+
+  lib_plan = find_plan(trans_type); 
+
 }  
 
 template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2,int type_ID,int d, bool inplace_) 
 {
 
-  is_empty = false;
   lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(gr1.ldims[d] != gr1.gdims[d] || gr2.ldims[d] != gr2.gdims[d] ) {
     printf("Error in transplan: dimensions dont match %d %d %d\n",gr1.ldims[d],gr2.ldims[d],d);
     return;
   }
 
-  trans_type = types1D[type_ID];
+  trans_type = (trans_type1D<Type1,Type2> *) types1D[type_ID];
 
   if(!trans_type || !trans_type->is_set) {
     cout << "Error in trans_plan: 1D transform type no set" << endl;
     return;
   }
-
-  double *A = new double[1024];
 
   dt1 = trans_type->dt1;
   dt2 = trans_type->dt2;
@@ -490,8 +490,6 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   grid1 = new grid(gr1);
   grid2 = new grid(gr2);
 
-  double *B = new double[1024];
-
   istride = 1;ostride = 1; 
   //  idist,odist;
   isign = trans_type->isign;
@@ -501,18 +499,6 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     dims2[i] = gr2.ldims[i];
     mo1[i] = gr1.mem_order[i];
     mo2[i] = gr2.mem_order[i];
-  }
-  if(idist <= gr1.gdims[d]) 
-    inembed = (int*) &(grid1->gdims[d]);
-  else  {
-    printf("Error in transplan: dimension too small %d, N=%d\n",gr2.gdims[d],N);
-    return;
-  }
-  if(odist <= gr2.gdims[d]) 
-    onembed = (int*) &(grid2->gdims[d]);
-  else {
-    printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
-    return;
   }
 
   if(trans_type->dt1 < trans_type->dt2) { //Real to complex
@@ -534,6 +520,21 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   }
 
   m = find_m(mo1,mo2,dims1,dims2,trans_dim);
+
+  if(idist <= gr1.gdims[d]) 
+    inembed = (int*) &(grid1->gdims[d]);
+  else  {
+    printf("Error in transplan: dimension too small %d, N=%d\n",gr1.gdims[d],N);
+    return;
+  }
+  if(odist <= gr2.gdims[d]) 
+    onembed = (int*) &(grid2->gdims[d]);
+  else {
+    printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
+    return;
+  }
+
+  lib_plan = find_plan(trans_type); 
 
 }
 
@@ -566,10 +567,10 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2                                                          
-      m = d1[1]; // Need finer grain transform, to reuse cache     
-      break;
-    case 1:
-      m = d1[1]*d1[2];
+      if(scheme == TRANS_IN) 
+	m = d2[0]; // Need finer grain transform, to reuse cache     
+      else
+	m = d1[0];
       break;
     case 2: // 1,2,0
       if(scheme == TRANS_IN) {
@@ -585,7 +586,6 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     
   case 0:
     switch(mc[1]) {   
-    case 0:
     case 1:
       m = d1[1]*d1[2];
     case 2: //2,1,0     
@@ -878,14 +878,8 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 }
 
 
-template class transform3D<float,float>;
-template class transform3D<double,double>;
-template class transform3D<mycomplex,float>;
-template class transform3D<complex_double,double>;
-template class transform3D<float,mycomplex>;
-template class transform3D<double,complex_double>;
-template class transform3D<mycomplex,mycomplex>;
-template class transform3D<complex_double,complex_double>;
+
+
 
 int print_type3D(const trans_type3D *type)
 {

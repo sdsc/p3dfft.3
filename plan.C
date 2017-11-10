@@ -79,7 +79,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
     if(type->dt2 == REAL) {
       if(prec == 4) {
 	trans_MPIplan<float,float> *p = new trans_MPIplan<float,float>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	(p->trplan)->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	(p->trplan)->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
 	  return(NULL);
@@ -93,7 +93,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
       }
       else if(prec == 8) {
 	trans_MPIplan<double,double> *p=new trans_MPIplan<double,double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
 	  return(NULL);
@@ -122,7 +122,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 
       if(prec == 4) {
 	trans_MPIplan<float,mycomplex> *p= new trans_MPIplan<float,mycomplex>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	delete tmpgrid;
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -137,7 +137,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
       }
       else if(prec == 8) {
 	trans_MPIplan<double,complex_double> *p= new trans_MPIplan<double,complex_double>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	delete tmpgrid;
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -171,7 +171,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 
       if(prec == 4) {
 	trans_MPIplan<mycomplex,float> *p = new trans_MPIplan<mycomplex,float>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	delete tmpgrid;
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -186,7 +186,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
       }
       else if(prec == 8) {
 	trans_MPIplan<complex_double,double> *p= new trans_MPIplan<complex_double,double>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	delete tmpgrid;
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -203,7 +203,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
     else if(type->dt2 == COMPLEX) {
       if(prec == 4) {
 	trans_MPIplan<mycomplex,mycomplex> *p= new trans_MPIplan<mycomplex,mycomplex>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
 	  return(NULL);
@@ -217,7 +217,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
       }
       else if(prec == 8) {
 	trans_MPIplan<complex_double,complex_double> *p= new trans_MPIplan<complex_double,complex_double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
-	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
+	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
 	  return(NULL);
@@ -250,7 +250,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
 	transplan<float,float> *p = new transplan<float,float>(gr1,gr2,type,d,inplace);
 	
 	if(!p->trans_type->is_empty) {
-	  p->lib_plan = p->find_plan(p->trans_type); 
+	  //	  p->lib_plan = p->find_plan(p->trans_type); 
 	  if(p->lib_plan == NULL) {
 	    cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -266,7 +266,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
       else if(prec == 8) {
 	transplan<double,double> *p =new transplan<double,double>(gr1,gr2,type,d,inplace);
 	if(!p->trans_type->is_empty) {
-	  p->lib_plan = p->find_plan(p->trans_type); 
+	  //	  p->lib_plan = p->find_plan(p->trans_type); 
 	  if(p->lib_plan == NULL) {
 	    cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -283,7 +283,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
     else if(type->dt2 == COMPLEX) {
       if(prec == 4) {
 	transplan<float,mycomplex> *p=new transplan<float,mycomplex>(gr1,gr2,type,d,inplace);
-  p->lib_plan = p->find_plan(p->trans_type); 
+	//  p->lib_plan = p->find_plan(p->trans_type); 
   if(p->lib_plan == NULL) {
     cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -297,7 +297,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
       }
       else if(prec == 8) {
 	transplan<double,complex_double> *p=new transplan<double,complex_double>(gr1,gr2,type,d,inplace);
-  p->lib_plan = p->find_plan(p->trans_type); 
+	//  p->lib_plan = p->find_plan(p->trans_type); 
   if(p->lib_plan == NULL) {
     cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -319,7 +319,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
     if(type->dt2 == REAL) {
       if(prec == 4) {
 	transplan<mycomplex,float> *p=new transplan<mycomplex,float>(gr1,gr2,type,d,inplace);
-  p->lib_plan = p->find_plan(p->trans_type); 
+	//  p->lib_plan = p->find_plan(p->trans_type); 
   if(p->lib_plan == NULL) {
     cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -333,7 +333,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
       }
       else if(prec == 8) {
 	transplan<complex_double,double> *p=new transplan<complex_double,double>(gr1,gr2,type,d,inplace);
-  p->lib_plan = p->find_plan(p->trans_type); 
+	//  p->lib_plan = p->find_plan(p->trans_type); 
   if(p->lib_plan == NULL) {
     cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -350,7 +350,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
       if(prec == 4) {
 	transplan<mycomplex,mycomplex> *p=new transplan<mycomplex,mycomplex>(gr1,gr2,type,d,inplace);
 	if(!p->trans_type->is_empty) {
-	  p->lib_plan = p->find_plan(p->trans_type); 
+	  //	  p->lib_plan = p->find_plan(p->trans_type); 
 	  if(p->lib_plan == NULL) {
 	    cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);
@@ -366,7 +366,7 @@ stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type
       else if(prec == 8) {
 	transplan<complex_double,complex_double> *p=new transplan<complex_double,complex_double>(gr1,gr2,type,d,inplace);
 	if(!p->trans_type->is_empty) {
-	  p->lib_plan = p->find_plan(p->trans_type); 
+	  //	  p->lib_plan = p->find_plan(p->trans_type); 
 	  if(p->lib_plan == NULL) {
 	    cout << "Error in trans_plan: null plan" << endl;
 	    return(NULL);

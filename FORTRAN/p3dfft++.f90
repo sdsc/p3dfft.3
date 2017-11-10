@@ -72,6 +72,18 @@ interface
       integer(C_INT) :: in(3),out(3)
       end subroutine
 
+      subroutine p3dfft_exec_1Dtrans_double_f(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_double_f')
+      import
+      integer(C_INT) plan
+      real(C_DOUBLE), dimension(*) :: in,out
+      end subroutine
+
+      subroutine p3dfft_exec_1Dtrans_single_f(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_single_f')
+      import
+      integer(C_INT) plan
+      real(C_FLOAT), dimension(*) :: in,out
+      end subroutine
+
       subroutine p3dfft_exec_3Dtrans_double_f(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
       import
       integer(C_INT) plan,OW;
@@ -83,6 +95,13 @@ interface
       integer(C_INT) plan,OW;
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
+
+      integer(C_INT) function p3dfft_plan_1Dtrans_f(grid1,grid2,trans_ID,dim,inplace) bind(C, name='p3dfft_plan_1Dtrans_f')
+      import
+      integer(C_INT) :: grid1,grid2,dim
+      integer(C_INT) :: trans_ID,inplace
+
+      end function
 
       integer(C_INT) function p3dfft_plan_3Dtrans_f(grid1,grid2,trans_ID,inplace) bind(C, name='p3dfft_plan_3Dtrans_f')
       import

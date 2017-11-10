@@ -42,14 +42,67 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2];
+  int pdims[2],nx,ny,nz,n,ndim;
   Plan3D trans_f,trans_b;
+  FILE *fp;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
-  printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
+
+   if(myid == 0) {
+     printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
+     if((fp=fopen("stdin", "r"))==NULL){
+        printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
+        nx=ny=nz=128; Nrep=1;ndim=2;
+     } else {
+        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+        fclose(fp);
+     }
+     printf("P3DFFT test, 3D wave input\n");
+#ifndef SINGLE_PREC
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,n);
+#else
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,n);
+#endif
+   }
+   MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+
+  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+
+   if(ndim == 1) {
+     pdims[0] = 1; pdims[1] = nprocs;
+   }
+   else if(ndim == 2) {
+     fp = fopen("dims","r");
+     if(fp != NULL) {
+       if(myid == 0)
+         printf("Reading proc. grid from file dims\n");
+       fscanf(fp,"%d %d\n",pdims,pdims+1);
+       fclose(fp);
+       if(pdims[0]*pdims[1] != nprocs)
+          pdims[1] = nprocs / pdims[0];
+     }
+     else {
+       if(myid == 0)
+          printf("Creating proc. grid with mpi_dims_create\n");
+       pdims[0]=pdims[1]=0;
+       MPI_Dims_create(nprocs,2,pdims);
+       if(pdims[0] > pdims[1]) {
+          pdims[0] = pdims[1];
+          pdims[1] = nprocs/pdims[0];
+       }
+     }
+   }
+
+   if(myid == 0)
+      printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
+
 
   // Set up work structures for P3DFFT
 
@@ -74,15 +127,14 @@ main(int argc,char **argv)
 
   //Set up global dimensions of the grid
 
+  gdims[0] = nx;
+  gdims[1] = ny;
+  gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    gdims[i] = N;
+    //    gdims[i] = N;
     proc_order[i] = mem_order[i] = i;
   }
 
-  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
-
-  pdims[0]=pdims[1]=0;
-  MPI_Dims_create(nprocs,2,pdims);
   //  p1 = floor(sqrt(nprocs));
   //p2 = nprocs / p1;
   p1 = pdims[0];
@@ -155,7 +207,7 @@ main(int argc,char **argv)
   // timing loop
 
   for(i=0; i < Nrep;i++) {
-    printf("Executing rcc\n");
+    //    printf("Executing rcc\n");
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
     t += MPI_Wtime();
@@ -164,26 +216,28 @@ main(int argc,char **argv)
       printf("Results of forward transform: \n");
     print_res(OUT,gdims,ldims2,glob_start2,mem_order2);
     normalize(OUT,size2,gdims);
-    printf("Executing ccr\n");
+    //    printf("Executing ccr\n");
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,0);
     t += MPI_Wtime();
   }
 
   mydiff = check_res(IN,FIN,ldims,mem_order);
+  printf("%d: my diff =%lf\n",myid,mydiff);
+  diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
     if(diff > 1.0e-14 * Nglob *0.25)
       printf("Results are incorrect\n");
     else
       printf("Results are correct\n");
-    printf("Max. diff. =%d\n",diff);
+    printf("Max. diff. =%lf\n",diff);
   }
 
-  MPI_Reduce(&gtavg,&t,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-  MPI_Reduce(&gtmin,&t,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
-  MPI_Reduce(&gtmax,&t,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
-  if(myid = 0)
+  MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
+  MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
 
   free(IN); free(OUT); free(FIN);
@@ -255,7 +309,7 @@ void print_res(double *A,int *gdims,int *ldims,int *gstart, int *mo)
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
       for(x=0;x < ldims[imo[0]];x++) {
-	if(abs(*p) > Nglob *1.25e-4 || abs(*(p+1))  > Nglob *1.25e-4) 
+	if(fabs(*p) > Nglob *1.25e-4 || fabs(*(p+1))  > Nglob *1.25e-4) 
     printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],*p,*(p+1));
 	p+=2;
       }
@@ -278,8 +332,8 @@ double check_res(double *A,double *B,int *ldims, int *mo)
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
       for(x=0;x < ldims[imo[0]];x++) {
-	if(abs(*p1 - *p2) > mydiff)
-	  mydiff = abs(*p1-*p2);
+	if(fabs(*p1 - *p2) > mydiff)
+	  mydiff = fabs(*p1-*p2);
 	p1++;
 	p2++;
       }

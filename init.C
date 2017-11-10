@@ -11,6 +11,7 @@ using namespace std;
 vector<Plan *> Plans;
 vector<gen_trans_type *> types1D;
 vector<gen_transform3D *> stored_trans3D;
+vector<stage *> stored_trans1D;
 vector<trans_type3D> types3D;
 vector<grid> stored_grids;
 
@@ -151,7 +152,7 @@ void setup()
   isign = FFTW_FORWARD;
   p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_c2c_d,(void (*)(...)) exec_c2c_d,isign);
 #endif
-  cout << " Pushing p" << endl;
+
   types1D.push_back(p);
   CFFT_FORWARD_D = types_count;
   types_count++;
@@ -313,22 +314,43 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
 
 void cleanup()
 {
-  /*
-  for(vector<gen_trans_type>::iterator it=types1D.begin();it < types1D.end();it++) {
-    delete **it;
+  
+  for(vector<gen_trans_type *>::iterator it=types1D.begin();it < types1D.end();it++) {
+    delete *it;
     types1D.erase(it);
   }
-  for(vector<Plan>::iterator it=Plans.begin();it < Plans.end();it++) {
-    delete **it;
+
+  for(vector<trans_type3D>::iterator it=types3D.begin();it < types3D.end();it++) {
+    //    delete it;
+    types3D.erase(it);
+  }
+
+  for(vector<grid>::iterator it=stored_grids.begin();it < stored_grids.end();it++) {
+    //delete it;
+    stored_grids.erase(it);
+  }
+
+  for(vector<Plan *>::iterator it=Plans.begin();it < Plans.end();it++) {
+    delete *it;
     Plans.erase(it);
   }
-    */
+  for(vector<stage *>::iterator it=stored_trans1D.begin();it < stored_trans1D.end();it++) {
+    delete *it;
+    stored_trans1D.erase(it);
+  }
 
-   types1D.erase(types1D.begin(),types1D.end());
-   types3D.erase(types3D.begin(),types3D.end());
-   Plans.erase(Plans.begin(),Plans.end());
-   stored_grids.erase(stored_grids.begin(),stored_grids.end());
-   stored_trans3D.erase(stored_trans3D.begin(),stored_trans3D.end());
+  for(vector<gen_transform3D *>::iterator it=stored_trans3D.begin();it < stored_trans3D.end();it++) {
+    delete *it;
+    stored_trans3D.erase(it);
+  }
+    
+
+  //   types1D.erase(types1D.begin(),types1D.end());
+  //types3D.erase(types3D.begin(),types3D.end());
+   //Plans.erase(Plans.begin(),Plans.end());
+  // stored_grids.erase(stored_grids.begin(),stored_grids.end());
+   //stored_trans3D.erase(stored_trans3D.begin(),stored_trans3D.end());
+   //stored_trans1D.erase(stored_trans1D.begin(),stored_trans1D.end());
 }
 
   

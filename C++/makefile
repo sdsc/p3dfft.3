@@ -1,9 +1,9 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW -DDEBUG 
+CPPFLAGS = -O3 -DFFTW 
 CC = mpicxx
-CFLAGS = -O0 -g -DFFTW
+CFLAGS = -O3 -DFFTW
 FF = mpif90
 #FFLAGS = -O3 
 AR = ar
@@ -25,19 +25,25 @@ P3DFFT_LIB = libp3dfft.3.a
 # ----------------
 
 
-all: test2D test1D
-test2D: test2D.o 
-	$(CPP) test2D.o -o test2D_cpp -L.. -lp3dfft.3 $(LDFLAGS) 
-test2D.o: test2D.C ../p3dfft.h 
+all: test3D_dec2D test3D_dec1D test_transplan
 
-test1D: test1D.o 
-	$(CPP) test1D.o -o test1D_cpp -L.. -lp3dfft.3 $(LDFLAGS) 
-test1D.o: test1D.C ../p3dfft.h
+test3D_dec2D: test3D_dec2D.o 
+	$(CPP) test3D_dec2D.o -o test3D_dec2D_cpp -L.. -lp3dfft.3 $(LDFLAGS) 
+test3D_dec2D.o: test3D_dec2D.C ../p3dfft.h 
+
+test3D_dec1D: test3D_dec1D.o 
+	$(CPP) test3D_dec1D.o -o test3D_dec1D_cpp -L.. -lp3dfft.3 $(LDFLAGS) 
+test3D_dec1D.o: test3D_dec1D.C ../p3dfft.h 
+
+test_transplan: test_transplan.o 
+	$(CPP) test_transplan.o -o test_transplan_cpp -L.. -lp3dfft.3 $(LDFLAGS)
+test_transplan.o: test_transplan.C ../p3dfft.h
+ 
 
 .C.o:   
 	$(CPP) -c $(CPPFLAGS) $(INCL) $<
 .c.o: 
-	$(CC) -c $(CFLAGS) $(INCL) *.c
+	$(CC) -c $(CFLAGS) $(INCL) $<
 .F90.o:
 	$(FF) $(DFLAGS) -c $(FFLAGS) $(INCL) $<
 .F.o:
