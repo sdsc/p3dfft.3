@@ -46,8 +46,12 @@ void setup()
 #endif
   name = "Empty Type";
   p = new gen_trans_type(name,0);
+  delete p;
+  p = new gen_trans_type(name,0);
   p->is_empty = true;
   types1D.push_back(p);
+
+
   EMPTY_TYPE = types_count;
   types_count++;
 
@@ -315,33 +319,35 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
 void cleanup()
 {
   
-  for(vector<gen_trans_type *>::iterator it=types1D.begin();it < types1D.end();it++) {
-    delete *it;
-    types1D.erase(it);
+  //  vector<grid>::iterator it1=stored_grids.begin();
+  stored_grids.erase(stored_grids.begin(),stored_grids.end());
+
+  vector<gen_trans_type *>::iterator it1=types1D.begin();
+  while(it1 != types1D.end()) {
+    delete *it1;
+    it1 = types1D.erase(it1);
   }
 
-  for(vector<trans_type3D>::iterator it=types3D.begin();it < types3D.end();it++) {
-    //    delete it;
-    types3D.erase(it);
+  //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
+    types3D.erase(types3D.begin(),types3D.end());
+
+  //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
+  vector<Plan *>::iterator it=Plans.begin();
+  while(it != Plans.end()) {
+    delete *it;
+    it = Plans.erase(it);
   }
 
-  for(vector<grid>::iterator it=stored_grids.begin();it < stored_grids.end();it++) {
-    //delete it;
-    stored_grids.erase(it);
+  vector<stage *>::iterator it2=stored_trans1D.begin();
+  while(it2 != stored_trans1D.end()) {
+    delete *it2;
+    it2 = stored_trans1D.erase(it2);
   }
 
-  for(vector<Plan *>::iterator it=Plans.begin();it < Plans.end();it++) {
-    delete *it;
-    Plans.erase(it);
-  }
-  for(vector<stage *>::iterator it=stored_trans1D.begin();it < stored_trans1D.end();it++) {
-    delete *it;
-    stored_trans1D.erase(it);
-  }
-
-  for(vector<gen_transform3D *>::iterator it=stored_trans3D.begin();it < stored_trans3D.end();it++) {
-    delete *it;
-    stored_trans3D.erase(it);
+  vector<gen_transform3D *>::iterator it3=stored_trans3D.begin();
+  while(it3 != stored_trans3D.end()) {
+    delete *it3;
+    it3 = stored_trans3D.erase(it3);
   }
     
 

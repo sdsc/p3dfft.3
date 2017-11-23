@@ -200,7 +200,7 @@ main(int argc,char **argv)
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,mydims2,glob_start2,mem_order2,mydims[ar_dim];
+  print_res(OUT,mydims2,glob_start2,mem_order2,mydims[ar_dim]);
   normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],1.0/((double) mydims[ar_dim]));
   p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN);
 
