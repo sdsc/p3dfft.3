@@ -1,4 +1,4 @@
-# p3dfft.3
+# P3DFFT++
 This is a repository for P3DFFT++ (a.k.a. P3DFFT v. 3), a library for simulating multiscale phenomena. It takes the essence of P3DFFT library (see http://www.p3dfft.net) further by creating an extensible, modular structure uniquely adaptable to a greater range of use cases. The users can specify in detail what kind of data layout they would like to use, both in terms of local memory ordering and the processor layout. 
 
 Just like P3DFFT, P3DFFT++ is a distributed software package, using MPI as the primary method for interprocessor commubnication. 
