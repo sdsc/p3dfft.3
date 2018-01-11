@@ -62,9 +62,9 @@ main(int argc,char **argv)
      }
      printf("P3DFFT test, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,n);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,n);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -77,8 +77,12 @@ main(int argc,char **argv)
 
    if(ndim == 1) {
      pdims[0] = 1; pdims[1] = nprocs;
+     if(myid == 0)
+       printf("Using one-dimensional decomposition\n");
    }
    else if(ndim == 2) {
+     if(myid == 0)
+       printf("Using two-dimensional decomposition\n");
      fp = fopen("dims","r");
      if(fp != NULL) {
        if(myid == 0)
@@ -223,7 +227,7 @@ main(int argc,char **argv)
   }
 
   mydiff = check_res(IN,FIN,ldims,mem_order);
-  printf("%d: my diff =%lf\n",myid,mydiff);
+  //printf("%d: my diff =%lg\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -231,14 +235,14 @@ main(int argc,char **argv)
       printf("Results are incorrect\n");
     else
       printf("Results are correct\n");
-    printf("Max. diff. =%lf\n",diff);
+    printf("Max. diff. =%lg\n",diff);
   }
 
   MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0)
-    printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
+    printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/(nprocs*Nrep),gtmin/Nrep,gtmax/Nrep);
 
   free(IN); free(OUT); free(FIN);
 

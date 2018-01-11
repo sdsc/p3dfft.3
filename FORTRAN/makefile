@@ -1,15 +1,15 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW 
+CPPFLAGS = -O3 -DFFTW 
 CC = mpicxx
-CFLAGS = -O0 -g -DFFTW
+CFLAGS = -O3 -DFFTW
 FF = mpif90
-FFLAGS = -O0 -g
+FFLAGS = -O3
 AR = ar
 ARFLAGS = -v -r -u
 FFT_LIB = -L$(HOME)/fftw-3.3.5/lib -lfftw3 -lfftw3f
-LDFLAGS= $(FFT_LIB) -cxxlib
+LDFLAGS= $(FFT_LIB) -cxxlib  -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 # For FFTW use path to the installed FFTW library:
 # -L/usr/local/apps/fftw301s/lib -lfftw3f 
 
@@ -26,11 +26,11 @@ P3DFFT_LIB = libp3dfft.3.a
 
 .SUFFIXES: .f90 .mod
 
-all: test2D test_trans1D 
-test2D.o: test2D.f90 p3dfft++.mod
+all: test3D test_trans1D 
+test3D.o: test3D.f90 p3dfft++.mod
 wrap.o:   wrap.f90 p3dfft++.mod
-test2D: test2D.o wrap.o 
-	$(FF) test2D.o wrap.o -o test2D_f -L.. -lp3dfft.3 $(LDFLAGS) 
+test3D: test3D.o wrap.o 
+	$(FF) test3D.o wrap.o -o test3D_f -L.. -lp3dfft.3 $(LDFLAGS) 
 
 test1D: test1D.o wrap.o
 	$(FF) test1D.o wrap.o -o test1D_f -L.. -lp3dfft.3 $(LDFLAGS) 
@@ -53,4 +53,4 @@ test_trans1D.o: test_trans1D.f90 p3dfft++.mod
 .f.o:
 	$(FF) -c $(FFLAGS) $(INCL) $<
 clean:
-	/bin/rm *.o *.mod test1D_f test2D_f
+	/bin/rm *.o *.mod test1D_f test3D_f

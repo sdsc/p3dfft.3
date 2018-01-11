@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #ifdef FFTW
 #include "fftw3.h"
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
@@ -70,6 +71,12 @@ typedef fftwf_plan lib_plan_type;
 typedef complex<float> mycomplex;
 typedef complex<double> complex_double;
 
+#ifdef MKL_BLAS
+#define MKL_Complex8 mycomplex
+#define MKL_Complex16 complex_double
+#include <mkl.h>
+#endif
+
 #define type_float typeid(float)
 #define type_double typeid(double)
 #define type_complex typeid(mycomplex)
@@ -94,6 +101,8 @@ void exec_c2r_s(long,mycomplex *,float *);
 void exec_c2r_d(long,complex_double *,double *);
 void exec_c2c_s(long,mycomplex *,mycomplex *);
 void exec_c2c_d(long,complex_double *,complex_double *);
+
+ template <class Type> void blas_trans(size_t rows,size_t cols,const double alpha,const Type *A,size_t lda,Type *B,size_t ldb);
 
 class gen_trans_type {
  public :

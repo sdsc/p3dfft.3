@@ -352,12 +352,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   rel_change(imo1,imo2,mc);
 
 #ifdef DEBUG
-  printf("In reorder_trans, mc=%d %d %d\n",mc[0],mc[1],mc[2]); 
-
+  printf("In reorder_trans, mc=%d %d %d, scheme=%s\n",mc[0],mc[1],mc[2],(scheme == TRANS_IN) ? "IN" : "OUT"); 
   char str[80];
   static int cnt_reorder_trans=0;
+  /*
   sprintf(str,"reorder_trans.in%d",cnt_reorder_trans);
   write_buf<Type1>(in,str,dims1,imo1);
+  */
 #endif
 
 
@@ -381,6 +382,32 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	
 	for(k=0;k <d1[2];k++) {
 	  (*(trans_type->exec))(lib_plan,in+k*d1[0]*d1[1],tmp);
+	  pout = out+k*d2[0]*d2[1];
+#ifdef MKL_BLAS
+#ifdef DEBUG
+	  if(taskid == 0) {
+	    printf("A=\n");
+	    for(i=0;i<d2[0];i++) {
+	      for(j=0;j<d2[1];j++)
+		printf("%lf ",*(tmp+i*d2[1]+j));
+	      printf("\n");
+	    }
+	  }
+#endif
+	  blas_trans<Type2>(d2[1],d2[0],1.0,tmp,d2[1],pout,d2[0]);
+#ifdef DEBUG
+	  if(taskid == 0) {
+	    printf("B=\n");
+	    for(i=0;i<d2[1];i++) {
+	      for(j=0;j<d2[0];j++)
+		printf("%lf ",*(pout+i*d2[0]+j));
+	      printf("\n");
+	    }
+	  }
+#endif
+	
+#else
+
 	  pout = out +k*d2[0]*d2[1];
 	  for(j=0;j < d2[1];j++) {
 	    pin = tmp + j;
@@ -388,7 +415,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      *pout++ = *pin;
 	      pin += d2[1];
 	    }	
+	 
 	  }
+#endif
 	  //      if(!trans_type->is_empty)
 	}
 	
@@ -550,9 +579,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
   
 	tmp = new Type1[d1[0]*d1[1]];
-
 	for(k=0;k <d1[2];k++) {
 	  pin = in + k*d1[0]*d1[1];
+#ifdef MKL_BLAS
+	  blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
+#else
 	  for(j=0;j < d1[1];j++) {
 	    pout = tmp +j;
 	    for(i=0;i < d1[0];i++) {
@@ -560,7 +591,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      pout += d1[1];
 	    }	
 	  }
-	  //      if(!trans_type->is_empty)
+#endif
 	  pout2 = out + k*d2[0]*d2[1];
 	  (*(trans_type->exec))(lib_plan,tmp,pout2);
 	}
@@ -576,7 +607,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	//m = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 
-	tmp = new Type1[d1[0]*d1[2]];
+	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
 
 	for(j=0;j < d1[1];j++) {
 	  pin1 = in +j*d1[0];
@@ -1534,6 +1565,22 @@ void inv_mo(int mo[3],int imo[3])
 	imo[j] = i;
     }
 }
+
+ template <class Type> void blas_trans(size_t rows,size_t cols,const double alpha,const Type *A,size_t lda,Type *B,size_t ldb)
+ {
+   if(typeid(Type) == type_float)      
+     mkl_somatcopy('r','t',rows,cols,alpha,(const float *) A,lda,(float *) B,ldb);
+   else if(typeid(Type) == type_double) {
+     //     printf("Calling mkl_domatcopy, rows=%d, cols=%d\n",rows,cols);
+     mkl_domatcopy('c','t',rows,cols,alpha,(const double *) A,lda,(double *) B,ldb);
+   }
+   else if(typeid(Type) == type_complex)
+     mkl_comatcopy('r','t',rows,cols,alpha,(const mycomplex *) A,lda,(mycomplex *) B,ldb);
+   else if(typeid(Type) == type_complex_double) {
+     //printf("Calling mkl_zomatcopy, rows=%d, cols=%d\n",rows,cols);
+     mkl_zomatcopy('r','t',rows,cols,alpha,(const complex_double *) A,lda,(complex_double *) B,ldb);
+   }
+ }
 
 
 }
