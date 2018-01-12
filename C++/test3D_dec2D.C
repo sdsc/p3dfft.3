@@ -139,6 +139,7 @@ main(int argc,char **argv)
       cout << "Results of forward transform: "<< endl;
     print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
     normalize(OUT,size2,gdims);
+    MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,0);
     t += MPI_Wtime();
@@ -158,6 +159,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
+  t /= Nrep;
   MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
