@@ -499,31 +499,31 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	delete [] tmp;
 	break;
       case 0: //2,0,1
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb32 < 1) nb32 = 1;
 	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb23 < 1) nb23 = 1;
+	int nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	if(nb32 < 1) nb32 = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 	(*(trans_type->exec))(lib_plan,in,tmp);
 	
-	for(k=0;k <d1[2];k+=nb32) {
-	  k2 = min(k+nb32,d1[2]);
-	  for(j=0;j < d1[1];j+=nb23) {
-	    j2 = min(j+nb23,d1[1]);
+	for(k=0;k <d1[1];k+=nb32) {
+	  k2 = min(k+nb32,d1[1]);
+	  for(j=0;j < d1[2];j+=nb23) {
+	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = tmp +kk*d2[1]*d2[2] +j*d2[1];
-	      pout1 = out +kk +j*d2[0]*d2[1];
+	      pin1 = tmp +kk*d2[2] +j*d2[0]*d2[2];
+	      pout1 = out +kk +j*d2[0];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
-		for(i=0;i < d2[1];i++) {
+		for(i=0;i < d2[2];i++) {
 		  *pout =  *pin++;
-		  pout += d2[0];
+		  pout += d2[0]*d2[1];
 		}
-		pin1 += d2[1];
-		pout1 += d2[0]*d2[1];
+		pin1 += d2[2]*d2[0];
+		pout1+= d2[0];
 	      }
 	    }
 	  }
@@ -656,13 +656,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	    i2 = min(i+nb13,d1[0]);
 	    for(kk=k; kk < k2; kk++) {
 	      pin1 = in + kk*d1[0]*d1[1] +i;
-	      pout1 = tmp + kk +i*d1[2]*d2[1];
+	      pout1 = tmp + kk +i*d1[2]*d1[1];
 	      for(j=0;j < d1[1];j++) {
 		pin = pin1;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
 		  *pout = *pin++;
-		  pout += d1[2]*d2[1];
+		  pout += d1[2]*d1[1];
 		}
 		pin1 += d1[0];
 		pout1 += d1[2];
@@ -678,28 +678,28 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       case 0: //2,0,1
 	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	int nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb23 < 1) nb23 = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
-	for(k=0;k <d1[2];k+=nb32) {
-	  k2 = min(k+nb32,d1[2]);
-	  for(j=0;j < d1[1];j+=nb23) {
-	    j2 = min(j+nb23,d1[1]);
+	for(k=0;k <d1[1];k+=nb32) {
+	  k2 = min(k+nb32,d1[1]);
+	  for(j=0;j < d1[2];j+=nb23) {
+	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = in +kk*d1[0]*d1[1] +j*d1[0];
-	      pout1 = tmp +kk +j*d1[2]*d2[1];
+	      pin1 = in +kk*d1[0] +j*d1[0]*d1[1];
+	      pout1 = tmp +kk +j*d1[1];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
 		for(i=0;i < d1[0];i++) {
 		  *pout =  *pin++;
-		  pout += d1[2];
+		  pout += d1[1]*d1[2];
 		}
-		pin1 += d1[0];
-		pout1 += d1[2]*d2[1];
+		pin1 += d1[0]*d1[1];
+		pout1 += d1[1];
 	      }
 	    }
 	  }

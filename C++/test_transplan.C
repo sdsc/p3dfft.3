@@ -7,7 +7,7 @@
 
 using namespace p3dfft;
 
-void init_wave1D(double *,int[3],int *,int[3],int);
+void init_wave1D(double *,int[3],int *,int[3],int,int[3]);
 void print_res(double *,int *,int *,int *, int *,int);
 void normalize(double *,long int,int *,int);
 double check_res(double*,double *,int *, int *);
@@ -179,7 +179,7 @@ using namespace p3dfft;
 
   //  printf("Initiating wave\n");
   glob_start = grid1.glob_start;
-  init_wave1D(IN,gdims,ldims,glob_start,mem_order[dim]);
+  init_wave1D(IN,gdims,ldims,glob_start,dim,mem_order);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -232,10 +232,10 @@ void normalize(double *A,long int size,int *gdims,int dim)
 
 }
 
-void init_wave1D(double *IN,int *gdims,int *ldims,int *gstart, int dim)
+void init_wave1D(double *IN,int *gdims,int *ldims,int *gstart, int dim, int mem_order[3])
 {
   double *mysin,*p;
-  int x,y,z;
+  int i,x,y,z,ld,d[3];
   double twopi = atan(1.0)*8.0;
 
   mysin = (double *) malloc(sizeof(double)*gdims[dim]);
@@ -243,31 +243,35 @@ void init_wave1D(double *IN,int *gdims,int *ldims,int *gstart, int dim)
   for(x=0;x < gdims[dim];x++)
     mysin[x] = sin(x*twopi/gdims[dim]);
 
+  for(i=0;i<3;i++)
+    d[mem_order[i]] = ldims[i];
+
+   ld = mem_order[dim];
    p = IN;
-   switch(dim) {
+   switch(ld) {
    case 0:
 
-     for(z=0;z < ldims[2];z++)
-       for(y=0;y < ldims[1];y++) 
-	 for(x=0;x < ldims[0];x++)
+     for(z=0;z < d[2];z++)
+       for(y=0;y < d[1];y++) 
+	 for(x=0;x < d[0];x++)
 	   *p++ = mysin[x];
        
      break;
 
    case 1:
 
-     for(z=0;z < ldims[2];z++)
-       for(y=0;y < ldims[1];y++) 
-	 for(x=0;x < ldims[0];x++)
+     for(z=0;z < d[2];z++)
+       for(y=0;y < d[1];y++) 
+	 for(x=0;x < d[0];x++)
 	   *p++ = mysin[y];
        
      break;
      
    case 2:
 
-     for(z=0;z < ldims[2];z++)
-       for(y=0;y < ldims[1];y++) 
-	 for(x=0;x < ldims[0];x++)
+     for(z=0;z < d[2];z++)
+       for(y=0;y < d[1];y++) 
+	 for(x=0;x < d[0];x++)
 	   *p++ = mysin[z];
        
      break;
