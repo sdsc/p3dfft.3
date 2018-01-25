@@ -585,16 +585,18 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     break;
     
   case 0:
-    switch(mc[1]) {   
-    case 1:
+    if(mc[1] == 1) // 012
       m = d1[1]*d1[2];
-    case 2: //2,1,0     
+    else
       m = 1;
-      break;
-    }
-  
+    break;
+
   case 2:
-    m =d1[1]*d1[2];
+    if(scheme == TRANS_IN)
+      m =d1[1]*d1[2];
+    else
+      m = d2[1]*d2[2];
+    break;
   }
 	
   return(m);
