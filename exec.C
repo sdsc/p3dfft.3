@@ -768,8 +768,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
-  Type2 *pin,*pout,*pin1,*pout1;
+  float *pin,*pout,*pin1,*pout1;
   int imo1[3],imo2[3],d1[3],d2[3];
+  int ds=sizeof(Type2) /4;
 
 
   inv_mo(mo1,imo1);
@@ -780,7 +781,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   }
 
   rel_change(imo1,imo2,mc);
-  pin = in;
+  pin = (float *) in;
   //  pout = pin+1;
   //*pout = *pin;
   switch(mc[0]) {
@@ -788,12 +789,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     switch(mc[1]) {
     case 0: //1,0,2
       for(k=0;k <d1[2];k++) {
-	pout1 = out +k*d1[0]*d1[1];
+	pout1 = (float *) out + ds*k*d1[0]*d1[1];
 	for(j=0;j < d1[1];j++)
 	  pout = pout1 + j;
 	  for(i=0;i < d1[0];i++) {
-	    *(pout)  = *(pin++);
-	    pout += d2[0];
+	    for(int m=0;m<ds;m++)
+	      *(pout++)  = *(pin++);
+	    pout += ds*(d2[0]-1);
 	  }
       }
       break;
@@ -808,17 +810,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(i=0;i < d1[0];i+=nb13) {
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*d1[0]*d1[1] +i;
-	    pout1 = out + kk*d2[1] +i*d2[0]*d2[1];
+	    pin1 = (float *) in +ds*(kk*d1[0]*d1[1] +i);
+	    pout1 = (float *) out + ds*(kk*d2[1] +i*d2[0]*d2[1]);
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
-		*pout = *pin++;
-		pout += d2[0]*d2[1];
+		for(int m=0;m<ds;m++)
+		  *pout++ = *pin++;
+		pout += ds*(d2[0]*d2[1]-1);
 	      }
-	      pin1 += d1[0];
-	      pout1++;
+	      pin1 += ds*d1[0];
+	      pout1+=ds;
 	    }
 	  }
 	}
@@ -840,17 +843,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(i=0;i < d1[0];i+=nb13) {
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in + kk*d1[0]*d1[1] +i;
-	    pout1 = out + kk + i * d2[0]*d2[1];
+	    pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +i);
+	    pout1 = (float *) out + ds*(kk + i * d2[0]*d2[1]);
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
-		*pout = *pin++;
-		pout += d2[0]*d2[1];
+		for(int m=0;m<ds;m++)
+		  *pout++ = *pin++;
+		pout += ds*(d2[0]*d2[1]-1);
 	      }
-	      pin1 += d1[0];
-	      pout1 += d2[0];
+	      pin1 += ds*d1[0];
+	      pout1 += ds*d2[0];
 	    }
 	  }
 	}
@@ -867,14 +871,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = in +kk*d1[0]*d1[1];
-	    pout1 = out +kk;
+	    pin1 = (float *) in +ds*kk*d1[0]*d1[1];
+	    pout1 = (float *) out +ds*kk;
 	    for(jj=j; jj < j2; jj++) {
-	      pin = pin1 +jj*d1[0];
-	      pout = pout1 +jj*d2[0]*d2[1];
+	      pin = pin1 +ds*jj*d1[0];
+	      pout = pout1 +ds*jj*d2[0]*d2[1];
 	      for(i=0;i < d1[0];i++) {
-		*pout = *pin++;
-		pout += d2[0];
+		for(int m=0;m<ds;m++)
+		  *pout++ = *pin++;
+		pout += ds*(d2[0]-1);
 	      }
 	    }
 	  }
@@ -895,15 +900,16 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
+	    pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +j*d1[0]);
+	    pout1 = (float *) out +ds*(kk*d2[0] +j*d2[0]*d2[1]);
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(i=0;i < d1[0];i++) 
-		*pout++ = *pin++;
-	      pin += d1[0];
-	      pout += d2[0]*d2[1];
+		for(int m=0;m<ds;m++)
+		  *pout++ = *pin++;
+	      pin += ds*d1[0];
+	      pout += ds*d2[0]*d2[1];
 	    }
 	  }
 	}
