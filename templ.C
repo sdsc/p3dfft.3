@@ -384,7 +384,7 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
 {
   lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(!type->is_set) {
-    cout << "Error in trans_plan: 1D transform type no set" << endl;
+    cout << "Error in trans_plan: 1D transform type not set" << endl;
     return;
   }
   if(gr1.ldims[d] != gr1.gdims[d] || gr2.ldims[d] != gr2.gdims[d] ) {
@@ -471,6 +471,11 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(gr1.ldims[d] != gr1.gdims[d] || gr2.ldims[d] != gr2.gdims[d] ) {
     printf("Error in transplan: dimensions dont match %d %d %d\n",gr1.ldims[d],gr2.ldims[d],d);
+    return;
+  }
+
+  if(gr1.pgrid[d] != 1 || gr1.pgrid[d] != 1) {
+    printf("Error in transplan: transform dimension %d must be local.\n",d);
     return;
   }
 

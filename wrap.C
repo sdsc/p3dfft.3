@@ -333,9 +333,9 @@ Grid *p3dfft_init_grid(int gdims[3],int pgrid[3],int proc_order[3],int mem_order
   return Cgr;
 }
 
-  void p3dfft_free_grid_f(Grid_fort *gr)
+  void p3dfft_free_grid_f(int *gr)
   {
-    delete gr;
+    stored_grids.erase(stored_grids.begin()+ *gr);
   }
 
   void p3dfft_free_grid(Grid *gr)
