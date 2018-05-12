@@ -86,7 +86,7 @@
       call MPI_Bcast(n,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ndim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
 
-! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+! Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
 !    nproc is devided into a iproc x jproc stencil
 !
@@ -138,9 +138,7 @@
       type_ids2(3) = P3DFFT_CFFT_BACKWARD_D;
 
 ! Now initialize 3D transforms (forward and backward) with these types
-!      print *,'Initializing type RCC'
       type_rcc = p3dfft_init_3Dtype(type_ids1)
-!      print *,'Initializing type CCR'
       type_ccr = p3dfft_init_3Dtype(type_ids2)
 
 ! Set up global dimensions of the grid
@@ -182,21 +180,15 @@
 
 ! Initialize initial and final grids, based on the above information
 
-!      print *,'Initializing grid1'
-
       grid1 = p3dfft_init_grid(ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
-
-!      print *,'Initializing grid2'
 
       grid2 = p3dfft_init_grid(ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-!      print *,'Plan rcc'
       trans_f = p3dfft_plan_3Dtrans_f(grid1,grid2,type_rcc,1)
 
 ! Now set up the backward transform
-!      print*,'Plan ccr'
       trans_b = p3dfft_plan_3Dtrans_f(grid2,grid1,type_ccr,1)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
@@ -212,7 +204,6 @@
 
 ! Initialize the BEG array with a sine wave in 3D
 
-!      print *,'Initiating wave'
       call init_wave(BEG,gdims,mydims,glob_start)
 
 ! Now allocate the complex array for holding Fourier space data

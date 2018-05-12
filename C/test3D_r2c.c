@@ -23,13 +23,12 @@ This program exemplifies using P3DFFT++ library.
 */
 
 #include "p3dfft.h"
-//#include "defs.h"
 #include <math.h>
 #include <stdio.h>
 
-  void init_wave(double *,int[3],int *,int[3]);
+void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *, int *);
-  void normalize(double *,long int,int *);
+void normalize(double *,long int,int *);
 double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
@@ -92,7 +91,7 @@ main(int argc,char **argv)
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
 
-  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+  // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
    if(ndim == 1) {
      pdims[0] = 1; pdims[1] = nprocs;

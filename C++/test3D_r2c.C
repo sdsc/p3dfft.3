@@ -25,8 +25,6 @@
 #include "p3dfft.h"
 #include <math.h>
 #include <stdio.h>
-//#include "templ.C"
-//#include "exec.C"
 
 using namespace p3dfft;
 
@@ -80,7 +78,7 @@ main(int argc,char **argv)
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
 
-  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+  // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
    if(ndim == 1) {
      pdims[0] = 1; pdims[1] = nprocs;
@@ -130,8 +128,6 @@ main(int argc,char **argv)
   for(i=0; i < 3;i++) {
     proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
   }
-
-  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
   p1 = pdims[0];
   p2 = pdims[1];
