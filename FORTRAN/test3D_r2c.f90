@@ -1,28 +1,3 @@
-! This file is part of P3DFFT++ library
-!
-!    P3DFFT++
-!
-!    Software Framework for Scalable Fourier Transforms in Three Dimensions
-!
-!    Copyright (C) 2017 Dmitry Pekurovsky
-!    Copyright (C) 2017 University of California
-!
-!    This program is free software: you can redistribute it and/or modify
-!    it under the terms of the GNU General Public License as published by
-!    the Free Software Foundation, either version 3 of the License, or
-!    (at your option) any later version.
-!
-!    This program is distributed in the hope that it will be useful,
-!    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!    GNU General Public License for more details.
-!
-!    You should have received a copy of the GNU General Public License
-!    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!
-!----------------------------------------------------------------------------
-
 ! This sample program illustrates the
 ! use of P3DFFT++ library for highly scalable parallel 3D FFT.
 !
@@ -195,7 +170,7 @@
       pgrid1(2) = iproc
       pgrid1(3) = jproc
 
-! Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local. 
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
       pgrid2(1) = iproc
       pgrid2(2) = jproc

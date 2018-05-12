@@ -1,9 +1,30 @@
 
 // This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real transforms using 2D domain decomposition (1D is a specific case).
 
+/*
+! This program initializes a 3D array with a 3D sine wave, then
+! performs 3D forward Fourier transform, then backward transform,
+! and checks that
+! the results are correct, namely the same as in the start except
+! for a normalization factor. It can be used both as a correctness
+! test and for timing the library functions.
+!
+! The program expects 'stdin' file in the working directory, with
+! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
+! are box dimensions, Ndim is the dimentionality of processor grid
+! (1 or 2), and Nrep is the number of repititions. Optionally
+! a file named 'dims' can also be provided to guide in the choice
+! of processor geometry in case of 2D decomposition. It should contain
+! two numbers in a line, with their product equal to the total number
+! of tasks. Otherwise processor grid geometry is chosen automatically.
+! For better performance, experiment with this setting, varying
+! iproc and jproc. In many cases, minimizing iproc gives best results.
+! Setting it to 1 corresponds to one-dimensional decomposition.
+*/
 
 #include "p3dfft.h"
 #include <math.h>
+#include <stdio.h>
 //#include "templ.C"
 //#include "exec.C"
 
@@ -30,13 +51,68 @@ main(int argc,char **argv)
   int imo1[3];
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
+  int pdims[2],ndim,nx,ny,nz;
+  FILE *fp;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
-  if(myid == 0)
-    printf("P3DFFT++ test1. Running on %d cores. Grid size %d\n",nprocs,N);
+   if(myid == 0) {
+     printf("P3DFFT++ C++ test program. Running on %d cores\n",nprocs);
+     if((fp=fopen("stdin", "r"))==NULL){
+        printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
+        nx=ny=nz=128; Nrep=1;ndim=2;
+     } else {
+        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+        fclose(fp);
+     }
+     printf("P3DFFT test R2C, 3D wave input\n");
+#ifndef SINGLE_PREC
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+#else
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+#endif
+   }
+   MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+
+  //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
+
+   if(ndim == 1) {
+     pdims[0] = 1; pdims[1] = nprocs;
+     if(myid == 0)
+       printf("Using one-dimensional decomposition\n");
+   }
+   else if(ndim == 2) {
+     if(myid == 0)
+       printf("Using two-dimensional decomposition\n");
+     fp = fopen("dims","r");
+     if(fp != NULL) {
+       if(myid == 0)
+         printf("Reading proc. grid from file dims\n");
+       fscanf(fp,"%d %d\n",pdims,pdims+1);
+       fclose(fp);
+       if(pdims[0]*pdims[1] != nprocs)
+          pdims[1] = nprocs / pdims[0];
+     }
+     else {
+       if(myid == 0)
+          printf("Creating proc. grid with mpi_dims_create\n");
+       pdims[0]=pdims[1]=0;
+       MPI_Dims_create(nprocs,2,pdims);
+       if(pdims[0] > pdims[1]) {
+          pdims[0] = pdims[1];
+          pdims[1] = nprocs/pdims[0];
+       }
+     }
+   }
+
+   if(myid == 0)
+      printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
   setup();
@@ -50,18 +126,13 @@ main(int argc,char **argv)
 
   //Set up global dimensions of the grid and processor and memory ordering. 
 
+  gdims[0] = nx; gdims[1]=ny;gdims[2]=nz;
   for(i=0; i < 3;i++) {
-    gdims[i] = N;
     proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
   }
 
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
-  int pdims[2];
-  pdims[0]=pdims[1]=0;
-  MPI_Dims_create(nprocs,2,pdims);
-  //  p1 = floor(sqrt(nprocs));
-  //p2 = nprocs / p1;
   p1 = pdims[0];
   p2 = pdims[1];
 
@@ -170,6 +241,7 @@ main(int argc,char **argv)
 
   // Clean up P3DFFT++ structures
 
+  
   cleanup();
   MPI_Finalize();
 

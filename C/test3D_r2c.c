@@ -1,9 +1,31 @@
+
+/*
+This program exemplifies using P3DFFT++ library. 
+
+! This program initializes a 3D array with a 3D sine wave, then
+! performs 3D forward Fourier transform, then backward transform,
+! and checks that
+! the results are correct, namely the same as in the start except
+! for a normalization factor. It can be used both as a correctness
+! test and for timing the library functions.
+!
+! The program expects 'stdin' file in the working directory, with
+! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
+! are box dimensions, Ndim is the dimentionality of processor grid
+! (1 or 2), and Nrep is the number of repititions. Optionally
+! a file named 'dims' can also be provided to guide in the choice
+! of processor geometry in case of 2D decomposition. It should contain
+! two numbers in a line, with their product equal to the total number
+! of tasks. Otherwise processor grid geometry is chosen automatically.
+! For better performance, experiment with this setting, varying
+! iproc and jproc. In many cases, minimizing iproc gives best results.
+! Setting it to 1 corresponds to one-dimensional decomposition.
+*/
+
 #include "p3dfft.h"
 //#include "defs.h"
 #include <math.h>
 #include <stdio.h>
-//#include "templ.C"
-//#include "exec.C"
 
   void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *, int *);
@@ -23,15 +45,12 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  //  void inv_mo(int[3],int[3]);
-  //void write_buf(double *,char *,int[3],int[3],int);
   int *ldims,*ldims2;
   long int size1,size2;
   double *IN;
   Grid *grid1,*grid2;
   int *glob_start,*glob_start2;
   double *OUT;
-  // Set up transform types for 3D transform
   int type_ids1[3];
   int type_ids2[3];
   Type3D type_rcc,type_ccr;
@@ -52,7 +71,7 @@ main(int argc,char **argv)
 
 
    if(myid == 0) {
-     printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
+     printf("P3DFFT++ C test program. Running on %d cores\n",nprocs);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
@@ -124,9 +143,7 @@ main(int argc,char **argv)
 
   //Now initialize 3D transforms (forward and backward) with these types
 
-  //  printf("Initializing type RCC\n");
   type_rcc = p3dfft_init_3Dtype(type_ids1);
-  //printf("Initializing type CCR\n");
   type_ccr = p3dfft_init_3Dtype(type_ids2);
 
   //Set up global dimensions of the grid
@@ -135,12 +152,9 @@ main(int argc,char **argv)
   gdims[1] = ny;
   gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    //    gdims[i] = N;
-    proc_order[i] = mem_order[i] = i;
+    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
   }
 
-  //  p1 = floor(sqrt(nprocs));
-  //p2 = nprocs / p1;
   p1 = pdims[0];
   p2 = pdims[1];
 
@@ -150,7 +164,7 @@ main(int argc,char **argv)
   pgrid1[1] = p1;
   pgrid1[2] = p2;
  
-  //Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local.
+  //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
   pgrid2[0] =p1;
   pgrid2[1] = p2;
@@ -164,34 +178,28 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  //  printf("Initiating grid1\n");  
   grid1 = p3dfft_init_grid(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  //  printf("Initiating grid2\n");
   grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  //  printf("Plan rcc\n");
   trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,1);
 
   //Now set up the backward transform
 
-  //printf("Plan ccr\n");
   trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,1);
 
-  //Determine local array dimensions. 
+  //Save the local array dimensions. 
 
   ldims = grid1->ldims;
   size1 = ldims[0]*ldims[1]*ldims[2];
-  //  printf("Allocating IN\n");
 
-  //Now allocate initial and final arrays in physical space (real-valued)
+  //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN=(double *) malloc(sizeof(double)*size1);
   FIN= (double *) malloc(sizeof(double) *size1);
 
-  //Initialize the IN array with a sine wave in 3D
+  //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
-  //  printf("Initiating wave\n");
   glob_start = grid1->glob_start;
   init_wave(IN,gdims,ldims,glob_start);
 
@@ -200,7 +208,6 @@ main(int argc,char **argv)
   ldims2 = grid2->ldims;
   glob_start2 = grid2->glob_start;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  //  printf("allocating OUT, size=%d\n",size2);
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
@@ -211,23 +218,20 @@ main(int argc,char **argv)
   // timing loop
 
   for(i=0; i < Nrep;i++) {
-    //    printf("Executing rcc\n");
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
+    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       printf("Results of forward transform: \n");
     print_res(OUT,gdims,ldims2,glob_start2,mem_order2);
     normalize(OUT,size2,gdims);
-    //    printf("Executing ccr\n");
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,0);
+    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,0); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 
   mydiff = check_res(IN,FIN,ldims,mem_order);
-  //printf("%d: my diff =%lg\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
