@@ -1,3 +1,7 @@
+
+// This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real transforms using 2D domain decomposition (1D is a specific case).
+
+
 #include "p3dfft.h"
 #include <math.h>
 //#include "templ.C"
@@ -14,8 +18,8 @@ main(int argc,char **argv)
 {
   using namespace p3dfft;
 
-  int N=1024;
-  int Nrep = 10;
+  int N=128;
+  int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
@@ -36,10 +40,11 @@ main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
   setup();
-  // Set up transform types for 3D transform
+  // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
+  // Define the transform types for these two transforms
   trans_type3D type_rcc(type_ids1); 
   trans_type3D type_ccr(type_ids2); 
 
@@ -47,7 +52,7 @@ main(int argc,char **argv)
 
   for(i=0; i < 3;i++) {
     gdims[i] = N;
-    proc_order[i] = mem_order[i] = i;
+    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
   }
 
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
@@ -68,10 +73,9 @@ main(int argc,char **argv)
 
   // Initialize the initial grid
 
-  //  cout << "Initiating grid1" << endl;
   grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
 
-  //Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local.
+  //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
   pgrid2[0] =p1;
   pgrid2[1] = p2;
@@ -83,30 +87,26 @@ main(int argc,char **argv)
     gdims2[i] = gdims[i];
   gdims2[0] = gdims2[0]/2+1;
 
-  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
+  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
   int mem_order2[] = {2,1,0};
 
   // Initialize final grid configuration
 
-  //cout << "Initiating grid2" << endl;
   grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
-  // Get the local grid dimensions
+  // Save the local grid dimensions and the size o physical space arrays
 
   int *ldims = &grid1.ldims[0];
   int size1 = ldims[0]*ldims[1]*ldims[2];
 
-  // Allocate initial and final arrays in physical space
+  // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
-  //  cout << "Allocating IN" << endl;
   double *IN=new double[size1];
   double *FIN=new double[size1];
 
   //Initialize the IN array with a sine wave in 3D  
 
-  //  cout << "Initiating wave" << endl;
-  //printf("%d: grid1 sglobal starts: %d %d %d\n",myid,grid1.glob_start[0],grid1.glob_start[1],grid1.glob_start[2]);
   init_wave(IN,gdims,ldims,grid1.glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
@@ -121,7 +121,7 @@ main(int argc,char **argv)
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
 
-  // Warm-up: execute forward 3D transform
+  // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
   trans_f.exec(IN,OUT,0);
 
@@ -132,7 +132,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,0);
+    trans_f.exec(IN,OUT,0);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -141,7 +141,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,0);
+    trans_b.exec(OUT,FIN,0);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 
@@ -173,11 +173,6 @@ main(int argc,char **argv)
   cleanup();
   MPI_Finalize();
 
-
-/*
-  fopen("input","r");
-  fscanf("%d %d %d %d %d\n",
-  */
 }
 
 void normalize(complex_double *A,long int size,int *gdims)
