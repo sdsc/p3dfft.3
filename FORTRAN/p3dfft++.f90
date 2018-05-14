@@ -62,10 +62,10 @@ interface
       integer(C_INT) :: mpicomm
     end function p3dfft_init_grid
 
-      subroutine p3dfft_free_grid(gr) bind(C,name='p3dfft_free_grid_f')
-      import
-      type(grid) :: gr
-      end subroutine
+!      subroutine p3dfft_free_grid(gr) bind(C,name='p3dfft_free_grid_f')
+!      import
+!      integer(C_INT) :: gr
+!      end subroutine
 
       subroutine p3dffft_inv_mo(in,out) bind(C,name='p3dfft_inv_mo')
       import
