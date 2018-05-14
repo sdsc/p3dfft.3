@@ -23,20 +23,25 @@
 !
 !----------------------------------------------------------------------------
 
+!
+!This program exemplifies the use of 1D transforms in P3DFFT++. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. 
+
 ! This sample program illustrates the
 ! use of P3DFFT++ library for highly scalable parallel 3D FFT.
 !
 ! This program initializes a 3D array with a 3D sine wave, then
-! performs forward transform, backward transform, and checks that
+! performs forward real-to-complex transform, backward comples-to-real 
+! transform, and checks that
 ! the results are correct, namely the same as in the start except
 ! for a normalization factor. It can be used both as a correctness
 ! test and for timing the library functions.
 !
 ! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
-! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
-! a file named 'dims' can also be provided to guide in the choice
+! a single line of numbers : Nx,Ny,Nz,dim,Nrep,MOIN(1)-(3),MOOUT(1)-(3). 
+! Here Nx,Ny,Nz are 3D grid dimensions, dim is the dimension of 1D transform 
+! (valid values are 0 through 2), Nrep is the number of repititions. 
+! MOIN are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating. Similarly, MOOUT is the memory order of the output grid. 
+! Optionally a file named 'dims' can also be provided to guide in the choice
 ! of processor geometry in case of 2D decomposition. It should contain
 ! two numbers in a line, with their product equal to the total number
 ! of tasks. Otherwise processor grid geometry is chosen automatically.
@@ -150,7 +155,7 @@
 
       call p3dfft_setup
 
-! Set up 2 transform types for 3D transforms
+! Set up 2 transform types for 1D transforms
 
       type_ids1 = P3DFFT_R2CFFT_D;
 
@@ -172,7 +177,6 @@
 
       do i=1,3
          proc_order(i) = i-1
-!         mem_order(i) = i-1
          if(mem_order2(dim) .eq. i-1) then
             ar_dim2 = i
          endif
@@ -199,21 +203,15 @@
 
 ! Initialize initial and final grids, based on the above information
 
-!      print *,'Initializing grid1'
-
       grid1 = p3dfft_init_grid(ldims, glob_start,gdims,pgrid,proc_order,mem_order,MPI_COMM_WORLD)
-
-!      print *,'Initializing grid2'
 
       grid2 = p3dfft_init_grid(ldims2,glob_start2,gdims2,pgrid,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-!      print *,'Plan rcc'
       trans_f = p3dfft_plan_1Dtrans_f(grid1,grid2,type_ids1,dim-1,0)
 
 ! Now set up the backward transform
-!      print*,'Plan ccr'
       trans_b = p3dfft_plan_1Dtrans_f(grid2,grid1,type_ids2,dim-1,0)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
@@ -229,7 +227,6 @@
 
 ! Initialize the BEG array with a sine wave in 3D
 
-!      print *,'Initiating wave'
       call init_wave(BEG,gdims,mydims,glob_start,ar_dim)
 
 ! Now allocate the complex array for holding Fourier space data

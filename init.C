@@ -346,16 +346,18 @@ void cleanup()
 {
   
   //  vector<grid>::iterator it1=stored_grids.begin();
-  stored_grids.erase(stored_grids.begin(),stored_grids.end());
+  //  stored_grids.erase(stored_grids.begin(),stored_grids.end());
+  //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
+  //    types3D.erase(types3D.begin(),types3D.end());
+  stored_grids.clear();
+  types3D.clear();
 
+  // Since these are vectors of pointers, simply erasing is not enough; must delete each referenced class. 
   vector<gen_trans_type *>::iterator it1=types1D.begin();
   while(it1 != types1D.end()) {
     delete *it1;
     it1 = types1D.erase(it1);
   }
-
-  //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
-    types3D.erase(types3D.begin(),types3D.end());
 
   //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
   vector<Plan *>::iterator it=Plans.begin();
@@ -376,13 +378,6 @@ void cleanup()
     it3 = stored_trans3D.erase(it3);
   }
     
-
-  //   types1D.erase(types1D.begin(),types1D.end());
-  //types3D.erase(types3D.begin(),types3D.end());
-   //Plans.erase(Plans.begin(),Plans.end());
-  // stored_grids.erase(stored_grids.begin(),stored_grids.end());
-   //stored_trans3D.erase(stored_trans3D.begin(),stored_trans3D.end());
-   //stored_trans1D.erase(stored_trans1D.begin(),stored_trans1D.end());
 }
 
   

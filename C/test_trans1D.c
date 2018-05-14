@@ -1,9 +1,34 @@
+/*
+This program exemplifies the use of 1D transforms in P3DFFT++. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. 
+! This sample program illustrates the
+! use of P3DFFT++ library for highly scalable parallel 3D FFT.
+!
+! This program initializes a 3D array with a 3D sine wave, then
+! performs forward real-to-complex transform, backward comples-to-real 
+! transform, and checks that
+! the results are correct, namely the same as in the start except
+! for a normalization factor. It can be used both as a correctness
+! test and for timing the library functions.
+!
+! The program expects 'stdin' file in the working directory, with
+! a single line of numbers : Nx,Ny,Nz,dim,Nrep,MOIN(1)-(3),MOOUT(1)-(3). 
+! Here Nx,Ny,Nz are 3D grid dimensions, dim is the dimension of 1D transform 
+! (valid values are 0 through 2), Nrep is the number of repititions. 
+! MOIN are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating. Similarly, MOOUT is the memory order of the output grid. 
+! Optionally a file named 'dims' can also be provided to guide in the choice
+! of processor geometry in case of 2D decomposition. It should contain
+! two numbers in a line, with their product equal to the total number
+! of tasks. Otherwise processor grid geometry is chosen automatically.
+! For better performance, experiment with this setting, varying
+! iproc and jproc. In many cases, minimizing iproc gives best results.
+! Setting it to 1 corresponds to one-dimensional decomposition.
+!
+! If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
+*/
+
 #include "p3dfft.h"
-//#include "defs.h"
 #include <math.h>
 #include <stdio.h>
-//#include "templ.C"
-//#include "exec.C"
 
 void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim);
 void print_res(double *A,int *mydims,int *gstart, int *mo, int N     );
@@ -23,15 +48,12 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  //  void inv_mo(int[3],int[3]);
-  //void write_buf(double *,char *,int[3],int[3],int);
   int *ldims,*ldims2;
   long int size1,size2;
   double *IN;
   Grid *grid1,*grid2;
   int *glob_start,*glob_start2;
   double *OUT;
-  // Set up transform types for 3D transform
   int type_ids1;
   int type_ids2;
   Type3D type_rcc,type_ccr;
@@ -49,6 +71,8 @@ main(int argc,char **argv)
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
+
+  // Read input parameters
 
    if(myid == 0) {
      printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
@@ -68,6 +92,9 @@ main(int argc,char **argv)
      printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,n);
 #endif
    }
+
+   // Broadcast input parameters
+
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -115,17 +142,10 @@ main(int argc,char **argv)
   gdims[0] = nx;
   gdims[1] = ny;
   gdims[2] = nz;
-  //  mem_order[dim] = 0;
   cnt = 1;
-  for(i=0; i < 3;i++) {
-    //    gdims[i] = N;
+  for(i=0; i < 3;i++) 
     proc_order[i] = i;
-    // if(i != dim)
-    //  mem_order[i] = cnt++;
-  }
 
-  //  p1 = floor(sqrt(nprocs));
-  //p2 = nprocs / p1;
   p1 = pdims[0];
   p2 = pdims[1];
 
@@ -150,26 +170,22 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  //  printf("Initiating grid1\n");  
   grid1 = p3dfft_init_grid(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  //  printf("Initiating grid2\n");
   grid2 = p3dfft_init_grid(gdims2,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  //  printf("Plan rcc\n");
+
   trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim,0);
 
   //Now set up the backward transform
 
-  //printf("Plan ccr\n");
   trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim,0);
 
   //Determine local array dimensions. 
 
   ldims = grid1->ldims;
   size1 = ldims[0]*ldims[1]*ldims[2];
-  //  printf("Allocating IN\n");
 
   for(i=0;i<3;i++)
     mydims[mem_order[i]] = ldims[i];
@@ -180,7 +196,6 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D
 
-  //  printf("Initiating wave\n");
   glob_start = grid1->glob_start;
   init_wave1D(IN,mydims,glob_start,ar_dim);
 
@@ -189,24 +204,24 @@ main(int argc,char **argv)
   ldims2 = grid2->ldims;
   glob_start2 = grid2->glob_start;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  //  printf("allocating OUT, size=%d\n",size2);
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
-  for(i=0;i < 3;i++) { 
+  for(i=0;i < 3;i++) 
     mydims2[mem_order2[i]] = ldims2[i];
-  }
 
+  // Execute forward transform
   p3dfft_exec_1Dtrans_double(trans_f,IN,OUT);
 
   if(myid == 0)
     printf("Results of forward transform: \n");
   print_res(OUT,mydims2,glob_start2,mem_order2,mydims[ar_dim]);
   normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],1.0/((double) mydims[ar_dim]));
+
+  // Execute backward transform
   p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN);
 
   mydiff = check_res(IN,FIN,mydims);
 
-  //  printf("%d: my diff =%lf\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -219,7 +234,7 @@ main(int argc,char **argv)
 
   free(IN); free(OUT); free(FIN);
 
-  // Clean up grid structures
+  // Clean up grid structures 
 
   p3dfft_free_grid(grid1);
   p3dfft_free_grid(grid2);
