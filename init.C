@@ -33,13 +33,14 @@ namespace p3dfft {
 
 using namespace std;
 
+  // External vectors 
 
-vector<Plan *> Plans;
-vector<gen_trans_type *> types1D;
-vector<gen_transform3D *> stored_trans3D;
-vector<stage *> stored_trans1D;
-vector<trans_type3D> types3D;
-vector<grid> stored_grids;
+vector<Plan *> Plans;  // Defined 1D transform plans
+vector<gen_trans_type *> types1D; // Defined 1D transform types
+vector<trans_type3D> types3D; // Defined 3D transform types
+vector<stage *> stored_trans1D; // Initialized and planned 1D transforms
+vector<gen_transform3D *> stored_trans3D; // Initialized and planned 3D transforms
+vector<grid> stored_grids; // Defined grids (used in Fortran and C wrappers)
 
   //  extern "C" {
 int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
@@ -53,17 +54,6 @@ void setup()
   const char *name;
   int isign;
   gen_trans_type *p;
-  /*
-  float *pf;
-  double *pd;
-  complex *pc;
-  complex_double *pcd;
-  
-  get_type(pf,type_float);
-  get_type(pd,type_double);
-  get_type(pc,type_complex);
-  get_type(pcd,type_complex_double);
-  */
 
   int types_count=0;
 
@@ -521,6 +511,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 */
 
 
+ // grid constructor: initialize grid description and setup up MPI structures
 grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
 	   MPI_Comm mpicomm_)
 	   //,int prec_,int dt_)
@@ -533,6 +524,8 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
   nd=0;
   P[0]=P[1]=P[2]=1;
   D[0]=D[1]=D[2]=L[0]=L[1]=L[2]=-1;
+  // Find dimension of processor grid (1 to 3 non-unit values in pgrid)
+
   for(i=0;i <3; i++) {
     pgrid[i] = pgrid_[i];
     gdims[i] = gdims_[i];
@@ -555,7 +548,7 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
   MPI_Comm_rank(mpicomm_,&taskid);
   MPI_Comm_size(mpicomm_,&numtasks);
 
-  // Set up communicators
+  // Set up communicators for pencils or 3D decomposition
   if(nd >1) {
     int periodic[nd];
     int reorder=0;
@@ -565,10 +558,8 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
     MPI_Cart_create(mpicomm_,nd,P,periodic,reorder,&mpi_comm_cart);
     MPI_Cart_coords(mpi_comm_cart,taskid,nd,grid_id_cart);
 
-
-
     int remain_dims[3];
-    if(nd == 2) {
+    if(nd == 2) { // 2D (pencils) decomposition
       remain_dims[0] = 1;
       remain_dims[1] = 0;
       // Create COLUMN sub comm.
@@ -585,12 +576,8 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
 #ifdef DEBUG
       printf("%d: myid=%d %d\n",taskid,myid[0],myid[1]);
 #endif
-      //int tmp;
-      //MPI_Comm_size(mpicomm[0],&tmp);
-      //      printf("grid: Size of mpicomm[0]=%d\n",tmp);
-      
     }
-    else if(nd == 3) {
+    else if(nd == 3) { // 3D (volumetric) decomsposition 
       remain_dims[0] = 1;
       remain_dims[1] = 0;
       remain_dims[2] = 0;
@@ -605,13 +592,13 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
       MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm);
 
     }
-    //    MPI_Comm_free(&mpi_comm_cart);
   }
-  else { //nd=1
+  else { //nd=1 Slab (1D) decomposition
     grid_id_cart[0] = taskid;
     *mpicomm = mpicomm_;
-    //    InitPencil1D();
   }
+
+  // Find grid id 3D coordinates of the local grid withint the global grid
   j=0;
   for(i=0;i<3;i++) 
     if(pgrid[i] == 1)
@@ -628,6 +615,9 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
   sz = new int**[nd];
   en = new int**[nd];
   */
+
+  // Allocate structures for local data sizes
+
   for(i=0;i<nd;i++) {
     st[i] = new int*[P[i]];
     sz[i] = new int*[P[i]];
@@ -639,10 +629,11 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
     }
   }
 
-  InitPencil();
+  InitPencil(); // Initialize pencils/slabs etc
   is_set = true;
 }
 
+  // Copy constructor
 grid::grid(const grid &rhs)
 {
   
@@ -933,6 +924,7 @@ template <class Type1,class Type2> trans_type1D<Type1,Type2>::trans_type1D(const
   }
 */
 
+// Initialize a 3D transform type based on IDs of 1D transforms
 trans_type3D::trans_type3D(int types_IDs[3]) //,const char name_[]) 
 {
   //  name = new char[sizeof(name_)+1];
@@ -953,6 +945,7 @@ trans_type3D::trans_type3D(int types_IDs[3]) //,const char name_[])
   is_set = true;
 }
 
+// Initialize a 3D transform type based on 1D transforms
 trans_type3D::trans_type3D(gen_trans_type *types_[3]) //st char name_[]) 
 {
   //name = new char[sizeof(name_)+1];
@@ -973,6 +966,7 @@ trans_type3D::trans_type3D(gen_trans_type *types_[3]) //st char name_[])
 
 }
 
+// Copy constructor
 trans_type3D::trans_type3D(const trans_type3D &tr) {
   //  name = new char[sizeof(tr.name)+1];
   //strcpy(name,tr.name);
@@ -991,7 +985,7 @@ trans_type3D::~trans_type3D()
   //delete [] name;
 }
 
-
+// Define a 1D transform type
 template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(const char *name_,long (*doplan_)(...),void (*exec_)(...),int isign) : gen_trans_type(name_,isign) {
   int prec2;
 
@@ -1082,5 +1076,3 @@ template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(cons
 
 }
 
-//  Testing GIT
-//  Testing GIT 2
