@@ -221,10 +221,10 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
       dt2 = rhs.dt2;
       name = new char[sizeof(rhs.name)];
       strcpy(name,rhs.name);
-      splan = rhs.splan;
-      dplan = rhs.dplan;
-      sexec = rhs.sexec;
-      dexec = rhs.dexec;
+      //    splan = rhs.splan;
+      //splan = rhs.dplan;
+      //sexec = rhs.sexec;
+      //dexec = rhs.dexec;
       isign = rhs.isign;
       is_set = rhs.is_set;
     }
@@ -287,6 +287,8 @@ template <class Type> class MPIplan : public stage {
   template <class Type1,class Type2> friend class trans_MPIplan;
   };
 
+ template <class Type1,class Type2>   class trans_MPIplan;
+
 template <class Type1,class Type2>   class transplan : public stage {
 
  protected:
@@ -321,7 +323,8 @@ template <class Type1,class Type2>   class transplan : public stage {
   void exec(char *in,char *out);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
-  template <class Type1,class Type2> friend class trans_MPIplan;
+  //template <class Type1,class Type2>  
+  friend class trans_MPIplan<Type1,Type2>;
 
   };
 
@@ -344,7 +347,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   ~trans_MPIplan();
   void exec(char *in,char *out);
 
-  template <class Type1,class Type2> friend class transplan;
+  template <class TypeIn1,class TypeOut1> friend class transplan;
   template <class Type> friend class MPIplan;
 
   };
@@ -461,7 +464,8 @@ template <class Type1,class Type2> class Plantype : public Plan
   }
   inline Plantype(const Plantype &rhs);
   inline ~Plantype();
-  template <class Type1,class Type2>  friend long transplan<class Type1,class Type2>::find_plan(trans_type1D<Type1,Type2> *type);
+  //template <class _TypeIn,class _TypeOut> 
+  friend long transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
  //  template <class Type1,class Type2> friend  long trans_MPIplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type);
 
 };
@@ -563,6 +567,16 @@ template class transform3D<double,complex_double>;
 template class transform3D<mycomplex,mycomplex>;
 template class transform3D<complex_double,complex_double>;
 
+/*
+template class trans_type1D<float,float>;
+template class trans_type1D<double,double>;
+template class trans_type1D<mycomplex,float>;
+template class trans_type1D<complex_double,double>;
+template class trans_type1D<float,mycomplex>;
+template class trans_type1D<double,complex_double>;
+template class trans_type1D<mycomplex,mycomplex>;
+template class trans_type1D<complex_double,complex_double>;
+*/
 template class transplan<float,float>;
 template class transplan<double,double>;
 template class transplan<mycomplex,float>;

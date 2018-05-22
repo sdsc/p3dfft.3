@@ -42,8 +42,10 @@ type, public, bind(C) :: grid
 end type grid 
 
 interface
-      integer(C_INT) function p3dfft_init_3Dtype(types) bind(C, name='p3dfft_init_3Dtype')
-      import
+
+      ! integer(C_INT) 
+      function p3dfft_init_3Dtype(types) bind(C, name='p3dfft_init_3Dtype')
+      import 
       integer(C_INT) :: types(3)
 
       end function
@@ -54,8 +56,9 @@ interface
       subroutine p3dfft_cleanup() bind(C,name="p3dfft_cleanup")
       end subroutine
 
-      integer(C_INT) function p3dfft_init_grid(ldims,glob_start,gdims,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
-        use iso_c_binding
+!      integer(C_INT) 
+      function p3dfft_init_grid(ldims,glob_start,gdims,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
+!        use iso_c_binding
       import 
 !      type(grid) :: gr
       integer(C_INT), dimension(3) :: gdims,pgrid,proc_order,mem_order,ldims,glob_start

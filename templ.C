@@ -591,7 +591,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     scheme = TRANS_OUT;
   else {
     printf("Error in reorder_trans: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
-    return;
+    return(-1);
   }
 
   switch(mc[0]) {

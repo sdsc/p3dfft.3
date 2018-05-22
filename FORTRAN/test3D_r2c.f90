@@ -287,7 +287,8 @@
         include 'mpif.h'
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision C(glob_start(1)+1:glob_start(1)+ldims(1),glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
+	double precision C(glob_start(1)+1:glob_start(1)+ldims(1), &
+     glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
 	double precision cdiff,ccdiff,sinyz,ans,prec,twopi,Nglob
 	integer x,y,z,ierr,myid
         double precision sinx(gdims(1))
@@ -343,7 +344,8 @@
         implicit none
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision A(glob_start(1)+1:glob_start(1)+ldims(1),glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
+	double precision A(glob_start(1)+1:glob_start(1)+ldims(1), &
+        glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
 	integer x,y,z
 	double precision sinyz,twopi
         double precision sinx(gdims(1))

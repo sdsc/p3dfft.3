@@ -341,7 +341,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   //  libplan plan;
 
   int imo1[3],imo2[3],d1[3],d2[3];
-  int scheme;
+  int scheme,nb13,nb31;
   
   int taskid;
   MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
@@ -454,9 +454,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 	
       case 2: //1,2,0
-	int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
 	//m = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);	
@@ -497,9 +497,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb13 < 1) nb13 = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
@@ -634,9 +634,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 
       case 2: //1,2,0
-	int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
 	//m = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
@@ -677,9 +677,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	int nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb13 < 1) nb13 = 1;
 	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
@@ -795,7 +795,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
   float *pin,*pout,*pin1,*pout1;
-  int imo1[3],imo2[3],d1[3],d2[3];
+  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31;
   int ds=sizeof(Type2) /4;
 
 
@@ -827,9 +827,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
       break;
 
     case 2: //1,2,0
-      int nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       for(k=0;k <d1[2];k+=nb31) {
 	k2 = min(k+nb31,d1[2]);
@@ -860,9 +860,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      int nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       for(k=0;k <d1[2];k+=nb31) {
 	k2 = min(k+nb31,d1[2]);
@@ -955,6 +955,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 // Input: in[d1[mo1[0]]][d1[mo1[1]]][d1[mo1[2]]]
 // dims2[mo2[i]] = d1[mo1[i]]
 // Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
+/*
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
@@ -977,7 +978,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  pout+= pad;//Cache shift
 	}
 	pin = tmp;
-	pout = out +k*d1[0]*d1[1];
+	pout = in +k*d1[0]*d1[1];
 	for(j=0;j < d1[1];j++)
 	  for(i=0;i < d1[0];i++) {	    
 	    *pout  = *pin++;
@@ -1007,7 +1008,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
 	    pin1 = tmp +kk*d1[0]*d1[1];
-	    pout1 = out + kk*dims2[1];
+	    pout1 = in + kk*dims2[1];
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1+i;
 	      pout = pout1+i*dims2[0]*dims2[1];
@@ -1049,7 +1050,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
 	    pin1 = tmp + kk*d1[0]*d1[1];
-	    pout1 = out + kk;
+	    pout1 = in + kk;
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1 + i;
 	      pout = pout1 + i * dims2[0]*dims2[1];
@@ -1087,7 +1088,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
 	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = out +kk +j*dims2[0]*dims2[1];
+	    pout1 = in +kk +j*dims2[0]*dims2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
@@ -1127,7 +1128,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
 	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = out +kk*dims2[0] +j*dims2[0]*dims2[1];
+	    pout1 = in +kk*dims2[0] +j*dims2[0]*dims2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
@@ -1145,6 +1146,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     break;
   }
 }
+*/
 
 // mo2[mc[i]] = mo1[i]
 void  rel_change(int mo1[3],int mo2[3],int mc[3])
@@ -1236,7 +1238,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   int j,istart[numtasks][3],iend[numtasks][3],isize[numtasks][3],d[3];
   int xstart,xend,ystart,yend,zstart,zend;
   int xsize,ysize,zsize;
-  int imo1[3],imo2[3];
+  int imo1[3],imo2[3],nb13,nb31,nb23,nb32;
 
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
@@ -1308,9 +1310,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	break;
 	
       case 2: //1,2,0
-	int nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
 	if(nb13 < 1) nb13 = 1;
 
 	for(i=0;i < numtasks;i++) {
@@ -1353,9 +1355,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	int nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
 	if(nb31 < 1) nb31 = 1;
-	int nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
 	if(nb13 < 1) nb13 = 1;
 	
 	for(i=0;i < numtasks;i++) {
@@ -1390,9 +1392,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	
 	break;
       case 0: //2,0,1
-	int nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
@@ -1437,9 +1439,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	int nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
@@ -1617,6 +1619,8 @@ void inv_mo(int mo[3],int imo[3])
     }
 }
 
+#ifdef MKL_BLAS
+
  template <class Type> void blas_trans(size_t rows,size_t cols,const double alpha,const Type *A,size_t lda,Type *B,size_t ldb)
  {
    if(typeid(Type) == type_float)      
@@ -1632,6 +1636,7 @@ void inv_mo(int mo[3],int imo[3])
      mkl_zomatcopy('r','t',rows,cols,alpha,(const complex_double *) A,lda,(complex_double *) B,ldb);
    }
  }
+#endif
 
 
 }
