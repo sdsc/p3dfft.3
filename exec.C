@@ -955,7 +955,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 // Input: in[d1[mo1[0]]][d1[mo1[1]]][d1[mo1[2]]]
 // dims2[mo2[i]] = d1[mo1[i]]
 // Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
-/*
+
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
@@ -991,7 +991,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     case 2: //1,2,0
       int nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type)*dims2[0]*d1[1]);
+      int nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
@@ -1008,13 +1008,13 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
 	    pin1 = tmp +kk*d1[0]*d1[1];
-	    pout1 = in + kk*dims2[1];
+	    pout1 = in + kk*d1[1];
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1+i;
-	      pout = pout1+i*dims2[0]*dims2[1];
+	      pout = pout1+i*d1[2]*d1[1];
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		pout += dims2[0]*dims2[1];
+		pout += d1[2]*d1[1];
 	      }
 	      pin1 += d1[0]+1;
 	      pout1++;
@@ -1033,7 +1033,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     case 1: //2,1,0
       int nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type)*d2[0]*d2[1]);
+      int nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
@@ -1053,13 +1053,13 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	    pout1 = in + kk;
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1 + i;
-	      pout = pout1 + i * dims2[0]*dims2[1];
+	      pout = pout1 + i * d1[1]*d1[2];
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		pout += d1[0]*dims2[1];
+		pout += d1[2]*d1[1];
 	      }
 	      pin1 += d1[0]+1;
-	      pout1 += dims2[0];
+	      pout1 += d1[2];
 	    }
 	  }
 	}
@@ -1071,7 +1071,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     case 0: //2,0,1
       int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
       if(nb23 < 1) nb23 = 1;
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
@@ -1088,16 +1088,16 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
 	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = in +kk +j*dims2[0]*dims2[1];
+	    pout1 = in +kk +j*d1[0]*d1[2];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(i=0;i < d1[0];i++) {
 		*pout = *pin++;
-		pout += dims2[1];
+		pout += d1[2];
 	      }
 	      pin1 += d1[0]+1;
-	      pout1 += dims2[0]*dims2[1];
+	      pout1 += d1[0]*d1[2];
 	    }
 	  }
 	}
@@ -1111,7 +1111,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     if(mc[1] == 2) {
       int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type)*dims2[0]*dims2[1]);
+      int nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
       if(nb23 < 1) nb23 = 1;
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pout = tmp;
@@ -1128,14 +1128,14 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
 	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = in +kk*dims2[0] +j*dims2[0]*dims2[1];
+	    pout1 = in +kk*d1[0] +j*d1[0]*d1[2];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(i=0;i < d1[0];i++) 
 		*pout++ = *pin++;
 	      pin += d1[0]+1;
-	      pout += dims2[0]*dims2[1];
+	      pout += d1[0]*d1[2];
 	    }
 	  }
 	}
@@ -1146,7 +1146,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
     break;
   }
 }
-*/
+
 
 // mo2[mc[i]] = mo1[i]
 void  rel_change(int mo1[3],int mo2[3],int mc[3])
@@ -1551,8 +1551,8 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   int *mo2 = mpiplan->mo2;
   int d[3],*tmpdims;
   int ds=sizeof(Type2)/4;
-  float *p1,*p0,*buf;
-  int imo1[3],imo2[3];
+  float *p1,*p0,*pz,*p2,*buf;
+  int imo1[3],imo2[3],xs,xe,ys,ye;
 
   nt = mpiplan->numtasks;
   int *SndStrt = mpiplan->SndStrt;
@@ -1586,7 +1586,9 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   // Optimize in the future
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
 #endif
+
   trplan->exec(src,(char *) buf);
+
 #ifdef DEBUG
   sprintf(str,"pack_send_trans.out%d",cnt_pack++);
   write_buf<Type2>((Type2 *) buf,str,tmpdims,imo1);
@@ -1594,16 +1596,23 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   
   for(i=0;i<3;i++)
     d[i] = dims1[imo1[i]];
-  
-  for(i=0;i < nt;i++) {
+
+for(i=0;i < nt;i++) {
+    xs = istart[i][imo1[0]]*ds;
+    xe = iend[i][imo1[0]]*ds;
+    ys = istart[i][imo1[1]];
+    ye = iend[i][imo1[1]];
     p1 = (float *) sendbuf + *(SndStrt+i);
-    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
-      for(y=istart[i][imo1[1]];y< iend[i][imo1[1]];y++) {
-	p0 = (float *) buf +ds*(d[0]*(z*d[1]+y) +istart[i][imo1[0]]);
-	for(x=istart[i][imo1[0]]*ds;x < ds*iend[i][imo1[0]];x++)
-	  *p1++ = *p0++;;
+    p0 = buf + ds * istart[i][imo1[0]];
+    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++) {
+      pz = p0 + ds*d[0]*d[1]*z;
+      for(y=ys;y< ye;y++) {
+	p2 = pz +ds*d[0]*y;
+	for(x=xs;x < xe;x++)
+	  *p1++ = *p2++;;
       }
-  }
+    }
+}
 
   if(!trplan->inplace) 
     delete [] buf;
