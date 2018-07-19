@@ -193,7 +193,8 @@ main(int argc,char **argv)
   trans_f.exec(IN,OUT,0);
 
   double t=0.;
-  Nglob = gdims[0]*gdims[1]*gdims[2];
+  Nglob = gdims[0]*gdims[1];
+  Nglob *= gdims[2];
 
   // timing loop
 
@@ -293,7 +294,8 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart, int *mo)
       if(mo[i] == j)
 	imo[j] = i;
 
-  Nglob = gdims[0]*gdims[1]*gdims[2];
+  Nglob = gdims[0]*gdims[1];
+  Nglob = Nglob *gdims[2];
   p = A;
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
