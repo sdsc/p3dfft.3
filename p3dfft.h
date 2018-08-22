@@ -111,6 +111,7 @@ void cleanup();
 
 const int CACHEPAD=32768;
 const int CACHE_BL=32768;
+ const int VECBLOCK=128;
 
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
@@ -658,11 +659,12 @@ extern "C" {
 void p3dfft_setup();
 void p3dfft_cleanup();
   Type3D p3dfft_init_3Dtype(int[3]); //,char *);
-  int p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
+  void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
+  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,int *);
   int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int);
-Plan3D p3dfft_plan_3Dtrans_f(int *,int *,Type3D *,int *);
+  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,int *);
 Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int);
-int p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *);
+  void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *);
   int find_grid(int [3],int [3],int [3],int [3],MPI_Comm);
 Grid *p3dfft_init_grid(int[3],int[3],int[3],int[3],MPI_Comm);
   //void p3dfft_free_grid_f(int *gr);
