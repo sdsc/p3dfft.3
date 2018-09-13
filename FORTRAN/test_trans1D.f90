@@ -200,16 +200,16 @@
 
 ! Initialize initial and final grids, based on the above information
 
-      grid1 = p3dfft_init_grid(ldims, glob_start,gdims,pgrid,proc_order,mem_order,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,pgrid,proc_order,mem_order,MPI_COMM_WORLD)
 
-      grid2 = p3dfft_init_grid(ldims2,glob_start2,gdims2,pgrid,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,pgrid,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      trans_f = p3dfft_plan_1Dtrans_f(grid1,grid2,type_ids1,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,0)
 
 ! Now set up the backward transform
-      trans_b = p3dfft_plan_1Dtrans_f(grid2,grid1,type_ids2,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,0)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 

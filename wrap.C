@@ -61,6 +61,15 @@ void p3dfft_cleanup() {
   return(count);
 }
 
+  void p3dfft_init_3Dtype_f(int *type,int types[3]) //,char *name)
+{
+  trans_type3D tp = trans_type3D(types);
+  int count = types3D.size();
+  types3D.push_back(tp);
+  *type = count;
+  //  return(count);
+}
+
 
 int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d,int inplace)
 {
@@ -104,7 +113,7 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d,int inplace)
 
   }
 
-int p3dfft_plan_1Dtrans_f(int *Fgr1,int *Fgr2,int *type_ID,int *d,int *inplace)
+  void p3dfft_plan_1Dtrans_f(int *plan,int *Fgr1,int *Fgr2,int *type_ID,int *d,int *inplace)
 {
   grid *gr1 = &stored_grids[*Fgr1];
   grid *gr2 = &stored_grids[*Fgr2];
@@ -139,11 +148,12 @@ int p3dfft_plan_1Dtrans_f(int *Fgr1,int *Fgr2,int *type_ID,int *d,int *inplace)
 
   stored_trans1D.push_back(tr);
   //  delete gr1,gr2;
-  return count;
+  *plan = count;
+  //  return count;
 
   }
 
-Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp,int inplace){
+  Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp,int inplace){
 
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: type3D=%d.  initiating gr1\n",tp);
@@ -212,7 +222,7 @@ Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp,int inplace){
 
 }
 
-Plan3D p3dfft_plan_3Dtrans_f(int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
+  void p3dfft_plan_3Dtrans_f(Plan3D *plan,int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
 
   /* 
 #ifdef DEBUG
@@ -270,7 +280,8 @@ Plan3D p3dfft_plan_3Dtrans_f(int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
 
   stored_trans3D.push_back(tr3D);
   //  delete gr1,gr2;
-  return count;
+  *plan = count;
+  //return count;
     
   /*
   gen_trans_type *tp1D[3];
@@ -286,11 +297,11 @@ Plan3D p3dfft_plan_3Dtrans_f(int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
 }
 
 
-  int p3dfft_init_grid_f(int *ldims,int *glob_start,int *gdims,int *pgrid,int *proc_order,int *mem_order,int *mpicomm) {
+  void p3dfft_init_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *pgrid,int *proc_order,int *mem_order,int *mpicomm) {
     
     int num=find_grid(gdims,pgrid,proc_order,mem_order,MPI_Comm_f2c(*mpicomm));
     if(num >= 0) 
-      return(num);
+      *mygrid = num;
     else {
 
     grid *gr1;
@@ -299,7 +310,8 @@ Plan3D p3dfft_plan_3Dtrans_f(int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
   memcpy(glob_start,gr1->glob_start,3*sizeof(int));
   num = stored_grids.size();
   stored_grids.push_back(*gr1);
-  return(num);
+  *mygrid = num;
+//  return(num);
     }
   /*
   memcpy(&gr->mem_order,mem_order,3*sizeof(int));

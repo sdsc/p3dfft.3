@@ -30,6 +30,7 @@ void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
 void normalize(double *,long int,int *);
 double check_res(double*,double *,int *);
+void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
 main(int argc,char **argv)
 {
@@ -52,7 +53,7 @@ main(int argc,char **argv)
   double *OUT;
   int type_ids1[3];
   int type_ids2[3];
-  Type3D type_rcc,type_ccr;
+  Type3D type_forward,type_backward;
   double t=0.;
   double *FIN;
   double mydiff;
@@ -132,18 +133,18 @@ main(int argc,char **argv)
 
   //Set up 2 transform types for 3D transforms
 
-  type_ids1[0] = P3DFFT_R2CFFT_D;
+  type_ids1[0] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[1] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[2] = P3DFFT_CFFT_FORWARD_D;
 
-  type_ids2[0] = P3DFFT_C2RFFT_D;
+  type_ids2[0] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[1] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[2] = P3DFFT_CFFT_BACKWARD_D;
 
   //Now initialize 3D transforms (forward and backward) with these types
 
-  type_rcc = p3dfft_init_3Dtype(type_ids1);
-  type_ccr = p3dfft_init_3Dtype(type_ids2);
+  type_forward = p3dfft_init_3Dtype(type_ids1);
+  type_backward = p3dfft_init_3Dtype(type_ids2);
 
   //Set up global dimensions of the grid
 
@@ -173,7 +174,6 @@ main(int argc,char **argv)
 
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
-  gdims2[0] = gdims2[0]/2+1;
 
   //Initialize initial and final grids, based on the above information
 
@@ -182,13 +182,14 @@ main(int argc,char **argv)
   grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,1);
+  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_forward,1);
 
   //Now set up the backward transform
 
-  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,1);
+  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_backward,1);
 
   //Save the local array dimensions. 
+  // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
 
   for(i=0;i<3;i++) {
     glob_start[mem_order[i]] = grid1->glob_start[i];
@@ -198,15 +199,16 @@ main(int argc,char **argv)
   size1 = ldims[0]*ldims[1]*ldims[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
-  IN=(double *) malloc(sizeof(double)*size1);
-  FIN= (double *) malloc(sizeof(double) *size1);
+  IN=(double *) malloc(sizeof(double)*size1*2);
+  FIN= (double *) malloc(sizeof(double) *size1*2);
 
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
-
   init_wave(IN,gdims,ldims,glob_start);
 
+
   //Determine local array dimensions and allocate fourier space, complex-valued out array
+
 
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2->glob_start[i];
@@ -300,8 +302,10 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
    for(z=0;z < ldims[2];z++)
      for(y=0;y < ldims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++)
+       for(x=0;x < ldims[0];x++) {
           *p++ = sinx[x]*sinyz;
+	  *p++ = 0.0;
+       }
      }
 
    free(sinx); free(siny); free(sinz);
@@ -329,21 +333,25 @@ void print_res(double *A,int *gdims,int *ldims,int *gstart)
 double check_res(double *A,double *B,int *ldims)
 {
   int x,y,z;
-  double *p1,*p2,mydiff;
+  double *p1,*p2,d,mydiff;
   int imo[3],i,j;
   p1 = A;
   p2 = B;
   
+
   mydiff = 0.;
   for(z=0;z < ldims[2];z++)
     for(y=0;y < ldims[1];y++)
       for(x=0;x < ldims[0];x++) {
-	if(fabs(*p1 - *p2) > mydiff)
-	  mydiff = fabs(*p1-*p2);
+	d = (*p1-*p2)*(*p1-*p2);
+	p1++; p2++;
+	d += (*p1-*p2)*(*p1-*p2);
+	if(d > mydiff)
+	  mydiff = d;
 	p1++;
 	p2++;
       }
-  return(mydiff);
+  return(sqrt(mydiff));
 }
 
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
@@ -359,7 +367,7 @@ void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
   for(k=0;k<sz[mo[2]];k++)
     for(j=0;j<sz[mo[1]];j++)
       for(i=0;i<sz[mo[0]];i++) {
-	if(abs(*p) > 1.e-7) {
+	if(fabs(*p) > 1.e-7) {
 	  fprintf(fp,"(%d %d %d) %lg\n",i,j,k,*p);
 	}
 	p++;

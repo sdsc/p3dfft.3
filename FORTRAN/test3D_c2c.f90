@@ -1,7 +1,7 @@
 ! This sample program illustrates the
 ! use of P3DFFT++ library for highly scalable parallel 3D FFT.
 !
-! This program initializes a 3D array with a 3D sine wave, then
+! This program initializes a 3D complex array with a 3D sine wave, then
 ! performs forward transform, backward transform, and checks that
 ! the results are correct, namely the same as in the start except
 ! for a normalization factor. It can be used both as a correctness
@@ -32,7 +32,7 @@
       integer fstatus
       logical flg_inplace
 
-      double precision, dimension(:,:,:),  allocatable :: BEG,C
+      complex(8), dimension(:,:,:),  allocatable :: BEG,C
       complex(8), dimension(:,:,:),  allocatable :: AEND
       double precision pi,twopi,sinyz,diff,cdiff,ccdiff,ans
 
@@ -47,7 +47,7 @@
       integer iproc,jproc,nxc,nyc,nzc
       logical iex
       integer type_ids1(3),type_ids2(3),trans_f,trans_b,pdims(2)
-      integer type_rcc,type_ccr,glob_start(3),glob_start2(3)
+      integer type_forward,type_backward,glob_start(3),glob_start2(3)
       integer gstart(3),gstart2(3)
       integer(8) size1,size2
       integer(C_INT) ldims(3),ldims2(3),imo(3),mem_order(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims(3),gdims2(3)
@@ -131,19 +131,19 @@
 
 ! Set up 2 transform types for 3D transforms
 
-      type_ids1(1) = P3DFFT_R2CFFT_D;
+      type_ids1(1) = P3DFFT_CFFT_FORWARD_D;
       type_ids1(2) = P3DFFT_CFFT_FORWARD_D;
       type_ids1(3) = P3DFFT_CFFT_FORWARD_D;
 
-      type_ids2(1) = P3DFFT_C2RFFT_D;
+      type_ids2(1) = P3DFFT_CFFT_BACKWARD_D;
       type_ids2(2) = P3DFFT_CFFT_BACKWARD_D;
       type_ids2(3) = P3DFFT_CFFT_BACKWARD_D;
 
 ! Now initialize 3D transforms (forward and backward) with these types
-      call p3dfft_init_3Dtype(type_rcc,type_ids1)
-      call p3dfft_init_3Dtype(type_ccr,type_ids2)
+      call p3dfft_init_3Dtype(type_forward,type_ids1)
+      call p3dfft_init_3Dtype(type_backward,type_ids2)
 
-      print *,'type_rcc=',type_rcc,', type_ccr=',type_ccr
+      print *,'type_forward=',type_forward,', type_backward=',type_backward
 
 ! Set up global dimensions of the grid
 
@@ -151,14 +151,14 @@
       gdims(2)=ny
       gdims(3)=nz
 
-! Set up processor order and memory ordering, as well as the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
+! Set up processor order and memory ordering, as well as the final global grid dimensions 
 
       do i=1,3
          proc_order(i) = i-1
          mem_order(i) = i-1
          gdims2(i) = gdims(i)
       enddo
-      gdims2(1) = gdims2(1)/2+1
+
 
 ! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
 
@@ -190,10 +190,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_rcc,1)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,1)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_ccr,1)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,1)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -220,7 +220,7 @@
       call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
-      Nglob = nx * ny
+      Nglob = dble(nx * ny)
       Nglob = Nglob * nz
       factor = 1.0d0/Nglob
 
@@ -293,9 +293,9 @@
         include 'mpif.h'
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision C(glob_start(1)+1:glob_start(1)+ldims(1), &
+	complex(8) C(glob_start(1)+1:glob_start(1)+ldims(1), &
      glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
-	double precision cdiff,ccdiff,sinyz,ans,prec,twopi,Nglob
+	double precision cdiff,ccdiff,sinyz,ans,prec,twopi,Nglob,d
 	integer x,y,z,ierr,myid
         double precision sinx(gdims(1))
         double precision siny(gdims(2))
@@ -322,11 +322,13 @@
             sinyz=siny(y)*sinz(z)
             do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
             ans=sinx(x)*sinyz
-            if(cdiff .lt. abs(C(x,y,z)-ans)) then
-               cdiff = abs(C(x,y,z)-ans)
+            d = abs(C(x,y,z)-cmplx(ans,0.0d0))
+            if(cdiff .lt. d) then
+               cdiff = d
 !               print *,'x,y,z,cdiff=',x,y,z,cdiff
             endif
  20   continue
+
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)
 
@@ -350,7 +352,7 @@
         implicit none
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision A(glob_start(1)+1:glob_start(1)+ldims(1), &
+	complex(8) A(glob_start(1)+1:glob_start(1)+ldims(1), &
         glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
 	integer x,y,z
 	double precision sinyz,twopi
@@ -376,7 +378,7 @@
          do y=glob_start(2)+1,glob_start(2)+ldims(2)
             sinyz=siny(y)*sinz(z)
             do x=glob_start(1)+1,glob_start(1)+ldims(1)
-               A(x,y,z)=sinx(x)*sinyz
+               A(x,y,z)=cmplx(sinx(x)*sinyz,0.0d0)
             enddo
          enddo
       enddo

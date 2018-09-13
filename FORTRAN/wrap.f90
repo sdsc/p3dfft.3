@@ -29,7 +29,7 @@
       double precision, TARGET :: OUT(1,1,*)
       integer OW,plan
 
-      call p3dfft_exec_1Dtrans_double_f(plan,IN,OUT)
+      call p3dfft_exec_1Dtrans_double(plan,IN,OUT)
 
       return
       end subroutine
@@ -42,7 +42,7 @@
       real, TARGET :: OUT(1,1,*)
       integer OW,plan
 
-      call p3dfft_exec_1Dtrans_single_f(plan,IN,OUT)
+      call p3dfft_exec_1Dtrans_single(plan,IN,OUT)
 
       return
       end subroutine
@@ -54,7 +54,7 @@
       double precision, TARGET :: OUT(1,1,*)
       integer OW,plan
 
-      call p3dfft_exec_3Dtrans_double_f(plan,IN,OUT,OW)
+      call p3dfft_exec_3Dtrans_double(plan,IN,OUT,OW)
 
       return
       end subroutine
@@ -67,7 +67,7 @@
       real, TARGET :: OUT(1,1,*)
       integer OW,plan
 
-      call p3dfft_exec_3Dtrans_single_f(plan,IN,OUT,OW)
+      call p3dfft_exec_3Dtrans_single(plan,IN,OUT,OW)
 
       return
       end subroutine

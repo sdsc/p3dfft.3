@@ -44,11 +44,12 @@ end type grid
 interface
 
       ! integer(C_INT) 
-      function p3dfft_init_3Dtype(types) bind(C, name='p3dfft_init_3Dtype')
+      subroutine p3dfft_init_3Dtype(mytype,types) bind(C, name='p3dfft_init_3Dtype_f')
       import 
+      integer(C_INT) :: mytype
       integer(C_INT) :: types(3)
 
-      end function
+      end subroutine
 
       subroutine p3dfft_setup() bind(C,name="p3dfft_setup")
       end subroutine
@@ -57,13 +58,13 @@ interface
       end subroutine
 
 !      integer(C_INT) 
-      function p3dfft_init_grid(ldims,glob_start,gdims,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
+      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
 !        use iso_c_binding
       import 
 !      type(grid) :: gr
       integer(C_INT), dimension(3) :: gdims,pgrid,proc_order,mem_order,ldims,glob_start
-      integer(C_INT) :: mpicomm
-    end function p3dfft_init_grid
+      integer(C_INT) :: mygrid,mpicomm
+    end subroutine p3dfft_init_grid
 
 !      subroutine p3dfft_free_grid(gr) bind(C,name='p3dfft_free_grid_f')
 !      import
@@ -75,43 +76,43 @@ interface
       integer(C_INT) :: in(3),out(3)
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_double_f(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_double_f')
+      subroutine p3dfft_exec_1Dtrans_double(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_double_f')
       import
       integer(C_INT) plan
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_single_f(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_single_f')
+      subroutine p3dfft_exec_1Dtrans_single(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_single_f')
       import
       integer(C_INT) plan
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_double_f(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
+      subroutine p3dfft_exec_3Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
       import
       integer(C_INT) plan,OW;
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_single_f(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
+      subroutine p3dfft_exec_3Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
       import
       integer(C_INT) plan,OW;
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      integer(C_INT) function p3dfft_plan_1Dtrans_f(grid1,grid2,trans_ID,dim,inplace) bind(C, name='p3dfft_plan_1Dtrans_f')
+      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim,inplace) bind(C, name='p3dfft_plan_1Dtrans_f')
       import
-      integer(C_INT) :: grid1,grid2,dim
+      integer(C_INT) :: myplan,grid1,grid2,dim
       integer(C_INT) :: trans_ID,inplace
 
-      end function
+      end subroutine
 
-      integer(C_INT) function p3dfft_plan_3Dtrans_f(grid1,grid2,trans_ID,inplace) bind(C, name='p3dfft_plan_3Dtrans_f')
+      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID,inplace) bind(C, name='p3dfft_plan_3Dtrans_f')
       import
-      integer(C_INT) :: grid1,grid2
+      integer(C_INT) :: myplan,grid1,grid2
       integer(C_INT) :: trans_ID,inplace
 
-      end function
+      end subroutine
 end interface
 
 end module

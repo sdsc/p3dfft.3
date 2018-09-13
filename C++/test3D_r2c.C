@@ -29,9 +29,9 @@
 using namespace p3dfft;
 
   void init_wave(double *,int[3],int *,int[3]);
-void print_res(complex_double *,int *,int *,int *, int *);
+void print_res(complex_double *,int *,int *,int *);
   void normalize(complex_double *,long int,int *);
-double check_res(double*,double *,int *, int *);
+double check_res(double*,double *,int *);
 
 main(int argc,char **argv)
 {
@@ -163,8 +163,13 @@ main(int argc,char **argv)
   grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   // Save the local grid dimensions and the size o physical space arrays
+  
+  int ldims[3],glob_start[3];
+  for(i=0;i<3;i++) {
+    glob_start[mem_order[i]] = grid1.glob_start[i];
+    ldims[mem_order[i]] = grid1.ldims[i];
+  }
 
-  int *ldims = &grid1.ldims[0];
   int size1 = ldims[0]*ldims[1]*ldims[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
@@ -174,12 +179,17 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,ldims,grid1.glob_start);
+  init_wave(IN,gdims,ldims,glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-  ldims = &grid2.ldims[0];
-  long int size2 = ldims[0]*ldims[1]*ldims[2];
+  int ldims2[3],glob_start2[3];
+  for(i=0;i<3;i++) {
+    glob_start2[mem_order2[i]] = grid2.glob_start[i];
+    ldims2[mem_order2[i]] = grid2.ldims[i];
+  }
+
+  long int size2 = ldims2[0]*ldims2[1]*ldims2[2];
   //  cout << "allocating OUT" << endl;
   complex_double *OUT=new complex_double[size2];
   
@@ -209,7 +219,7 @@ main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,grid2.ldims,grid2.glob_start,mem_order2);
+    print_res(OUT,gdims,ldims2,glob_start2);
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
@@ -217,7 +227,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  double mydiff = check_res(IN,FIN,grid1.ldims,mem_order);
+  double mydiff = check_res(IN,FIN,ldims);
   double diff = 0.0;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -289,31 +299,35 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
    delete [] sinx,siny,sinz;
 }
 
-void print_res(complex_double *A,int *gdims,int *ldims,int *gstart, int *mo)
+void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
 {
   int x,y,z;
   complex_double *p;
   double Nglob;
   int imo[3],i,j;
   
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(mo[i] == j)
-	imo[j] = i;
 
   Nglob = gdims[0]*gdims[1];
   Nglob = Nglob *gdims[2];
   p = A;
+<<<<<<< HEAD
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
       for(x=0;x < ldims[imo[0]];x++) {
 	if(std::abs(*p) > Nglob *1.25e-4) 
 	  printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],p->real(),p->imag());
+=======
+  for(z=0;z < ldims[2];z++)
+    for(y=0;y < ldims[1];y++)
+      for(x=0;x < ldims[0];x++) {
+	if(abs(*p) > Nglob *1.25e-4) 
+	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
+>>>>>>> 7fd394972a71fd92f924b9003dbab0b20dbdef1b
 	p++;
       }
 }
 
-double check_res(double *A,double *B,int *ldims, int *mo)
+double check_res(double *A,double *B,int *ldims)
 {
   int x,y,z;
   double *p1,*p2,mydiff;
@@ -322,15 +336,10 @@ double check_res(double *A,double *B,int *ldims, int *mo)
 
   int imo[3],i,j;
   
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(mo[i] == j)
-	imo[j] = i;
-
   mydiff = 0.;
-  for(z=0;z < ldims[imo[2]];z++)
-    for(y=0;y < ldims[imo[1]];y++)
-      for(x=0;x < ldims[imo[0]];x++) {
+  for(z=0;z < ldims[2];z++)
+    for(y=0;y < ldims[1];y++)
+      for(x=0;x < ldims[0];x++) {
 	if(abs(*p1 - *p2) > mydiff)
 	  mydiff = abs(*p1-*p2);
 	p1++;
