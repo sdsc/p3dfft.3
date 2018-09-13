@@ -198,6 +198,10 @@ main(int argc,char **argv)
 
   // timing loop
 
+#ifdef TIMERS
+  timers.init();
+#endif
+
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
     trans_f.exec(IN,OUT,0);  // Execute forward real-to-complex FFT
@@ -232,7 +236,10 @@ main(int argc,char **argv)
   MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0)
-    printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
+    printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
+#ifdef TIMERS
+  timers.print(MPI_COMM_WORLD);
+#endif
 
   delete [] IN,OUT,FIN;
 
@@ -300,7 +307,7 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart, int *mo)
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
       for(x=0;x < ldims[imo[0]];x++) {
-	if(abs(*p) > Nglob *1.25e-4) 
+	if(std::abs(*p) > Nglob *1.25e-4) 
 	  printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],p->real(),p->imag());
 	p++;
       }

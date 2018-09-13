@@ -1,18 +1,19 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O0 -g -DFFTW 
+CPPFLAGS = -DFFTW -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -DTIMERS # -DMKL_BLAS 
+# #-qopt-report
 CC = mpicc
 FF = mpif90
 #FFLAGS = -O3 
 AR = ar
 ARFLAGS = -v -r -u
-FFT_LIB = -L$(HOME)/fftw-3.3.5/lib -lfftw3 -lfftw3f
+FFT_LIB = -L$(TACC_FFTW3_LIB) -lfftw3 -lfftw3f
 LDFLAGS= $(FFT_LIB) -lm
 # For FFTW use path to the installed FFTW library:
 # -L/usr/local/apps/fftw301s/lib -lfftw3f 
 
-INCL = -I$(FFTWHOME)/include 
+INCL = -I$(TACC_FFTW3_INC)
 # For FFTW add include file location, for example: 
 # INCL = -I/usr/local/apps/fftw312s/include 
 
@@ -29,8 +30,8 @@ all: lib samples
 lib: $(FFT3DLIB)
 	$(AR) $(ARFLAGS) $(P3DFFT_LIB) $(FFT3DLIB)	
 samples: lib
-	cd C++; make
 	cd C; make
+	cd C++; make
 	cd FORTRAN; make
 test1D: $(FFT3DLIB) test1D.o 
 	$(CPP) test1D.o -o test1D -L. -lp3dfft.3 $(LDFLAGS) 

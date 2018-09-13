@@ -42,6 +42,7 @@ vector<stage *> stored_trans1D; // Initialized and planned 1D transforms
 vector<gen_transform3D *> stored_trans3D; // Initialized and planned 3D transforms
 vector<grid> stored_grids; // Defined grids (used in Fortran and C wrappers)
 
+
   //  extern "C" {
 int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
@@ -329,7 +330,81 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
   types1D.push_back(p);
   */
 
+
 }
+
+#ifdef TIMERS
+
+void timer::init()
+{
+
+  reorder_trans = 0.0;
+  reorder_out = 0.0;
+  reorder_in = 0.0;
+  trans_exec = 0.0;
+  packsend = 0.0;
+  packsend_trans = 0.0;
+  unpackrecv = 0.0;
+  alltoall = 0.0;
+
+}
+
+void timer::print(MPI_Comm comm)
+{
+
+  timer gtimers_avg,gtimers_min,gtimers_max;
+  gtimers_avg.init();
+  gtimers_min.init();
+  gtimers_max.init();
+  int nproc,taskid;
+  MPI_Comm_rank(comm,&taskid);
+  MPI_Comm_size(comm,&nproc);
+
+  MPI_Reduce(&reorder_trans,&gtimers_avg.reorder_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_trans,&gtimers_min.reorder_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_trans,&gtimers_max.reorder_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
+
+  MPI_Reduce(&reorder_out,&gtimers_avg.reorder_out,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_out,&gtimers_min.reorder_out,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_out,&gtimers_max.reorder_out,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_avg.reorder_in,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_min.reorder_in,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_max.reorder_in,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_avg.trans_exec,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_min.trans_exec,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_max.trans_exec,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_avg.packsend_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_min.packsend_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_max.packsend_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&packsend,&gtimers_avg.packsend,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&packsend,&gtimers_min.packsend,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&packsend,&gtimers_max.packsend,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_avg.unpackrecv,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_min.unpackrecv,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_max.unpackrecv,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_avg.alltoall,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_min.alltoall,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_max.alltoall,1,MPI_DOUBLE,MPI_MAX,0,comm);
+
+  if(taskid == 0) {
+    printf("TIMERS (avg/min/max): \nReorder_trans (%lf %lf %lf)\n",gtimers_avg.reorder_trans/nproc,gtimers_min.reorder_trans,gtimers_max.reorder_trans);
+    printf("Reorder_out   (%lf %lf %lf)\n",gtimers_avg.reorder_out/nproc,gtimers_min.reorder_out,gtimers_max.reorder_out);
+    printf("Reorder_in    (%lf %lf %lf)\n",gtimers_avg.reorder_in/nproc,gtimers_min.reorder_in,gtimers_max.reorder_in);
+    printf("Trans_exec    (%lf %lf %lf)\n",gtimers_avg.trans_exec/nproc,gtimers_min.trans_exec,gtimers_max.trans_exec);
+    printf("Packsend      (%lf %lf %lf)\n",gtimers_avg.packsend/nproc,gtimers_min.packsend,gtimers_max.packsend);
+    printf("Packsend_trans(%lf %lf %lf)\n",gtimers_avg.packsend_trans/nproc,gtimers_min.packsend_trans,gtimers_max.packsend_trans);
+    printf("Unpackrecv    (%lf %lf %lf)\n",gtimers_avg.unpackrecv/nproc,gtimers_min.unpackrecv,gtimers_max.unpackrecv);
+    printf("Alltoall      (%lf %lf %lf)\n",gtimers_avg.alltoall/nproc,gtimers_min.alltoall,gtimers_max.alltoall);
+
+
+  }
+
+}
+
+  extern  timer timers;
+
+#endif
+
 
 
 void cleanup()
@@ -367,7 +442,9 @@ void cleanup()
     delete *it3;
     it3 = stored_trans3D.erase(it3);
   }
+
     
+
 }
 
   

@@ -35,7 +35,13 @@
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
 #endif
 
+extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
 
+//#define Grid int
+#define Type3D int
+#define Type1D int
+#define Plan3D int
+#define Plan1D int
 
 #ifdef __cplusplus
 
@@ -111,6 +117,7 @@ void cleanup();
 
 const int CACHEPAD=32768;
 const int CACHE_BL=32768;
+ const int VECBLOCK=128;
 
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
@@ -558,6 +565,7 @@ extern vector<grid> stored_grids;
 
 extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
+
 template class transform3D<float,float>;
 template class transform3D<double,double>;
 template class transform3D<mycomplex,float>;
@@ -586,19 +594,42 @@ template class transplan<double,complex_double>;
 template class transplan<mycomplex,mycomplex>;
 template class transplan<complex_double,complex_double>;
 
-}
+#ifdef TIMERS
+  class timer {
+  protected:
+    double reorder_trans;
+    double reorder_out;
+    double reorder_in;
+    double trans_exec;
+    double packsend;
+    double packsend_trans;
+    double unpackrecv;
+    double alltoall;
+  public:
+    void init();
+    void print(MPI_Comm);
 
+    template<class Type1,class Type2> friend  class transform3D;
+    template<class Type1,class Type2> friend  class transplan;
+    //    friend void transplan<Type1,Type2>::exec(char *,char *);
+    template<class Type1,class Type2> friend  class trans_MPIplan;
+    template<class Type1> friend class  MPIplan;
+    //    friend void transform3D.exec;
+    //    friend void transplan::exec(char *,char *);
+    //friend void trans_MPIplan.exec;
+    //friend void MPIplan.exec;
+    //friend class stage;
+
+  };
+
+  extern  timer timers;
+
+  //Timers
 #endif
 
-extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
+  // Namespace
+}
 
-//#define Grid int
-#define Type3D int
-#define Type1D int
-#define Plan3D int
-#define Plan1D int
-
-#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -644,6 +675,7 @@ int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. row
   int mpi_comm_glob; // Global MPi communicator we are starting from
 } ;
 
+
 #ifdef __cplusplus
 }
 #endif
@@ -658,11 +690,12 @@ extern "C" {
 void p3dfft_setup();
 void p3dfft_cleanup();
   Type3D p3dfft_init_3Dtype(int[3]); //,char *);
-  int p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
+  void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
+  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,int *);
   int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int);
-Plan3D p3dfft_plan_3Dtrans_f(int *,int *,Type3D *,int *);
+  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,int *);
 Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int);
-int p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *);
+  void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *);
   int find_grid(int [3],int [3],int [3],int [3],MPI_Comm);
 Grid *p3dfft_init_grid(int[3],int[3],int[3],int[3],MPI_Comm);
   //void p3dfft_free_grid_f(int *gr);

@@ -1,7 +1,7 @@
 #SHELL=/bin/csh
 
 CPP = mpicxx
-CPPFLAGS = -O3 -DFFTW 
+CPPFLAGS = -O3 -DFFTW -DTIMERS -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
 CC = mpicxx
 CFLAGS = -O3 -DFFTW
 FF = mpif90
@@ -28,7 +28,7 @@ P3DFFT_LIB = libp3dfft.3.a
 all: test3D test_transplan
 
 test3D: test3D_r2c.o 
-	$(CPP) test3D_r2c.o -o test3D_r2c_cpp -L.. -lp3dfft.3 $(LDFLAGS) 
+	$(CPP) test3D_r2c.o -o test3D_r2c_cpp.ipo -L.. -lp3dfft.3 $(LDFLAGS) 
 test3D_r2c.o: test3D_r2c.C ../p3dfft.h 
 
 test_transplan: test_transplan.o 
@@ -47,4 +47,4 @@ test_transplan.o: test_transplan.C ../p3dfft.h
 .f.o:
 	$(FF) -c $(FFLAGS) $(INCL) $<
 clean:
-	/bin/rm *.o test1D_cpp test2D_cpp
+	/bin/rm *.o 

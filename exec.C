@@ -28,6 +28,10 @@
 
 namespace p3dfft {
 
+#ifdef TIMERS
+  timer timers;
+#endif
+
 static int cnt_pack=0;
 static int cnt_trans=0;
 
@@ -41,7 +45,7 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
   int next,curr,dt_1,dt_2,nextvar,stage_cnt=0;
 
   int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
+  MPI_Comm_rank(grid1->mpi_comm_glob,&taskid);
 
 
   next = 1; curr = 0;
@@ -148,7 +152,9 @@ template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in
   if(nvar > 0)
     delete [] var[1-nextvar];
 
+
 }
+
 
 void stage::myexec(char *in,char *out)
 {
@@ -293,10 +299,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   if(mo1[L] == 0 || mo2[L] == 0) {
 
     if(!arcmp(mo1,mo2,3)) {
+#ifdef TIMERS
+      double t1=MPI_Wtime();
+#endif
       (*(trans_type->exec))(lib_plan,in,out);
+#ifdef TIMERS
+      timers.trans_exec += MPI_Wtime() -t1;
+#endif
     }
     else {
+#ifdef TIMERS
+      double t1=MPI_Wtime();
+#endif
       reorder_trans(in,out,mo1,mo2,dims1);   
+#ifdef TIMERS
+      timers.reorder_trans += MPI_Wtime() -t1;
+#endif
     }	
   }
 
@@ -305,13 +323,25 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   //    Try to organize so out of place transpose is used, if possible
     //    if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
     buf = new Type2[dims2[0]*dims2[1]*dims2[2]];
+#ifdef TIMERS
+      double t1=MPI_Wtime();
+#endif
     reorder_trans(in,buf,mo1,mocurr,dims1);   
+#ifdef TIMERS
+      timers.reorder_trans += MPI_Wtime() -t1;
+#endif
     /*
     int currdims[3],i,tmpdims[3];
     for(i=0; i < 3;i++) 
       currdims[mocurr[i]] = dims2[mo2[i]];
     */
+#ifdef TIMERS
+      t1=MPI_Wtime();
+#endif
     reorder_out(buf,out,mocurr,mo2,dims2);
+#ifdef TIMERS
+      timers.reorder_out += MPI_Wtime() -t1;
+#endif
     delete [] buf;
   }
 }
@@ -1183,11 +1213,30 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
   in = (Type *) in_;
   out = (Type *) out_;
   Type *sendbuf = new Type[dims1[0]*dims1[1]*dims1[2]];
+#ifdef TIMERS
+  double t1=MPI_Wtime();
+#endif
   pack_sendbuf(sendbuf,(Type *) in);
+#ifdef TIMERS
+      timers.packsend += MPI_Wtime() -t1;
+#endif
   Type *recvbuf = new Type[dims2[0]*dims2[1]*dims2[2]];
+#ifdef TIMERS
+  t1=MPI_Wtime();
+#endif
   MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,mpicomm);
+#ifdef TIMERS
+      timers.alltoall += MPI_Wtime() -t1;
+#endif
   delete [] sendbuf;
+#ifdef TIMERS
+  t1=MPI_Wtime();
+#endif
   unpack_recvbuf((Type *) out,recvbuf);
+#ifdef TIMERS
+      timers.unpackrecv += MPI_Wtime() -t1;
+#endif
+
   delete [] recvbuf;
 }
 
@@ -1495,14 +1544,33 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   tmpdims = trplan->grid2->ldims;
 
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
+#ifdef TIMERS
+  double t1=MPI_Wtime();
+#endif
   pack_sendbuf_trans(sendbuf,in);
+#ifdef TIMERS
+      timers.packsend_trans += MPI_Wtime() -t1;
+#endif
   tmpdims = mpiplan->grid2->ldims;
   double *tmp = (double *) sendbuf;
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
+#ifdef TIMERS
+  t1=MPI_Wtime();
+#endif
   MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->mpicomm);
+#ifdef TIMERS
+      timers.alltoall += MPI_Wtime() -t1;
+#endif
+
   tmp = (double *) recvbuf;
   delete [] sendbuf;
+#ifdef TIMERS
+  t1=MPI_Wtime();
+#endif
   mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
+#ifdef TIMERS
+      timers.unpackrecv += MPI_Wtime() -t1;
+#endif
   delete [] recvbuf;
 
 #ifdef DEBUG
