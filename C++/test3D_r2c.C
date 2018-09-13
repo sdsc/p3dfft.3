@@ -310,19 +310,12 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
   Nglob = gdims[0]*gdims[1];
   Nglob = Nglob *gdims[2];
   p = A;
-<<<<<<< HEAD
+
   for(z=0;z < ldims[imo[2]];z++)
     for(y=0;y < ldims[imo[1]];y++)
       for(x=0;x < ldims[imo[0]];x++) {
 	if(std::abs(*p) > Nglob *1.25e-4) 
 	  printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],p->real(),p->imag());
-=======
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
-	if(abs(*p) > Nglob *1.25e-4) 
-	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
->>>>>>> 7fd394972a71fd92f924b9003dbab0b20dbdef1b
 	p++;
       }
 }
