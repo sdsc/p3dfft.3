@@ -27,7 +27,13 @@
 #include "p3dfft.h"
 #include <string.h>
 
-int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
+int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
+int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
+int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
+int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
+int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_REAL_D,P3DFFT_DCT4_COMPLEX_S,P3DFFT_DCT4_COMPLEX_D,P3DFFT_DST4_COMPLEX_S,P3DFFT_DST4_COMPLEX_D;
+
+//P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
 
 namespace p3dfft {
 
@@ -44,7 +50,12 @@ vector<grid> stored_grids; // Defined grids (used in Fortran and C wrappers)
 
 
   //  extern "C" {
-int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
+  int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+  int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
+  int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
+  int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
+  int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
+  //CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
   // }
 
@@ -223,49 +234,65 @@ void setup()
   */
 
 #ifdef DEBUG
-  cout << "p3dft_setup: adding Cosine R2R single type" << endl;
+  cout << "p3dft_setup: adding Cosine R2R DCT1 single type" << endl;
 #endif
 
-  name = "Real-valued Cosine Transform, single precision";
+  name = "Real-valued Cosine Transform DCT1, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_cos_s);
+  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dct1_s, (void (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
-  COSTRAN_REAL_S = types_count;
+  DCT1_REAL_S = types_count;
   types_count++;
 
 #ifdef DEBUG
-  cout << "p3dft_setup: adding cosine R2R double type" << endl;
+  cout << "p3dft_setup: adding cosine R2R DCT1 double type" << endl;
 #endif
 
-  name = "Real-valued Cosine Transform, double precision";
+  name = "Real-valued Cosine Transform DCT1, double precision";
 #ifdef FFTW
-p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_cos_d);
+  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dct1_d,(void (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
-  COSTRAN_REAL_D = types_count;
+  DCT1_REAL_D = types_count;
   types_count++;
 
-  /*
-  name = "Complex-valued Cosine Transform";
-  dt1 = 2;dt2 = 2;
+#ifdef DEBUG
+  cout << "p3dft_setup: adding complex Cosine R2R DCT1 single type" << endl;
+#endif
+
+  name = "Complex-valued Cosine Transform DCT1, single precision";
 #ifdef FFTW
-  p = new trans_type1D(name,dt1,dt2,myscos_plan,
-		  mydcos_plan,fftwf_exec_r2r,fftw_exec_r2r);
+  p = new trans_type1D<mycomplex,mycomplex >(name,(long (*)(...) ) plan_dct1_complex_s, (void (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
-  */
+  DCT1_COMPLEX_S = types_count;
+  types_count++;
 
 #ifdef DEBUG
-  cout << "p3dft_setup: adding sine R2R single type" << endl;
+  cout << "p3dft_setup: adding complex cosine R2R DCT1 double type" << endl;
 #endif
 
-  name = "Real-valued Sine Transform, single precision";
+  name = "Complex-valued Cosine Transform DCT1, double precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_sin_s);
+  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dct1_complex_d,(void (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
-  SINTRAN_REAL_S = types_count;
+  DCT1_COMPLEX_D = types_count;
+  types_count++;
+
+
+
+#ifdef DEBUG
+  cout << "p3dft_setup: adding sine R2R DST1 single type" << endl;
+#endif
+
+  name = "Real-valued Sine Transform DST1, single precision";
+#ifdef FFTW
+  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dst1_s,(void (*)(...)) exec_r2r_s);
+#endif
+  types1D.push_back(p);
+  DST1_REAL_S = types_count;
   types_count++;
 
 #ifdef DEBUG
@@ -274,22 +301,36 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_cos_d);
 
   name = "Real-valued Sine Transform, double precision";
 #ifdef FFTW
-p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
+  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dst1_d,(void (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
-  SINTRAN_REAL_D = types_count;
+  DST1_REAL_D = types_count;
   types_count++;
 
-  /*
-  name = "Complex-valued Sine Transform";
-  dt1 = 2;dt2 = 2;
+
+#ifdef DEBUG
+  cout << "p3dft_setup: adding complex sine R2R DST1 single type" << endl;
+#endif
+
+  name = "Complex-valued Sine Transform DST1, single precision";
 #ifdef FFTW
-  p = new trans_type1D(name,dt1,dt2,myssin_plan,
-		  mydsin_plan,fftwf_exec_r2r,fftw_exec_r2r);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_dst1_complex_s,(void (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
-  */
+  DST1_COMPLEX_S = types_count;
+  types_count++;
 
+#ifdef DEBUG
+  cout << "p3dft_setup: adding complex sine R2R double type" << endl;
+#endif
+
+  name = "Complex-valued Sine Transform, double precision";
+#ifdef FFTW
+  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dst1_complex_d,(void (*)(...)) exec_r2r_complex_d);
+#endif
+  types1D.push_back(p);
+  DST1_COMPLEX_D = types_count;
+  types_count++;
 
 
   /*
@@ -309,26 +350,6 @@ p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_sin_d);
   types1D.push_back(p);
   */
 
-
-  /*
-  name = "Complex-valued Cosine Transform";
-  dt1 = 2;dt2 = 2;
-#ifdef FFTW
-  p = new trans_type1D(name,dt1,dt2,myscos_plan,
-		  mydcos_plan,fftwf_exec_r2r,fftw_exec_r2r);
-#endif
-  types1D.push_back(p);
-  */
-
-  /*
-  name = "Complex-valued Sine Transform";
-  dt1 = 2;dt2 = 2;
-#ifdef FFTW
-  p = new trans_type1D(name,dt1,dt2,myssin_plan,
-		  mydsin_plan,fftwf_exec_r2r,fftw_exec_r2r);
-#endif
-  types1D.push_back(p);
-  */
 
 
 }
@@ -514,9 +535,28 @@ void exec_c2c_d(long plan,complex_double *in,complex_double *out)
 {
   fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
 }
+void exec_r2r_s(long plan,float *in,float *out)
+{
+  fftwf_execute_r2r((fftwf_plan) plan,in,out);
+}
+void exec_r2r_d(long plan,double *in,double *out)
+{
+  fftw_execute_r2r((fftw_plan) plan,in,out);
+}
+
+void exec_r2r_complex_s(long plan,float *in,float *out)
+{
+  fftwf_execute_r2r((fftwf_plan) plan,in,out);
+  fftwf_execute_r2r((fftwf_plan) plan,in+1,out+1);
+}
+void exec_r2r_complex_d(long plan,double *in,double *out)
+{
+  fftw_execute_r2r((fftw_plan) plan,in,out);
+  fftw_execute_r2r((fftw_plan) plan,in+1,out+1);
+}
 
 
-long plan_cos_s(int rank, const int *n,		   
+long plan_dct1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -529,7 +569,7 @@ long plan_cos_s(int rank, const int *n,
 }
 
 
-long plan_cos_d(int rank, const int *n,		   
+long plan_dct1_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -542,7 +582,7 @@ long plan_cos_d(int rank, const int *n,
 }
 
 
-long plan_sin_s(int rank, const int *n,		   
+long plan_dst1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -555,7 +595,7 @@ long plan_sin_s(int rank, const int *n,
 }
 
 
-long plan_sin_d(int rank, const int *n,		   
+long plan_dst1_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -565,6 +605,58 @@ long plan_sin_d(int rank, const int *n,
   fftw_r2r_kind type = FFTW_RODFT00;
   return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
+}
+
+
+long plan_dct1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag)
+{
+   fftwf_r2r_kind type = FFTW_REDFT00;
+   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
+    ostride*2,odist*2,&type,fft_flag));
+}
+
+
+long plan_dct1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		  int ostride, int odist,unsigned fft_flag)
+{
+  fftw_r2r_kind type = FFTW_REDFT00;
+  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+    ostride*2,odist*2,&type,fft_flag));
+}
+
+
+long plan_dst1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		  int ostride, int odist,unsigned fft_flag)
+{
+  fftwf_r2r_kind type = FFTW_RODFT00;
+  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+    ostride*2,odist*2,&type,fft_flag));
+}
+
+
+long plan_dst1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		  int ostride, int odist,unsigned fft_flag)
+{
+  fftw_r2r_kind type = FFTW_RODFT00;
+  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+    ostride*2,odist*2,&type,fft_flag));
 }
 
 /*

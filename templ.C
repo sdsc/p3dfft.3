@@ -823,8 +823,8 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      if(isign == 0) 
-	cout << "Error in find_plan: isign is not set" << endl;
+      //      if(isign == 0) 
+      //	cout << "Error in find_plan: isign is not set" << endl;
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign);
     }
     else //R2C or C2R
@@ -864,8 +864,8 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 	A[i] = 0.0;
 	B[i] = 1.0;
       }       
-      if(isign == 0) 
-	cout << "Error in find_plan: isign is not set" << endl;
+      //      if(isign == 0) 
+      //	cout << "Error in find_plan: isign is not set" << endl;
 #ifdef DEBUG
       printf("Calling doplan\n");
 #endif
@@ -896,8 +896,8 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      if(isign == 0) 
-	cout << "Error in find_plan: isign is not set" << endl;
+      //      if(isign == 0) 
+      //	cout << "Error in find_plan: isign is not set" << endl;
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
     }
     else //R2C or C2R

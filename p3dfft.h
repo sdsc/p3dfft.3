@@ -35,7 +35,12 @@
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
 #endif
 
-extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D,P3DFFT_COSTRAN_REAL_S,P3DFFT_COSTRAN_REAL_D,P3DFFT_SINTRAN_REAL_S,P3DFFT_SINTRAN_REAL_D,P3DFFT_COSTRAN_COMPLEX_S,P3DFFT_COSTRAN_COMPLEX_D,P3DFFT_SINTRAN_COMPLEX_S,P3DFFT_SINTRAN_COMPLEX_D,P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
+extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
+extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
+extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
+extern int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
+extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_REAL_D,P3DFFT_DCT4_COMPLEX_S,P3DFFT_DCT4_COMPLEX_D,P3DFFT_DST4_COMPLEX_S,P3DFFT_DST4_COMPLEX_D;
+  //P3DFFT_CHEB_REAL_S,P3DFFT_CHEB_REAL_D,P3DFFT_CHEB_COMPLEX_S,P3DFFT_CHEB_COMPLEX_D;
 
 //#define Grid int
 #define Type3D int
@@ -132,6 +137,10 @@ void exec_c2r_s(long,mycomplex *,float *);
 void exec_c2r_d(long,complex_double *,double *);
 void exec_c2c_s(long,mycomplex *,mycomplex *);
 void exec_c2c_d(long,complex_double *,complex_double *);
+void exec_r2r_s(long,float *,float *);
+void exec_r2r_d(long,double *,double *);
+void exec_r2r_complex_s(long,float *,float *);
+void exec_r2r_complex_d(long,double *,double *);
 
  template <class Type> void blas_trans(size_t rows,size_t cols,const double alpha,const Type *A,size_t lda,Type *B,size_t ldb);
 
@@ -168,25 +177,49 @@ class gen_trans_type {
 #define plan_c2r_d fftw_plan_many_dft_c2r
 #define plan_c2c_s fftwf_plan_many_dft
 #define plan_c2c_d fftw_plan_many_dft
-long plan_cos_s(int rank, const int *n,		   
+long plan_dct1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
                          float *out, const int *onembed,			
 		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_cos_d(int rank, const int *n,		   
+long plan_dct1_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
                          double *out, const int *onembed,			
 		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_sin_s(int rank, const int *n,		   
+long plan_dst1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
                          float *out, const int *onembed,			
 		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_sin_d(int rank, const int *n,		   
+long plan_dst1_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst1_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -194,17 +227,6 @@ long plan_sin_d(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
 
 #endif
-
-/*
-long plan_r2c_s(...);
-long plan_r2c_d(...);
-long plan_c2r_s(...);
-long plan_c2r_d(...);
-long plan_c2c_s(...);
-long plan_c2c_d(...);
-*/
-
-
 
 template <class Type1,class Type2>  class trans_type1D  : public gen_trans_type{
 
@@ -563,7 +585,12 @@ extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
 extern vector<grid> stored_grids;
 
-extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D,COSTRAN_REAL_S,COSTRAN_REAL_D,SINTRAN_REAL_S,SINTRAN_REAL_D,COSTRAN_COMPLEX_S,COSTRAN_COMPLEX_D,SINTRAN_COMPLEX_S,SINTRAN_COMPLEX_D,CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
+ extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+ extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
+ extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
+ extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
+ extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
+ //CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
 
 template class transform3D<float,float>;

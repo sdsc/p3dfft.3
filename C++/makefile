@@ -25,7 +25,7 @@ P3DFFT_LIB = libp3dfft.3.a
 # ----------------
 
 
-all: test3D test_transplan
+all: test3D test_transplan test_cos test_sin test_cos_complex
 
 test3D: test3D_r2c.o 
 	$(CPP) test3D_r2c.o -o test3D_r2c_cpp.ipo -L.. -lp3dfft.3 $(LDFLAGS) 
@@ -34,6 +34,18 @@ test3D_r2c.o: test3D_r2c.C ../p3dfft.h
 test_transplan: test_transplan.o 
 	$(CPP) test_transplan.o -o test_transplan_cpp -L.. -lp3dfft.3 $(LDFLAGS)
 test_transplan.o: test_transplan.C ../p3dfft.h
+
+test_cos: test_cos.o 
+	$(CPP) test_cos.o -o test_cos_cpp -L.. -lp3dfft.3 $(LDFLAGS)
+test_cos.o: test_cos.C ../p3dfft.h
+
+test_cos_complex: test_cos_complex.o 
+	$(CPP) test_cos_complex.o -o test_cos_complex_cpp -L.. -lp3dfft.3 $(LDFLAGS)
+test_cos_complex.o: test_cos_complex.C ../p3dfft.h
+
+test_sin: test_sin.o 
+	$(CPP) test_sin.o -o test_sin_cpp -L.. -lp3dfft.3 $(LDFLAGS)
+test_sin.o: test_sin.C ../p3dfft.h
  
 
 .C.o:   
