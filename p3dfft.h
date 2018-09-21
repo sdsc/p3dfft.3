@@ -35,7 +35,21 @@
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
 #endif
 
+
 extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
+
+extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
+extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
+extern int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
+extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_REAL_D,P3DFFT_DCT4_COMPLEX_S,P3DFFT_DCT4_COMPLEX_D,P3DFFT_DST4_COMPLEX_S,P3DFFT_DST4_COMPLEX_D;
+extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
+extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
+extern int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
+extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_REAL_D,P3DFFT_DCT4_COMPLEX_S,P3DFFT_DCT4_COMPLEX_D,P3DFFT_DST4_COMPLEX_S,P3DFFT_DST4_COMPLEX_D;
+extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
+extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
+extern int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
+extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_REAL_D,P3DFFT_DCT4_COMPLEX_S,P3DFFT_DCT4_COMPLEX_D,P3DFFT_DST4_COMPLEX_S,P3DFFT_DST4_COMPLEX_D;
 extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
 extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
 extern int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
@@ -70,6 +84,12 @@ static const int COMPLEX=2;
 static const int TRANS_ONLY=1;
 static const int MPI_ONLY=2;
 static const int TRANSMPI=3;
+
+ extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+ extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
+ extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
+ extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
+ extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
 
 /*
 const int R2CFFT_S=0;
@@ -220,6 +240,156 @@ long plan_dst1_complex_s(int rank, const int *n,
                          float *out, const int *onembed,			
 		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
 long plan_dst1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+long plan_dct2_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct2_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst2_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst2_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct2_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct2_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst2_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst2_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+long plan_dct3_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct3_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst3_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst3_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct3_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct3_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst3_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst3_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+long plan_dct4_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct4_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst4_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst4_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct4_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dct4_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst4_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+long plan_dst4_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -585,11 +755,6 @@ extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
 extern vector<grid> stored_grids;
 
- extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
- extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
- extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
- extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
- extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
  //CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
 
