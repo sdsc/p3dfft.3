@@ -305,19 +305,21 @@
 
     integer dims(3),start(3),idir,ldir,glob(3),mem_order(3)
     complex(8) in(dims(1),dims(2),dims(3)),out(dims(1),dims(2),dims(3))
-    integer i,j,k
+    integer i,j,k, g
     complex(8) ci,ky,kz
 
     ci = (0.0d0,1.0d0)
-    ldir = mem_order(idir) +1
+    ldir = mem_order(idir-1) +1
 
 ! Adjust for reduced X space after real-to-complex transform
     if(idir .eq. 1) then
-       glob(ldir) = (glob(ldir)-1)*2
+       g = (glob(ldir)-1)*2
+    else
+       g = glob(ldir)
     endif
 
 ! Compute the middle point in the spectrum (Nyquist frequency)
-    mid = glob(ldir)/2 +1 - start(ldir)
+    mid = g/2 +1 - start(ldir)
 
 !    print *,'ldir, glob,mid=',ldir,glob(ldir),mid
     
@@ -329,7 +331,7 @@
                 out(i,j,k) = ci * (i+start(ldir)-1) * in(i,j,k)
              enddo
              do i=max(1,mid+1),dims(1)
-                out(i,j,k) = ci * (i+start(ldir)-1 - glob(ldir)) * in(i,j,k)
+                out(i,j,k) = ci * (i+start(ldir)-1 - g) * in(i,j,k)
              enddo
 ! Nyquist frequency=0
              if(mid .ge. 1 .and. mid .le. dims(ldir)) then
@@ -349,7 +351,7 @@
           enddo
           
           do j=max(1,mid+1),dims(2)
-             ky = ci * (j+start(ldir)-1-glob(ldir))
+             ky = ci * (j+start(ldir)-1-g)
              do i=1,dims(1)
                 out(i,j,k) = ky * in(i,j,k)
              enddo
@@ -375,7 +377,7 @@
        enddo
        
        do k=max(1,mid+1),dims(3)
-          kz = ci * cmplx(k+start(ldir)-1-glob(ldir),0)
+          kz = ci * cmplx(k+start(ldir)-1-g,0)
           do j=1,dims(2)
              do i=1,dims(1)
                 out(i,j,k) = kz * in(i,j,k)
