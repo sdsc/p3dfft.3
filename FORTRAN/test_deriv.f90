@@ -309,7 +309,7 @@
     complex(8) ci,ky,kz
 
     ci = (0.0d0,1.0d0)
-    ldir = mem_order(idir-1) +1
+    ldir = mem_order(idir) +1
 
 ! Adjust for reduced X space after real-to-complex transform
     if(idir .eq. 1) then
