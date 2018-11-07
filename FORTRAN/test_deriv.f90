@@ -1,6 +1,5 @@
-! This sample program illustrates the
-! use of P3DFFT++ library for highly scalable parallel 3D FFT.
-!
+!This program exemplifies using P3DFFT++ library for taking a spectral derivative in a given dimension. 
+
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs forward transform, backward transform, and checks that
 ! the results are correct, namely the same as in the start except
@@ -8,9 +7,10 @@
 ! test and for timing the library functions.
 !
 ! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
+! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here Nx,Ny,Nz
 ! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
+! (1 or 2), and Nrep is the number of repititions, idir is the dimension
+! to take derivative in (1 for X, 2 for Y, 3 for Z). Optionally
 ! a file named 'dims' can also be provided to guide in the choice
 ! of processor geometry in case of 2D decomposition. It should contain
 ! two numbers in a line, with their product equal to the total number
@@ -327,9 +327,11 @@
 
        do k=1,dims(3)
           do j=1,dims(2)
+! Multiply by wavenumbers to differentiate in spectral space: lower half
              do i=1,min(dims(1),mid-1)
                 out(i,j,k) = ci * (i+start(ldir)-1) * in(i,j,k)
              enddo
+! Multiply by wavenumbers to differentiate in spectral space: upper half
              do i=max(1,mid+1),dims(1)
                 out(i,j,k) = ci * (i+start(ldir)-1 - g) * in(i,j,k)
              enddo
@@ -344,6 +346,7 @@
           
        do k=1,dims(3)
           do j=1,min(dims(2),mid-1)
+! Multiply by wavenumbers to differentiate in spectral space: lower half
              ky = ci * (j+start(ldir)-1)
              do i=1,dims(1)
                 out(i,j,k) = ky * in(i,j,k)
@@ -351,6 +354,7 @@
           enddo
           
           do j=max(1,mid+1),dims(2)
+! Multiply by wavenumbers to differentiate in spectral space: upper half
              ky = ci * (j+start(ldir)-1-g)
              do i=1,dims(1)
                 out(i,j,k) = ky * in(i,j,k)
@@ -368,6 +372,7 @@
     else if(ldir .eq. 3) then
        
        do k=1,min(dims(3),mid-1)
+! Multiply by wavenumbers to differentiate in spectral space: lower half
           kz = ci * cmplx(k+start(ldir)-1,0)
           do j=1,dims(2)
              do i=1,dims(1)
@@ -377,6 +382,7 @@
        enddo
        
        do k=max(1,mid+1),dims(3)
+! Multiply by wavenumbers to differentiate in spectral space: upper half
           kz = ci * cmplx(k+start(ldir)-1-g,0)
           do j=1,dims(2)
              do i=1,dims(1)

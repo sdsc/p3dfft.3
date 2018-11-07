@@ -1,25 +1,23 @@
 
 /*
-This program exemplifies using P3DFFT++ library. 
+This program exemplifies using P3DFFT++ library for taking a spectral derivative in a given dimension. 
 
-! This program initializes a 3D array with a 3D sine wave, then
-! performs 3D forward Fourier transform, then backward transform,
-! and checks that
-! the results are correct, namely the same as in the start except
-! for a normalization factor. It can be used both as a correctness
-! test and for timing the library functions.
-!
-! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
-! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
-! a file named 'dims' can also be provided to guide in the choice
-! of processor geometry in case of 2D decomposition. It should contain
-! two numbers in a line, with their product equal to the total number
-! of tasks. Otherwise processor grid geometry is chosen automatically.
-! For better performance, experiment with this setting, varying
-! iproc and jproc. In many cases, minimizing iproc gives best results.
-! Setting it to 1 corresponds to one-dimensional decomposition.
+This program initializes a 3D array with a 3D sine wave, then
+performs 3D forward Fourier transform, takes derivative in spectral space (multiplies by wavenumbers), then backward transform,
+and checks that the results are what we expect (sine in one dimension becomes cosine)
+
+The program expects 'stdin' file in the working directory, with
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here Nx,Ny,Nz
+are box dimensions, Ndim is the dimentionality of processor grid
+(1 or 2), and Nrep is the number of repititions, and idir is the dimension 
+to take derivative in (1 for X, 2 for Y, 3 for Z). Optionally
+a file named 'dims' can also be provided to guide in the choice
+of processor geometry in case of 2D decomposition. It should contain
+two numbers in a line, with their product equal to the total number
+of tasks. Otherwise processor grid geometry is chosen automatically.
+For better performance, experiment with this setting, varying
+iproc and jproc. In many cases, minimizing iproc gives best results.
+Setting it to 1 corresponds to one-dimensional decomposition.
 */
 
 #include "p3dfft.h"
