@@ -1,0 +1,13 @@
+AM_CXXFLAGS = $(CPPFLAGS)
+
+INCLUDES = $(FFTW_INC)
+
+LDADD = $(FFTW_LIB)
+
+ARFLAGS = -v -r -u
+
+lib_LIBRARIES = libp3dfft.3.a
+
+libp3dfft_a_SOURCES = init.o plan.o exec.o templ.o wrap.o
+
+
