@@ -4,7 +4,7 @@
 AC_PREREQ([2.69])
 AC_INIT([P3DFFT++], [3.0.0], [dmitry@sdsc.edu])
 AM_INIT_AUTOMAKE([-Wall])
-AC_CONFIG_SRCDIR([init.C])
+AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([config.h])
 
 #TODO possibly make function for enabling certain compilers

@@ -1,13 +1,10 @@
-AM_CXXFLAGS = $(CPPFLAGS)
+EXTRA_DIST = README.md AUTHORS _config.yml
 
-INCLUDES = $(FFTW_INC)
+include_HEADERS = include/p3dfft.h include/p3dfft.mod
 
-LDADD = $(FFTW_LIB)
+SUBDIRS = build sample
 
-ARFLAGS = -v -r -u
-
-lib_LIBRARIES = libp3dfft.3.a
-
-libp3dfft_a_SOURCES = init.o plan.o exec.o templ.o wrap.o
-
-
+all-local:
+	@echo $(SUCCESS)
+clean-local:
+	-[ -z "include/p3dfft.mod"] || rm -f include/p3dfft.mod
