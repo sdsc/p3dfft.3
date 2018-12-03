@@ -2,7 +2,7 @@ EXTRA_DIST = README.md AUTHORS _config.yml
 
 include_HEADERS = include/p3dfft.h include/p3dfft.mod
 
-SUBDIRS = build sample
+SUBDIRS = build# sample
 
 all-local:
 	@echo $(SUCCESS)
