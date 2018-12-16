@@ -24,7 +24,7 @@
 !----------------------------------------------------------------------------
 */
 
-#include "p3dfft.h"
+#include "../include/p3dfft.h"
 #include <string.h>
 
 int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;

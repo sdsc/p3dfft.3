@@ -24,7 +24,7 @@
 !----------------------------------------------------------------------------
 */
 
-#include "p3dfft.h"
+#include "../include/p3dfft.h"
 
 using namespace std;
 using namespace p3dfft;

@@ -2,18 +2,17 @@ AM_CXXFLAGS = $(CPPFLAGS)
 
 INCLUDES = $(FFTW_INC)
 
-LDADD = $(FFTW_LIB)
-
 ARFLAGS = -v -r -u
-
-lib_LIBRARIES = libp3dfft.3.a
-
-libp3dfft_3_a_SOURCES = init.o plan.o exec.o templ.o wrap.o
 
 plan.o: templ.C
 
-all-local:
-	-@[ -e "p3dfft.mod" ] && mv -f p3dfft.mod ../include
+lib_LIBRARIES = libp3dfft.3.a
+
+#LDADD = -L$(FFTW_LIB)
+
+libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C
+
+libp3dfft_3_a_LIBADD = -L$(FFTW_LIB) -lfftw3 -lfftw3f -lm
 
 clean-local:
-	-[ -z "*.mod"] || rm -f *.mod
+	-[ -z "*.mod" ] || rm -f *.mod
