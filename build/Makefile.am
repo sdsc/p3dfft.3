@@ -1,6 +1,4 @@
-AM_CXXFLAGS = $(CPPFLAGS)
-
-INCLUDES = $(FFTW_INC)
+AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include -DFFTW
 
 ARFLAGS = -v -r -u
 
@@ -8,11 +6,12 @@ plan.o: templ.C
 
 lib_LIBRARIES = libp3dfft.3.a
 
+LDADD = $(FFTWF_LIB) $(FFTW_LIB) -lm
+
 #LDADD = -L$(FFTW_LIB)
 
 libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C
 
-libp3dfft_3_a_LIBADD = -L$(FFTW_LIB) -lfftw3 -lfftw3f -lm
 
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod

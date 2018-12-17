@@ -1,4 +1,4 @@
-EXTRA_DIST = README.md AUTHORS _config.yml
+EXTRA_DIST = README.md AUTHORS _config.yml build/init.C build/exec.C build/plan.C build/templ.C build/wrap.C
 
 include_HEADERS = include/p3dfft.h
 

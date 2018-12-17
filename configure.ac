@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([P3DFFT++], [3.0.0], [dmitry@sdsc.edu])
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([config.h])
 
@@ -83,15 +83,18 @@ AC_MSG_CHECKING([fftw location])
 AC_ARG_WITH(fftw, [AC_HELP_STRING([--with-fftw], [path to FFTW directory])], withfftw=$withval, withfftw="")
 if test "$withfftw" != "yes" && test "$withfftw" != ""; then
 	AC_MSG_RESULT([$withfftw])
-	if test -e [$withfftw/lib/libfftw3.a ]; then
+	if test -e [$withfftw/lib/libfftw3.a ] && test -e [$withfftw/lib/libfftw3f.a ]; then
 		AC_SUBST(FFTW_INC, "-I$withfftw/include")
 		AC_SUBST(FFTW_LIB, "$withfftw/lib/libfftw3.a")
-	elif test -e [$withfftw/lib64/libfftw3.a ]; then
+		AC_SUBST(FFTWF_LIB, "$withfftw/lib/libfftw3f.a")
+	elif test -e [$withfftw/lib64/libfftw3.a ] && test -e [$withfftw/lib64/libfftw3f.a ]; then
                 AC_SUBST(FFTW_INC, "-I$withfftw/include")
                 AC_SUBST(FFTW_LIB, "$withfftw/lib64/libfftw3.a")
-	elif test -e [$withfftw/lib/x86_64-linux-gnu/libfftw3.a ]; then
+                AC_SUBST(FFTWF_LIB, "$withfftw/lib64/libfftw3f.a")
+	elif test -e [$withfftw/lib/x86_64-linux-gnu/libfftw3.a ] && test -e [$withfftw/lib/x86_64-linux-gnu/libfftw3f.a ]; then
                 AC_SUBST(FFTW_INC, "-I$withfftw/include")
 		AC_SUBST(FFTW_LIB, "$withfftw/lib/x86_64-linux-gnu/libfftw3.a")
+		AC_SUBST(FFTWF_LIB, "$withfftw/lib/x86_64-linux-gnu/libfftw3f.a")
 	else
 		AC_MSG_ERROR([libfftw3.a was not found in given location!])
 	fi
@@ -106,9 +109,9 @@ if test "$withfftwlib" != "" && test "$withfftw" != ""; then
 fi
 if test "$withfftwlib" != "yes" && test "$withfftwlib" != "" && test "$fftwval" = "yes"; then
 	AC_MSG_RESULT([$withfftwlib])
-	if test -e [$withfftwlib/libfftw3.a ]
-	then
+	if test -e [$withfftwlib/libfftw3.a ] && test -e [$withfftwlib/libfftw3f.a ]; then
 		AC_SUBST(FFTW_LIB, "$withfftwlib/libfftw3.a")
+		AC_SUBST(FFTWF_LIB, "$withfftwlib/libfftw3f.a")
 	else
 		AC_MSG_ERROR([libfftw3.a was not found in given location!])
 	fi
@@ -135,12 +138,12 @@ fi
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_FC
-AC_PROG_RANLIB
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_CPP
 AM_PROG_AR
+AC_PROG_RANLIB
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lfftw3':
@@ -169,3 +172,5 @@ AC_CONFIG_FILES([Makefile
                  #sample/C/Makefile
                  #sample/FORTRAN/Makefile])
 AC_OUTPUT
+cp config.h include/config.h
+AC_MSG_NOTICE([configure script complete!])
