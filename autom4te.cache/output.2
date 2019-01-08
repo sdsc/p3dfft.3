@@ -3012,6 +3012,15 @@ $as_echo "@%:@define INTEL 1" >>confdefs.h
 	compiler="intel"
 fi
 
+if test "$CC" = ''; then
+	CC="mpicc"
+fi
+if test "$CXX" = ''; then
+	CXX="mpicxx"
+fi
+if test "$FC" = ''; then
+	FC="mpif90"
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
 $as_echo_n "checking whether to use FFTW library... " >&6; }
@@ -5411,12 +5420,9 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile build/Makefile"
+ac_config_files="$ac_config_files Makefile build/Makefile sample/Makefile sample/C++/Makefile sample/C/Makefile"
 
-		 #sample/Makefile
-		 #sample/C++/Makefile
-                 #sample/C/Makefile
-                 #sample/FORTRAN/Makefile])
+                 #sample/FORTRAN/Makefile
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6128,6 +6134,9 @@ do
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "build/Makefile") CONFIG_FILES="$CONFIG_FILES build/Makefile" ;;
+    "sample/Makefile") CONFIG_FILES="$CONFIG_FILES sample/Makefile" ;;
+    "sample/C++/Makefile") CONFIG_FILES="$CONFIG_FILES sample/C++/Makefile" ;;
+    "sample/C/Makefile") CONFIG_FILES="$CONFIG_FILES sample/C/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

@@ -2,7 +2,7 @@ EXTRA_DIST = README.md AUTHORS _config.yml build/init.C build/exec.C build/plan.
 
 include_HEADERS = include/p3dfft.h
 
-SUBDIRS = build# sample
+SUBDIRS = build sample
 
 all-local:
 	@echo $(SUCCESS)

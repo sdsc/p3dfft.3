@@ -54,6 +54,15 @@ if test "$compiler" = ''; then
 	compiler="intel"
 fi
 
+if test "$CC" = ''; then
+	CC="mpicc"
+fi
+if test "$CXX" = ''; then
+	CXX="mpicxx"
+fi
+if test "$FC" = ''; then
+	FC="mpif90"
+fi
 
 AC_MSG_CHECKING([whether to use FFTW library])
 AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
@@ -166,11 +175,11 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([sqrt])
 
 AC_CONFIG_FILES([Makefile
-		 build/Makefile])
-		 #sample/Makefile
-		 #sample/C++/Makefile
-                 #sample/C/Makefile
-                 #sample/FORTRAN/Makefile])
+		 build/Makefile
+		 sample/Makefile
+		 sample/C++/Makefile
+                 sample/C/Makefile])
+                 #sample/FORTRAN/Makefile
 AC_OUTPUT
 cp config.h include/config.h
 AC_MSG_NOTICE([configure script complete!])
