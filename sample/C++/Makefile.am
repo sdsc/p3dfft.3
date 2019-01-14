@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I$(top_builddir)/include -include $(top_builddir)/include/config.h#-03 -DTIMERS -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
+AM_CXXFLAGS = -I$(top_builddir)/include -include $(top_builddir)/include/config.h -O3 -DGIT_VERSION=\"$(GIT_VERSION)\" -DGIT_DATE=\"$(GIT_DATE)\"
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 

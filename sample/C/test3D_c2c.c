@@ -34,6 +34,8 @@ void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
 main(int argc,char **argv)
 {
+  printf("GitVersion = %s\n", GIT_VERSION);
+  printf("GitDate = %s\n", GIT_DATE);
   int N=64;
   int Nrep = 1;
   int myid,nprocs;

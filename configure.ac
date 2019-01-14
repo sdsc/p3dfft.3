@@ -7,13 +7,23 @@ AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([config.h])
 
-#TODO possibly make function for enabling certain compilers
+git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
+git_version=`git --no-pager describe --tags --always --dirty`
+
+AC_SUBST(GIT_DATE, "$git_date")
+AC_SUBST(GIT_VERSION, "$git_version")
+
+
 AC_MSG_CHECKING([whether to use IBM compiler])
 AC_ARG_ENABLE(ibm, [AC_HELP_STRING([--enable-ibm], [compile P3DFFT using IBM compiler])], enableibm=$enableval, enableibm=no)
 AC_MSG_RESULT([$enableibm])
 if test "$enableibm" = "yes"; then
 	AC_DEFINE(IBM, 1, [Define if you want to compile P3DFFT using IBM compiler])
-	compiler="ibm"
+	if test "$compiler" == ''; then
+		compiler="ibm"
+	else
+		AC_MSG_ERROR([Only choose one compiler!])
+	fi
 fi
 
 AC_MSG_CHECKING([whether to use Intel compiler])
@@ -21,15 +31,23 @@ AC_ARG_ENABLE(intel, [AC_HELP_STRING([--enable-intel], [compile P3DFFT using Int
 AC_MSG_RESULT([$enableintel])
 if test "$enableintel" = "yes"; then
 	AC_DEFINE(INTEL, 1, [Define if you want to compile P3DFFT using Intel compiler])
-	compiler="intel"
+	if test "$compiler" == ''; then
+		compiler="intel"
+	else
+		AC_MSG_ERROR([Only choose one compiler!])
+	fi
 fi
 
 AC_MSG_CHECKING([whether to use PGI compiler])
 AC_ARG_ENABLE(pgi, [AC_HELP_STRING([--enable-pgi], [compile P3DFFT using PGI compiler])], enablepgi=$enableval, enablepgi=no)
 AC_MSG_RESULT([$enablepgi])
 if test "$enablepgi" = "yes"; then
-	AC_DEFINE(PGI, 1, [Define if you want to compile P3DFFT using PGI compiler])
-	compiler="pgi"
+	AC_DEFINE(PGI, 1, [Define if you want to compile P3DFFT using PGI compiler])	
+	if test "$compiler" == ''; then
+		compiler="pgi"
+	else
+		AC_MSG_ERROR([Only choose one compiler!])
+	fi
 fi
 
 AC_MSG_CHECKING([whether to use Cray compiler])
@@ -37,15 +55,23 @@ AC_ARG_ENABLE(cray, [AC_HELP_STRING([--enable-cray], [compile P3DFFT using IBM c
 AC_MSG_RESULT([$enablecray])
 if test "$enablecray" = "yes"; then
 	AC_DEFINE(Cray, 1, [Define if you want to compile P3DFFT using Cray compiler])
-	compiler="cray"
+	if test "$compiler" == ''; then
+		compiler="cray"
+	else
+		AC_MSG_ERROR([Only choose one compiler!])
+	fi
 fi
 
 AC_MSG_CHECKING([whether to use GNU compiler])
 AC_ARG_ENABLE(gnu, [AC_HELP_STRING([--enable-gnu], [compile P3DFFT using GNU compiler])], enablegnu=$enableval, enablegnu=no)
 AC_MSG_RESULT([$enablegnu])
 if test "$enablegnu" = "yes"; then
-	AC_DEFINE(GNU, 1, [Define if you want to compile P3DFFT using GNU compiler])
-	compiler="gnu"
+	AC_DEFINE(GNU, 1, [Define if you want to compile P3DFFT using GNU compiler])	
+	if test "$compiler" == ''; then
+		compiler="gnu"
+	else
+		AC_MSG_ERROR([Only choose one compiler!])
+	fi
 fi
 
 if test "$compiler" = ''; then
@@ -178,8 +204,8 @@ AC_CONFIG_FILES([Makefile
 		 build/Makefile
 		 sample/Makefile
 		 sample/C++/Makefile
-                 sample/C/Makefile])
-                 #sample/FORTRAN/Makefile
+                 sample/C/Makefile
+                 sample/FORTRAN/Makefile])
 AC_OUTPUT
 cp config.h include/config.h
 AC_MSG_NOTICE([configure script complete!])

@@ -37,8 +37,9 @@ double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
 {
-
-using namespace p3dfft;
+  printf("GitVersion = %s\n", GIT_VERSION);
+  printf("GitDate = %s\n", GIT_DATE);
+  using namespace p3dfft;
 
   int N=64;
   int Nrep = 1;

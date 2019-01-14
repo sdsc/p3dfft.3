@@ -648,6 +648,8 @@ CXX
 FFTWF_LIB
 FFTW_LIB
 FFTW_INC
+GIT_VERSION
+GIT_DATE
 AM_BACKSLASH
 AM_DEFAULT_VERBOSITY
 AM_DEFAULT_V
@@ -2912,7 +2914,15 @@ fi
 ac_config_headers="$ac_config_headers config.h"
 
 
-#TODO possibly make function for enabling certain compilers
+git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
+git_version=`git --no-pager describe --tags --always --dirty`
+
+GIT_DATE="$git_date"
+
+GIT_VERSION="$git_version"
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use IBM compiler" >&5
 $as_echo_n "checking whether to use IBM compiler... " >&6; }
 @%:@ Check whether --enable-ibm was given.
@@ -2928,7 +2938,11 @@ if test "$enableibm" = "yes"; then
 	
 $as_echo "@%:@define IBM 1" >>confdefs.h
 
-	compiler="ibm"
+	if test "$compiler" == ''; then
+		compiler="ibm"
+	else
+		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use Intel compiler" >&5
@@ -2946,7 +2960,11 @@ if test "$enableintel" = "yes"; then
 	
 $as_echo "@%:@define INTEL 1" >>confdefs.h
 
-	compiler="intel"
+	if test "$compiler" == ''; then
+		compiler="intel"
+	else
+		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use PGI compiler" >&5
@@ -2963,8 +2981,12 @@ $as_echo "$enablepgi" >&6; }
 if test "$enablepgi" = "yes"; then
 	
 $as_echo "@%:@define PGI 1" >>confdefs.h
-
-	compiler="pgi"
+	
+	if test "$compiler" == ''; then
+		compiler="pgi"
+	else
+		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use Cray compiler" >&5
@@ -2982,7 +3004,11 @@ if test "$enablecray" = "yes"; then
 	
 $as_echo "@%:@define Cray 1" >>confdefs.h
 
-	compiler="cray"
+	if test "$compiler" == ''; then
+		compiler="cray"
+	else
+		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use GNU compiler" >&5
@@ -2999,8 +3025,12 @@ $as_echo "$enablegnu" >&6; }
 if test "$enablegnu" = "yes"; then
 	
 $as_echo "@%:@define GNU 1" >>confdefs.h
-
-	compiler="gnu"
+	
+	if test "$compiler" == ''; then
+		compiler="gnu"
+	else
+		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	fi
 fi
 
 if test "$compiler" = ''; then
@@ -5420,9 +5450,8 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile build/Makefile sample/Makefile sample/C++/Makefile sample/C/Makefile"
+ac_config_files="$ac_config_files Makefile build/Makefile sample/Makefile sample/C++/Makefile sample/C/Makefile sample/FORTRAN/Makefile"
 
-                 #sample/FORTRAN/Makefile
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6137,6 +6166,7 @@ do
     "sample/Makefile") CONFIG_FILES="$CONFIG_FILES sample/Makefile" ;;
     "sample/C++/Makefile") CONFIG_FILES="$CONFIG_FILES sample/C++/Makefile" ;;
     "sample/C/Makefile") CONFIG_FILES="$CONFIG_FILES sample/C/Makefile" ;;
+    "sample/FORTRAN/Makefile") CONFIG_FILES="$CONFIG_FILES sample/FORTRAN/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

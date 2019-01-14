@@ -35,6 +35,8 @@ double check_res(double *A,double *B,int *mydims);
 
 main(int argc,char **argv)
 {
+  printf("GitVersion = %s\n", GIT_VERSION);
+  printf("GitDate = %s\n", GIT_DATE);
   int N=64;
   int Nrep = 1;
   int myid,nprocs;

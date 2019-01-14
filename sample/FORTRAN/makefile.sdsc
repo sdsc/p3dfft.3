@@ -9,7 +9,7 @@ FFLAGS = -O3
 AR = ar
 ARFLAGS = -v -r -u
 FFT_LIB = -L$(FFTWHOME)/lib -lfftw3 -lfftw3f
-LDFLAGS= $(FFT_LIB) -cxxlib  -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
+LDFLAGS= $(FFT_LIB) -cxxlib # -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 # For FFTW use path to the installed FFTW library:
 # -L/usr/local/apps/fftw301s/lib -lfftw3f 
 

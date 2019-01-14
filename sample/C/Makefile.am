@@ -1,8 +1,6 @@
-AM_CPPFLAGS = -I$(top_builddir)/include -include $(top_builddir)/include/config.h#-03
+AM_CPPFLAGS = -I$(top_builddir)/include -include $(top_builddir)/include/config.h -DGIT_VERSION=\"$(GIT_VERSION)\" -DGIT_DATE=\"$(GIT_DATE)\"
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
-
-AM_LDFLAGS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -ldl
 
 csampledir = $(datadir)/p3dfft++_samples/
 
