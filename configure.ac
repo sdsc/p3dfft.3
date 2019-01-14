@@ -9,7 +9,6 @@ AC_CONFIG_HEADERS([config.h])
 
 git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
 git_version=`git --no-pager describe --tags --always --dirty`
-
 AC_SUBST(GIT_DATE, "$git_date")
 AC_SUBST(GIT_VERSION, "$git_version")
 
@@ -90,6 +89,19 @@ if test "$FC" = ''; then
 	FC="mpif90"
 fi
 
+compile_date=`date +%D`
+AC_SUBST(COMPILED_WITH, "$compiler")
+AC_SUBST(COMPILE_DATE, "$compile_date")
+
+
+AC_MSG_CHECKING([whether to use MKL])
+AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-mkl], [for using mkl library])], mklval=$enableval, mklval=no)
+if test "$mklval" = "yes"; then
+	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
+fi
+AC_MSG_RESULT([$mklval])
+
+
 AC_MSG_CHECKING([whether to use FFTW library])
 AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
 if test "$fftwval" = "yes"; then
@@ -169,6 +181,25 @@ if test "$withfftwinc" != "yes" && test "$withfftwinc" != "" && test "$fftwval" 
 else
 	AC_MSG_RESULT([none])
 fi
+
+AC_MSG_CHECKING([ESSL directory])
+AC_ARG_WITH(essl, [AC_HELP_STRING([--with-essl], [path to location of ESSL library])], withessl=$withval, withessl="")
+if test "$withessl" != "yes" && test "$withessl" != ""; then
+
+        AC_MSG_RESULT([$withessl])
+        if [[ -d $withessl/lib64 ]]; then
+                AC_SUBST(ESSL_INC, "-I$withessl/include")
+                AC_SUBST(ESSL_LIB, "-L$withessl/lib64 -lesslbg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64")
+        else
+                AC_MSG_ERROR([essl library was not found in given location!])
+		fi
+else
+        AC_MSG_RESULT([none])
+        if test "$esslval" == "yes"; then
+                AC_MSG_ERROR([location to ESSL was not given!])
+        fi
+fi
+
 
 # Checks for programs.
 AC_PROG_CXX

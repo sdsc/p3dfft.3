@@ -1,4 +1,4 @@
-AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include -include $(top_builddir)/include/config.h# -DMKL_BLAS 
+AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include -include $(top_builddir)/include/config.h 
 
 ARFLAGS = -v -r -u
 

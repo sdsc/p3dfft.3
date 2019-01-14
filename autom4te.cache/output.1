@@ -648,6 +648,8 @@ CXX
 FFTWF_LIB
 FFTW_LIB
 FFTW_INC
+COMPILE_DATE
+COMPILED_WITH
 GIT_VERSION
 GIT_DATE
 AM_BACKSLASH
@@ -724,6 +726,7 @@ enable_intel
 enable_pgi
 enable_cray
 enable_gnu
+enable_mkl
 enable_fftw
 enable_essl
 with_fftw
@@ -1365,6 +1368,7 @@ Optional Features:
   --enable-pgi            compile P3DFFT using PGI compiler
   --enable-cray           compile P3DFFT using IBM compiler
   --enable-gnu            compile P3DFFT using GNU compiler
+  --enable-mkl            for using mkl library
   --enable-fftw           for using the FFTW library
   --enable-essl           for using the ESSL library
 
@@ -2916,7 +2920,6 @@ ac_config_headers="$ac_config_headers config.h"
 
 git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
 git_version=`git --no-pager describe --tags --always --dirty`
-
 GIT_DATE="$git_date"
 
 GIT_VERSION="$git_version"
@@ -3051,6 +3054,31 @@ fi
 if test "$FC" = ''; then
 	FC="mpif90"
 fi
+
+compile_date=`date +%D`
+COMPILED_WITH="$compiler"
+
+COMPILE_DATE="$compile_date"
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use MKL" >&5
+$as_echo_n "checking whether to use MKL... " >&6; }
+@%:@ Check whether --enable-mkl was given.
+if test "${enable_mkl+set}" = set; then :
+  enableval=$enable_mkl; mklval=$enableval
+else
+  mklval=no
+fi
+
+if test "$mklval" = "yes"; then
+	
+$as_echo "@%:@define MKL_BLAS 1" >>confdefs.h
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklval" >&5
+$as_echo "$mklval" >&6; }
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
 $as_echo_n "checking whether to use FFTW library... " >&6; }
