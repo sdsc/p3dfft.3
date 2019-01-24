@@ -37,9 +37,6 @@ double check_res(double*,double *,int *, int *);
 
 main(int argc,char **argv)
 {
-  printf("GitVersion = %s\n", GIT_VERSION);
-  printf("GitDate = %s\n", GIT_DATE);
-  printf("This executable was compiled with %s on %s\n", P3DFFT3_COMPILE_WITH, P3DFFT3_COMPILE_DATE);
   using namespace p3dfft;
 
   int N=64;
@@ -79,6 +76,9 @@ main(int argc,char **argv)
 
    if(myid == 0) {
      printf("P3DFFT++ test1. Running on %d cores\n",nprocs);
+     printf("GitVersion = %s\n", GIT_VERSION);
+     printf("GitDate = %s\n", GIT_DATE);
+     printf("This executable was compiled with %s on %s at %s\n", P3DFFT3_COMPILE_WITH, __DATE__, __TIME__);
      if((fp=fopen("trans.in", "r"))==NULL){
         printf("Cannot open input file. Setting to default nx=ny=nz=128, dim=0, n=1.\n");
         nx=ny=nz=128; Nrep=1;dim=0;

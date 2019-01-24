@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir)/include -include $(top_builddir)/include/config.h -DGIT_VERSION=\"$(GIT_VERSION)\" -DGIT_DATE=\"$(GIT_DATE)\" -DP3DFFT3_COMPILE_WITH=\"$(COMPILED_WITH)\" -DP3DFFT3_COMPILE_DATE=\"$(COMPILE_DATE)\"
+AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"' -DP3DFFT3_COMPILE_WITH=\"$(CC)\"
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 

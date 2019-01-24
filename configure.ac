@@ -7,11 +7,13 @@ AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([config.h])
 
+DEFINE="#define"
+UNDEFINE="#undef"
+
 git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
 git_version=`git --no-pager describe --tags --always --dirty`
 AC_SUBST(GIT_DATE, "$git_date")
 AC_SUBST(GIT_VERSION, "$git_version")
-
 
 AC_MSG_CHECKING([whether to use IBM compiler])
 AC_ARG_ENABLE(ibm, [AC_HELP_STRING([--enable-ibm], [compile P3DFFT using IBM compiler])], enableibm=$enableval, enableibm=no)
@@ -89,23 +91,34 @@ if test "$FC" = ''; then
 	FC="mpif90"
 fi
 
-compile_date=`date +%D`
-AC_SUBST(COMPILED_WITH, "$compiler")
-AC_SUBST(COMPILE_DATE, "$compile_date")
-
 
 AC_MSG_CHECKING([whether to use MKL])
 AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-mkl], [for using mkl library])], mklval=$enableval, mklval=no)
 if test "$mklval" = "yes"; then
 	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
+	AC_SUBST(DEFINE_MKL_BLAS, "$DEFINE MKL_BLAS 1")
+else
+	AC_SUBST(DEFINE_MKL_BLAS, "$UNDEFINE MKL_BLAS")
 fi
 AC_MSG_RESULT([$mklval])
 
+AC_MSG_CHECKING([whether to use TIMERS])
+AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-timers], [for using timers])], timersval=$enableval, timersval=no)
+if test "$timersval" = "yes"; then
+	AC_DEFINE(TIMERS, 1, [Define if you want to use timers])
+	AC_SUBST(DEFINE_TIMERS, "$DEFINE TIMERS 1")
+else
+	AC_SUBST(DEFINE_TIMERS, "$UNDEFINE TIMERS")
+fi
+AC_MSG_RESULT([$timersval])
 
 AC_MSG_CHECKING([whether to use FFTW library])
 AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
 if test "$fftwval" = "yes"; then
 	AC_DEFINE(FFTW, 1, [Define if you want to use the FFTW library])
+	AC_SUBST(DEFINE_FFTW, "$DEFINE FFTW 1")
+else
+	AC_SUBST(DEFINE_FFTW, "$UNDEFINE FFTW")
 fi
 AC_MSG_RESULT([$fftwval])
 
@@ -113,6 +126,9 @@ AC_MSG_CHECKING([whether to use ESSL library])
 AC_ARG_ENABLE(essl, [AC_HELP_STRING([--enable-essl], [for using the ESSL library])], esslval=$enableval, esslval=no)
 if test "$esslval" = "yes"; then
 	AC_DEFINE(ESSL, 1, [Define if you want to use the ESSL library])
+	AC_SUBST(DEFINE_ESSL, "$DEFINE ESSL 1")
+else
+	AC_SUBST(DEFINE_ESSL, "$UNDEFINE ESSL")
 fi
 AC_MSG_RESULT([$esslval])
 
@@ -232,6 +248,7 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([sqrt])
 
 AC_CONFIG_FILES([Makefile
+		 include/p3dfft.h
 		 build/Makefile
 		 sample/Makefile
 		 sample/C++/Makefile

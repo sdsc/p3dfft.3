@@ -1,3 +1,5 @@
+#ifndef P3DFFT_3_H
+#define P3DFFT_3_H
 /*
 !
 !    P3DFFT++
@@ -28,6 +30,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#define FFTW 1
+#undef MKL_BLAS
+#undef ESSL
+#undef TIMERS
 
 
 #ifdef FFTW
@@ -907,4 +913,4 @@ void p3dfft_exec_3Dtrans_single(Plan3D,float *,float *,int);
 #endif
 
 
-  
+#endif 
