@@ -92,18 +92,18 @@ if test "$FC" = ''; then
 fi
 
 
-AC_MSG_CHECKING([whether to use MKL])
-AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-mkl], [for using mkl library])], mklval=$enableval, mklval=no)
-if test "$mklval" = "yes"; then
+AC_MSG_CHECKING([whether to use MKL_BLAS])
+AC_ARG_ENABLE(mkl_blas, [AC_HELP_STRING([--enable-mklblas], [for using mklblas])], mklblasval=$enableval, mklblasval=no)
+if test "$mklblasval" = "yes"; then
 	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
 	AC_SUBST(DEFINE_MKL_BLAS, "$DEFINE MKL_BLAS 1")
 else
 	AC_SUBST(DEFINE_MKL_BLAS, "$UNDEFINE MKL_BLAS")
 fi
-AC_MSG_RESULT([$mklval])
+AC_MSG_RESULT([$mklblasval])
 
 AC_MSG_CHECKING([whether to use TIMERS])
-AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-timers], [for using timers])], timersval=$enableval, timersval=no)
+AC_ARG_ENABLE(timers, [AC_HELP_STRING([--enable-timers], [for using timers])], timersval=$enableval, timersval=no)
 if test "$timersval" = "yes"; then
 	AC_DEFINE(TIMERS, 1, [Define if you want to use timers])
 	AC_SUBST(DEFINE_TIMERS, "$DEFINE TIMERS 1")
@@ -226,14 +226,6 @@ AC_PROG_MAKE_SET
 AC_PROG_CPP
 AM_PROG_AR
 AC_PROG_RANLIB
-
-# Checks for libraries.
-# FIXME: Replace `main' with a function in `-lfftw3':
-#AC_CHECK_LIB([fftw3], [main])
-# FIXME: Replace `main' with a function in `-lfftw3f':
-#AC_CHECK_LIB([fftw3f], [main])
-# FIXME: Replace `main' with a function in `-lm':
-#AC_CHECK_LIB([m], [main])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h])

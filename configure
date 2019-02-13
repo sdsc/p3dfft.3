@@ -730,7 +730,8 @@ enable_intel
 enable_pgi
 enable_cray
 enable_gnu
-enable_mkl
+enable_mkl_blas
+enable_timers
 enable_fftw
 enable_essl
 with_fftw
@@ -1373,7 +1374,7 @@ Optional Features:
   --enable-pgi            compile P3DFFT using PGI compiler
   --enable-cray           compile P3DFFT using IBM compiler
   --enable-gnu            compile P3DFFT using GNU compiler
-  --enable-mkl            for using mkl library
+  --enable-mklblas        for using mklblas
   --enable-timers         for using timers
   --enable-fftw           for using the FFTW library
   --enable-essl           for using the ESSL library
@@ -3065,16 +3066,16 @@ if test "$FC" = ''; then
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use MKL" >&5
-$as_echo_n "checking whether to use MKL... " >&6; }
-# Check whether --enable-mkl was given.
-if test "${enable_mkl+set}" = set; then :
-  enableval=$enable_mkl; mklval=$enableval
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use MKL_BLAS" >&5
+$as_echo_n "checking whether to use MKL_BLAS... " >&6; }
+# Check whether --enable-mkl_blas was given.
+if test "${enable_mkl_blas+set}" = set; then :
+  enableval=$enable_mkl_blas; mklblasval=$enableval
 else
-  mklval=no
+  mklblasval=no
 fi
 
-if test "$mklval" = "yes"; then
+if test "$mklblasval" = "yes"; then
 
 $as_echo "#define MKL_BLAS 1" >>confdefs.h
 
@@ -3084,14 +3085,14 @@ else
 	DEFINE_MKL_BLAS="$UNDEFINE MKL_BLAS"
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklval" >&5
-$as_echo "$mklval" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklblasval" >&5
+$as_echo "$mklblasval" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use TIMERS" >&5
 $as_echo_n "checking whether to use TIMERS... " >&6; }
-# Check whether --enable-mkl was given.
-if test "${enable_mkl+set}" = set; then :
-  enableval=$enable_mkl; timersval=$enableval
+# Check whether --enable-timers was given.
+if test "${enable_timers+set}" = set; then :
+  enableval=$enable_timers; timersval=$enableval
 else
   timersval=no
 fi
@@ -5042,14 +5043,6 @@ else
   RANLIB="$ac_cv_prog_RANLIB"
 fi
 
-
-# Checks for libraries.
-# FIXME: Replace `main' with a function in `-lfftw3':
-#AC_CHECK_LIB([fftw3], [main])
-# FIXME: Replace `main' with a function in `-lfftw3f':
-#AC_CHECK_LIB([fftw3f], [main])
-# FIXME: Replace `main' with a function in `-lm':
-#AC_CHECK_LIB([m], [main])
 
 # Checks for header files.
 

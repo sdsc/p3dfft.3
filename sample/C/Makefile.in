@@ -103,19 +103,24 @@ PROGRAMS = $(csample_PROGRAMS)
 am_test3D_c2c_c_OBJECTS = test3D_c2c.$(OBJEXT)
 test3D_c2c_c_OBJECTS = $(am_test3D_c2c_c_OBJECTS)
 test3D_c2c_c_LDADD = $(LDADD)
-test3D_c2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+am__DEPENDENCIES_1 =
+test3D_c2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_c_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_c_OBJECTS = $(am_test3D_r2c_c_OBJECTS)
 test3D_r2c_c_LDADD = $(LDADD)
-test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
 test_deriv_c_OBJECTS = $(am_test_deriv_c_OBJECTS)
 test_deriv_c_LDADD = $(LDADD)
-test_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_trans1D_c_OBJECTS = test_trans1D.$(OBJEXT)
 test_trans1D_c_OBJECTS = $(am_test_trans1D_c_OBJECTS)
 test_trans1D_c_LDADD = $(LDADD)
-test_trans1D_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_trans1D_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -276,8 +281,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"@GIT_VERSION@"' -DGIT_DATE='"@GIT_DATE@"' -DP3DFFT3_COMPILE_WITH=\"$(CC)\"
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a @FFTWF_LIB@ @FFTW_LIB@
+AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"' -DP3DFFT3_COMPILE_WITH=\"$(CC)\"
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 csampledir = $(datadir)/p3dfft++_samples/
 test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c

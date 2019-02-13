@@ -104,24 +104,30 @@ PROGRAMS = $(cppsample_PROGRAMS)
 am_test3D_r2c_cpp_ipo_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_cpp_ipo_OBJECTS = $(am_test3D_r2c_cpp_ipo_OBJECTS)
 test3D_r2c_cpp_ipo_LDADD = $(LDADD)
-test3D_r2c_cpp_ipo_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+am__DEPENDENCIES_1 =
+test3D_r2c_cpp_ipo_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_cos_complex_cpp_OBJECTS = test_cos_complex.$(OBJEXT)
 test_cos_complex_cpp_OBJECTS = $(am_test_cos_complex_cpp_OBJECTS)
 test_cos_complex_cpp_LDADD = $(LDADD)
 test_cos_complex_cpp_DEPENDENCIES =  \
-	$(top_builddir)/build/libp3dfft.3.a
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test_cos_cpp_OBJECTS = test_cos.$(OBJEXT)
 test_cos_cpp_OBJECTS = $(am_test_cos_cpp_OBJECTS)
 test_cos_cpp_LDADD = $(LDADD)
-test_cos_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_cos_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_sin_cpp_OBJECTS = test_sin.$(OBJEXT)
 test_sin_cpp_OBJECTS = $(am_test_sin_cpp_OBJECTS)
 test_sin_cpp_LDADD = $(LDADD)
-test_sin_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_sin_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_transplan_cpp_OBJECTS = test_transplan.$(OBJEXT)
 test_transplan_cpp_OBJECTS = $(am_test_transplan_cpp_OBJECTS)
 test_transplan_cpp_LDADD = $(LDADD)
-test_transplan_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_transplan_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -285,8 +291,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = -I$(top_builddir)/include -O3 -DGIT_VERSION='"@GIT_VERSION@"' -DGIT_DATE='"@GIT_DATE@"' -DP3DFFT3_COMPILE_WITH=\"$(CXX)\"
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a @FFTWF_LIB@ @FFTW_LIB@
+AM_CXXFLAGS = -I$(top_builddir)/include -O3 -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"' -DP3DFFT3_COMPILE_WITH=\"$(CXX)\"
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 cppsampledir = $(datadir)/p3dfft++_samples/
 test3D_r2c_cpp_ipo_SOURCES = test3D_r2c.C
 test_transplan_cpp_SOURCES = test_transplan.C

@@ -103,19 +103,24 @@ PROGRAMS = $(fsample_PROGRAMS)
 am_test3D_c2c_f_OBJECTS = test3D_c2c.$(OBJEXT) wrap.$(OBJEXT)
 test3D_c2c_f_OBJECTS = $(am_test3D_c2c_f_OBJECTS)
 test3D_c2c_f_LDADD = $(LDADD)
-test3D_c2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+am__DEPENDENCIES_1 =
+test3D_c2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_f_OBJECTS = test3D_r2c.$(OBJEXT) wrap.$(OBJEXT)
 test3D_r2c_f_OBJECTS = $(am_test3D_r2c_f_OBJECTS)
 test3D_r2c_f_LDADD = $(LDADD)
-test3D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test3D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_deriv_f_OBJECTS = test_deriv.$(OBJEXT) wrap.$(OBJEXT)
 test_deriv_f_OBJECTS = $(am_test_deriv_f_OBJECTS)
 test_deriv_f_LDADD = $(LDADD)
-test_deriv_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_deriv_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test_trans1D_f_OBJECTS = test_trans1D.$(OBJEXT) wrap.$(OBJEXT)
 test_trans1D_f_OBJECTS = $(am_test_trans1D_f_OBJECTS)
 test_trans1D_f_LDADD = $(LDADD)
-test_trans1D_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a
+test_trans1D_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -277,7 +282,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_FCFLAGS = -I$(top_builddir)/include -O3
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a @FFTWF_LIB@ @FFTW_LIB@
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 AM_LDFLAGS = -cxxlib
 fsampledir = $(datadir)/p3dfft++_samples/
 test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90
@@ -509,7 +514,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-fsamplePROGRAMS clean-generic mostlyclean-am
+clean-am: clean-fsamplePROGRAMS clean-generic clean-local \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -f Makefile
@@ -577,8 +583,8 @@ uninstall-am: uninstall-fsamplePROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
-	clean-fsamplePROGRAMS clean-generic cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
+	clean-fsamplePROGRAMS clean-generic clean-local cscopelist-am \
+	ctags ctags-am distclean distclean-compile distclean-generic \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am \
@@ -602,6 +608,9 @@ test3D_c2c.o: test3D_c2c.f90 p3dfft++.o
 test_deriv.o: test_deriv.f90 p3dfft++.o
 
 test_trans1D.o: test_trans1D.f90 p3dfft++.o
+
+clean-local:
+	-test -z "*.mod" || rm -f *.mod
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

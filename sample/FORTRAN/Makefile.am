@@ -25,3 +25,6 @@ test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90
 test_deriv_f_SOURCES = test_deriv.f90 wrap.f90
 
 test_trans1D_f_SOURCES = test_trans1D.f90 wrap.f90
+
+clean-local:
+	-test -z "*.mod" || rm -f *.mod
