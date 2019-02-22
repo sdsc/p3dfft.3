@@ -238,7 +238,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dtrans_double(trans_f,INOUT,1)
+         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT,1)
 
          rtime1 = rtime1 + MPI_wtime()
 
