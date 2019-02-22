@@ -27,11 +27,13 @@ P3DFFT_LIB = libp3dfft.3.a
 
 
 all: test3D test_trans1D test_deriv
-test3D: test3D_r2c.o test3D_c2c.o 
+test3D: test3D_r2c.o test3D_c2c.o test3D_c2c_inplace.o
 	$(CPP) test3D_r2c.o -o test3D_r2c_c -L.. -lp3dfft.3 $(LDFLAGS) 
 	$(CPP) test3D_c2c.o -o test3D_c2c_c -L.. -lp3dfft.3 $(LDFLAGS) 
+	$(CPP) test3D_c2c_inplace.o -o test3D_c2c_inplace_c -L.. -lp3dfft.3 $(LDFLAGS) 
 test3D_r2c.o: test3D_r2c.c ../p3dfft.h 
 test3D_c2c.o: test3D_c2c.c ../p3dfft.h 
+test3D_c2c_inplace.o: test3D_c2c_inplace.c ../p3dfft.h 
 
 test_deriv: test_deriv.o
 	$(CPP) test_deriv.o -o test_deriv_c -L.. -lp3dfft.3 $(LDFLAGS)
