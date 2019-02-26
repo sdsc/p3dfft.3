@@ -281,8 +281,7 @@ main(int argc,char **argv)
 void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob_start[3],int gdims[3],int mem_order[3],int idir)
 {
   int ldir,i,j,k,g,mid;
-  complex_double *p1,*p2,tmp;
-  double ky,kz;
+  complex_double *p1,*p2,mult;
 
   // Find local storage dimension to be differentiated
   ldir = mem_order[idir-1];
@@ -304,7 +303,7 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
       for(j=0;j<ldims[1];j++) {
 // Lower half: complex-multiply by i*k
 	for(i=0;i < min(ldims[0],mid);i++) 
-	  *p2++ = (0.0,(double) i+glob_start[ldir]) * *p1++; 
+	  *p2++ = complex_double(0.0,i+glob_start[ldir]) * *p1++;
 
 // Nyquist frequency: zero
 	if(mid >= 0 && mid < ldims[ldir]) {
@@ -313,7 +312,7 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
 
 // Upper half: complex-multiply by i*(k-N)
 	for(i=max(0,mid+1);i < ldims[0];i++)
-	  *p2++ = (0.0,(double) (i+glob_start[ldir] - g)) * *p1++;
+	  *p2++ = complex_double(0.0,i+glob_start[ldir] - g) * *p1++;
       }
 	  
     break;
@@ -324,9 +323,9 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
     for(k=0;k<ldims[2];k++) {
 // Lower half: complex-multiply by i*k
       for(j=0;j < min(ldims[1],mid);j++) { 
-	ky = j+glob_start[ldir];
+	mult = complex_double(0.0,j+glob_start[ldir]);
 	for(i=0;i<ldims[0];i++) 
-	  *p2++ = (0.0,ky) * *p1++;
+	  *p2++ = mult * *p1++;
       }
     // Nyquist frequency: zero
     if(mid >= 0 && mid < ldims[ldir]) 
@@ -336,9 +335,9 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
 
       // Upper half: complex-multiply by i*(k-N)
     for(j=max(0,mid+1);j < ldims[1];j++){
-	ky = j+glob_start[ldir] -g;
+      mult = complex_double(0.0,j+glob_start[ldir] -g);
 	for(i=0;i<ldims[0];i++) 
-	  *p2++ = (0.0,ky) * *p1++;
+	  *p2++ = mult * *p1++;
       }
     }
 
@@ -349,10 +348,10 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
     p2 = OUT;
 // Lower half: complex-multiply by i*k
     for(k=0;k < min(ldims[2],mid);k++) { 
-      kz = k+glob_start[ldir];
+      mult = complex_double(0.0,k+glob_start[ldir]);
       for(j=0;j<ldims[1];j++)
 	for(i=0;i<ldims[0];i++) 
-	  *p2++ = (0.0,kz) * *p1++;
+	  *p2++ = mult * *p1++;
     }
 // Nyquist frequency: zero
     if(mid >= 0 && mid < ldims[ldir]) 
@@ -363,10 +362,10 @@ void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob
 
 // Upper half: complex-multiply by i*(k-N)
     for(k=max(0,mid+1);k < ldims[2];k++){
-	kz = k+glob_start[ldir] -g;
+      mult = complex_double(0.0,k+glob_start[ldir] -g);
 	for(j=0;j<ldims[1];j++)
 	  for(i=0;i<ldims[0];i++) 
-	  *p2++ = (0.0,kz) * *p1++;
+	  *p2++ = mult * *p1++;
     }
   	  
     break;
@@ -413,23 +412,25 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
    free(sinx); free(siny); free(sinz);
 }
 
+// ldims: local dimensions in physical storage order
+// gstart: starting indices of the local grid, in the physical storge order
 void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
 {
   int x,y,z;
   complex_double *p;
   double Nglob;
-  int imo[3],i,j;
+  int i,j;
   
 
   Nglob = gdims[0]*gdims[1];
   Nglob = Nglob *gdims[2];
   p = A;
 
-  for(z=0;z < ldims[imo[2]];z++)
-    for(y=0;y < ldims[imo[1]];y++)
-      for(x=0;x < ldims[imo[0]];x++) {
+  for(z=0;z < ldims[2];z++)
+    for(y=0;y < ldims[1];y++)
+      for(x=0;x < ldims[0];x++) {
 	if(std::abs(*p) > Nglob *1.25e-4) 
-	  printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],p->real(),p->imag());
+	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
 	p++;
       }
 }
