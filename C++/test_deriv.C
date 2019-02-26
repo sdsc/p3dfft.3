@@ -230,10 +230,6 @@ main(int argc,char **argv)
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if(myid == 0)
-      printf("Results of forward transform: \n");
-    print_res(OUT,gdims,ldims2,glob_start2);
-
     compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);
     if(myid == 0)
       printf("After derviative: \n");
