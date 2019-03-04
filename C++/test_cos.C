@@ -171,9 +171,9 @@ using namespace p3dfft;
 
   //Initialize initial and final grids, based on the above information
 
-  grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  grid grid2(gdims2,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid grid2(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   //  printf("Plan rcc\n");

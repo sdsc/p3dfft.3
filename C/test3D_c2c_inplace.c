@@ -176,9 +176,9 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid1 = p3dfft_init_grid(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid2 = p3dfft_init_grid(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_forward,1);

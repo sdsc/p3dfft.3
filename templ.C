@@ -30,7 +30,7 @@ namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
 
-template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_)
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_,bool OW)
 {
 
 #ifdef DEBUG
@@ -81,6 +81,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   gen_trans_type *tmptype;
   MPI_Comm mpicomm,splitcomm;
   bool reverse_steps;
+  bool orig_input=true;
 
   /*
   if(!grid1.is_set || !grid2.is_set) {
@@ -99,13 +100,8 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       MPI_Abort(MPI_COMM_WORLD,0);
     }
 
-  /*
-    int tmp;
-    MPI_Comm_size(grid1_.mpicomm[0],&tmp);
-    printf("size of grid1_ mpicomm=%d\n",tmp);
-    MPI_Comm_size(grid1->mpicomm[0],&tmp);
-    printf("size of grid1 mpicomm=%d\n",tmp);
-  */
+  if(inplace_) OW=true;
+
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
   inplace = inplace_;
@@ -127,7 +123,28 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
   mpicomm = grid1_.mpi_comm_glob;
 
-  grid *tmpgrid0 = new grid(grid1_);
+
+  if(nd == 3) { // Special treament for 3D decomposition: first transpose to get one local dimension
+    
+    // Find dimension corresponding to rows (adjacent tasks)
+    for(i=0;i<3;i++)
+      if(proc_order[i] == 0)
+	break;
+    grid1->nd = 2;
+    grid1->L[0] = i;
+    grid1->P[0] = grid1->pgrid[i] = 1;
+    grid1->D[0] = grid1->D[1];
+    grid1->D[1] = grid1->D[2];
+    grid1->D[2] = -1;
+    splitcomm = grid1->mpicomm[0];
+
+    curr_stage = init_MPIplan(grid1_,*grid1,splitcomm,d1,d2,dt_prev,prec);
+    Stages = prev_stage = curr_stage;
+    curr_stage->kind = MPI_ONLY;
+
+  } // nd==3
+
+  grid *tmpgrid0 = new grid(*grid1);
   grid *tmpgrid1;
   reverse_steps = false;
 
@@ -192,9 +209,11 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
     //    tmpgrid0->set_mo(monext);
       
+    int dim_conj_sym = -1;
     tmptype = types1D[type->types[L[st]]];
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
       gdims[L[st]] = gdims[L[st]]/2+1;
+      dim_conj_sym = L[st];
     }
     else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
       gdims[L[st]] = (gdims[L[st]]-1)*2;
@@ -208,7 +227,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid0->pgrid[d1];  ////P[0];  // proc_order[0] ???
 
-      tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
 #ifdef DEBUG
       printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
@@ -219,10 +238,21 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     }
     else { // Only transform
 
-      tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 #ifdef DEBUG
       printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
+
+      // Determine if can use inplace transform
+      int size1 = tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2];
+      int size2 = tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2];
+      int dt_1 = tmptype->dt1;
+      int dt_2 = tmptype->dt2;
+      // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
+      if(size1*dt_1 >= size2*dt_2 && (OW || st>0) && ((inplace && orig_input) || st<2) )
+	inpl = true;
+      else
+	orig_input = false;
 
       curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],inpl,prec);
 
@@ -232,7 +262,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
     tmpgrid0 = tmpgrid1;
-    if(st == 0) 
+    if(Stages == NULL)
       Stages = prev_stage = curr_stage;
     else {
       prev_stage->next = curr_stage;
@@ -262,7 +292,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
-      tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
       curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
@@ -288,7 +318,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
         pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
-	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
@@ -308,7 +338,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
-      tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
       curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
@@ -323,7 +353,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
-	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+	tmpgrid1 = new grid(gdims,tmpgrid0->dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,tmpgrid0->mpicomm[0],d1,d2,dt_prev,prec);
@@ -819,7 +849,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 #endif
 #ifdef FFTW
     A = (Type1 *) fftw_malloc(size *sizeof(Type1));
-    Type2 *B = (Type2 *) fftw_malloc(size *sizeof(Type2));
+    Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
@@ -831,7 +861,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
 
     fftw_free(A);
-    fftw_free(B);
+    //    fftw_free(B);
 #endif
   }    
     else { //not inplace
@@ -888,7 +918,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     //delete [] B;
     fftw_free(A);
     fftw_free(B);
-#else
+#else // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);
     A = new Type1[size1];

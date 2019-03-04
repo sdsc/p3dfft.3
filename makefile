@@ -1,37 +1,35 @@
-#SHELL=/bin/csh
-
 CPP = mpicxx
-CPPFLAGS = -DFFTW -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -DTIMERS # -DMKL_BLAS 
-# #-qopt-report
+CPPFLAGS = -O0 -g -pg -DFFTW -fno-stack-protector  #-DMKL_BLAS 
 CC = mpicc
 FF = mpif90
 #FFLAGS = -O3 
 AR = ar
 ARFLAGS = -v -r -u
-FFT_LIB = -L$(TACC_FFTW3_LIB) -lfftw3 -lfftw3f
-LDFLAGS= $(FFT_LIB) -lm
+FFT_LIB = -L$(HOME)/fftw-3.3.5/lib -lfftw3 -lfftw3f
+LDFLAGS= -g $(FFT_LIB)  -lm
+#-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 # For FFTW use path to the installed FFTW library:
 # -L/usr/local/apps/fftw301s/lib -lfftw3f 
 
-INCL = -I$(TACC_FFTW3_INC)
+INCL = -I$(FFTWHOME)/include -I/$(MKL_ROOT)/include 
 # For FFTW add include file location, for example: 
 # INCL = -I/usr/local/apps/fftw312s/include 
 
-DFLAGS = -DFFTW
+DFLAGS = -DFFTW 
 
 P3DFFT_ROOT = .
 P3DFFT_LIB = libp3dfft.3.a
 
 # ----------------
 
-FFT3DLIB = init.o plan.o exec.o templ.o wrap.o
+FFT3DLIB = init.o plan.o exec.o templ.o wrap.o deriv.o
 
 all: lib samples
 lib: $(FFT3DLIB)
 	$(AR) $(ARFLAGS) $(P3DFFT_LIB) $(FFT3DLIB)	
 samples: lib
-	cd C; make
 	cd C++; make
+	cd C; make
 	cd FORTRAN; make
 test1D: $(FFT3DLIB) test1D.o 
 	$(CPP) test1D.o -o test1D -L. -lp3dfft.3 $(LDFLAGS) 
@@ -47,7 +45,8 @@ install:
 
 init.o: init.C p3dfft.h 
 plan.o: plan.C templ.C p3dfft.h
-exec.o: exec.C p3dfft.h
+exec.o: exec.C p3dfft.h 
+	$(CPP) -c $(CPPFLAGS) $(INCL) exec.C
 templ.o: templ.C p3dfft.h
 wrap.o: wrap.C p3dfft.h
 

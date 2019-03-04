@@ -142,7 +142,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	}
 	gdims[trans_dim_] = gdims[trans_dim_]/2+1;
 	double *A=new double[1024];
-	grid *tmpgrid = new grid(gdims,pgrid,proc_order,mo,mpicomm_glob);
+	grid *tmpgrid = new grid(gdims,gr1.dim_conj_sym,pgrid,proc_order,mo,mpicomm_glob);
 
       if(prec == 4) {
 	trans_MPIplan<float,mycomplex> *p= new trans_MPIplan<float,mycomplex>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
@@ -191,7 +191,7 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	  mo[i] = gr1.mem_order[i];
 	}
 	gdims[trans_dim_] = (gdims[trans_dim_]-1)*2;
-	grid *tmpgrid = new grid(gdims,pgrid,proc_order,mo,mpicomm_glob);
+	grid *tmpgrid = new grid(gdims,gr1.dim_conj_sym,pgrid,proc_order,mo,mpicomm_glob);
 
       if(prec == 4) {
 	trans_MPIplan<mycomplex,float> *p = new trans_MPIplan<mycomplex,float>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);

@@ -181,9 +181,9 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid1 = p3dfft_init_grid(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid2 = p3dfft_init_grid(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,1);
@@ -231,14 +231,14 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
+    p3dfft_exec_3Dderiv_double(trans_f,IN,OUT,idir-1,0); // Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);
+    /*    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);*/
 
     if(myid == 0)
-      printf("Results of forward transform: \n");
+      printf("Results after derivative: \n");
     print_res(OUT,gdims,ldims2,glob_start2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();

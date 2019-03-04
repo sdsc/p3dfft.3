@@ -457,6 +457,7 @@ class stage {
   int kind;
   stage() {next = NULL;};
    void myexec(char *in,char *out);
+   void myexec_deriv(char *in,char *out);
 };
 
 
@@ -502,12 +503,11 @@ template <class Type1,class Type2>   class transplan : public stage {
   int *inembed,*onembed;
   unsigned fft_flag;
   int mo1[3],mo2[3];
-
-  int trans_dim;  // Rank of dimension of the transform
-  //  trans_type1D<Type1,Type2> 
+  void compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]);
 
   public :
 
+  int trans_dim;  // Rank of dimension of the transform
   bool is_set;
   long lib_plan;
   trans_type1D<Type1,Type2> *trans_type;
@@ -518,8 +518,10 @@ template <class Type1,class Type2>   class transplan : public stage {
   void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
+  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
   long find_plan(trans_type1D<Type1,Type2> *type);
   void exec(char *in,char *out);
+  void exec_deriv(char *in,char *out);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
   //template <class Type1,class Type2>  
@@ -533,6 +535,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
  private : 
 
   void pack_sendbuf_trans(Type2 *sendbuf,char *in);
+  void pack_sendbuf_deriv(Type2 *sendbuf,char *in);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
   
 
@@ -545,6 +548,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_,bool inplace_);
   ~trans_MPIplan();
   void exec(char *in,char *out);
+  void exec_deriv(char *in,char *out);
 
   template <class TypeIn1,class TypeOut1> friend class transplan;
   template <class Type> friend class MPIplan;
@@ -567,6 +571,7 @@ class grid {
   int taskid,numtasks;
   int nd;  //number of dimensions the volume is split over
   int gdims[3];  //Global dimensions
+  int dim_conj_sym; // Dimension of conjugate symmetry, where we store N/2+1 of the data after R2C transform due to conjugate symmety; =-1 if none
   int mem_order[3];  //Memory ordering inside the data volume
   int ldims[3];  //Local dimensions on THIS processor
   int pgrid[3];  //Processor grid
@@ -583,7 +588,7 @@ class grid {
   //  int (*st)[3],(*sz)[3],(*en)[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
   int **st[3],**sz[3],**en[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
   bool is_set;
-  grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order[3],
+  grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int mem_order[3],
 	    MPI_Comm mpicomm_);
   grid(const grid &rhs);
   grid() {};
@@ -726,8 +731,9 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
  public:
 
   void exec(Type1 *in,Type2 *out,int OW);
+  void exec_deriv(Type1 *in,Type2 *out,int OW,int idir);
 
-  transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type,bool inplace_); 
+  transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type,bool inplace_,bool OW=false); 
   ~transform3D();
 };
 
@@ -747,6 +753,9 @@ const int gblock=1;
 template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],int dims1[3]);
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
 
+//template <class Type> void compute_deriv_loc(Type *in,Type *out,int dims[3],bool r2c); 
+template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir); 
+// template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir);
 
 extern vector<Plan *> Plans;
 extern vector<gen_trans_type *> types1D;
@@ -789,12 +798,15 @@ template class transplan<complex_double,complex_double>;
 #ifdef TIMERS
   class timer {
   protected:
+    double reorder_deriv;
     double reorder_trans;
     double reorder_out;
     double reorder_in;
     double trans_exec;
+    double trans_deriv;
     double packsend;
     double packsend_trans;
+    double packsend_deriv;
     double unpackrecv;
     double alltoall;
   public:
@@ -822,86 +834,21 @@ template class transplan<complex_double,complex_double>;
   // Namespace
 }
 
+
 extern "C" {
 #endif
 
-struct Grid_struct {
-  int taskid,numtasks;
-  int nd;  //number of dimensions the volume is split over
-  int gdims[3];  //Global dimensions
-  int mem_order[3];  //Memory ordering inside the data volume
-  int ldims[3];  //Local dimensions on THIS processor
-  int pgrid[3];  //Processor grid
-  int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
-  int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
-  int D[3];  //Ranks of Dimensions of physical grid split over rows and columns correspondingly
-  int L[3];  //Rank of Local dimension (p=1)
-  int grid_id[3];  //Position of this pencil/cube in the processor grid
-  int grid_id_cart[3];
-  int glob_start[3]; // Starting coords of this cube in the global grid
-  MPI_Comm mpi_comm_glob; // Global MPi communicator we are starting from
-  MPI_Comm mpi_comm_cart;
-  MPI_Comm mpicomm[3]; //MPI communicators for each dimension 
-} ;
+#include "Cwrap.h"
+#include "Fwrap.h"
 
-struct Grid_struct_fort {
-  int taskid;
-  int numtasks;
-  int nd;  //number of dimensions the volume is split over
-  int gdims[3];  //Global dimensions
-  int mem_order[3];  //Memory ordering inside the data volume
-  int ldims[3];  //Local dimensions on THIS processor
-  
-  int pgrid[3];  //Processor grid
-    int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
-  /*
-int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
-  int D[3];  //Ranks of Dimensions of physical grid split over rows and columns correspondingly
-  int L[3];  //Rank of Local dimension (p=1)
-  int grid_id[3];  //Position of this pencil/cube in the processor grid
-  int grid_id_cart[3];
-  int mpi_comm_cart;
-  int mpicomm[3]; //MPI communicators for each dimension 
-  */
-  int glob_start[3]; // Starting coords of this cube in the global grid
-  int mpi_comm_glob; // Global MPi communicator we are starting from
-} ;
+  //#ifdef __cplusplus
+  //}
+  //#endif
 
+  //#ifdef __cplusplus
+  //extern "C" {
+  //#endif
 
-#ifdef __cplusplus
-}
-#endif
-
-
-typedef struct Grid_struct Grid;
-typedef struct Grid_struct_fort Grid_fort;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-void p3dfft_setup();
-void p3dfft_cleanup();
-  Type3D p3dfft_init_3Dtype(int[3]); //,char *);
-  void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
-  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,int *);
-  int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int);
-  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,int *);
-Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int);
-  void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *);
-  int find_grid(int [3],int [3],int [3],int [3],MPI_Comm);
-Grid *p3dfft_init_grid(int[3],int[3],int[3],int[3],MPI_Comm);
-  //void p3dfft_free_grid_f(int *gr);
-void p3dfft_free_grid(Grid *gr);
-void p3dfft_inv_mo(int [3],int [3]);
-void p3dfft_write_buf(double *,char *,int [3],int [3]);
-void p3dfft_exec_1Dtrans_double_f(int *,double *,double *);
-void p3dfft_exec_1Dtrans_single_f(int *,float *,float *);
-void p3dfft_exec_1Dtrans_double(int,double *,double *);
-void p3dfft_exec_1Dtrans_single(int,float *,float *);
-void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *,int *);
-void p3dfft_exec_3Dtrans_single_f(Plan3D *,float *,float *,int *);
-void p3dfft_exec_3Dtrans_double(Plan3D,double *,double *,int);
-void p3dfft_exec_3Dtrans_single(Plan3D,float *,float *,int);
 #ifdef __cplusplus
 }
 #endif

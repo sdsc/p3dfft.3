@@ -1301,7 +1301,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 
 
  // grid constructor: initialize grid description and setup up MPI structures
-grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
+grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int mem_order_[3],
 	   MPI_Comm mpicomm_)
 	   //,int prec_,int dt_)
 {
@@ -1309,6 +1309,7 @@ grid::grid(int gdims_[3],int pgrid_[3],int proc_order_[3],int mem_order_[3],
   int myid[2];
   MPI_Comm mpi_comm_tmp;
 
+  dim_conj_sym = dim_conj_sym_;
   MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
   nd=0;
   P[0]=P[1]=P[2]=1;
@@ -1434,6 +1435,7 @@ grid::grid(const grid &rhs)
     int i,j,m,l;
     pm = rhs.pm;
     nd = rhs.nd;
+    dim_conj_sym = rhs.dim_conj_sym;
 
     /*    st = new int[pm][3];
     sz = new int[pm][3];

@@ -178,8 +178,8 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
-  grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   // Set up 3D transforms, including stages and plans, for forward trans.
@@ -225,12 +225,12 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,0); // Forward R2C 3D FFT
+    trans_f.exec_deriv(IN,OUT,idir-1,0); // Forward R2C 3D FFT and derivative
 
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);
+    //    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);
     if(myid == 0)
       printf("After derviative: \n");
     print_res(OUT,gdims,ldims2,glob_start2);
