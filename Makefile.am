@@ -8,4 +8,3 @@ all-local:
 	@echo $(SUCCESS)
 clean-local:
 	-[ -z "include/p3dfft.mod" ] || rm -f include/p3dfft.mod
-	rm include/p3dfft.h include/config.h

@@ -841,7 +841,6 @@ all-local:
 	@echo $(SUCCESS)
 clean-local:
 	-[ -z "include/p3dfft.mod" ] || rm -f include/p3dfft.mod
-	rm include/p3dfft.h include/config.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
