@@ -1,10 +1,12 @@
-AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"' -DP3DFFT3_COMPILE_WITH=\"$(CC)\"
+AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 
 csampledir = $(datadir)/p3dfft++_samples/
 
-csample_PROGRAMS = test3D_r2c_c test3D_c2c_c test_deriv_c test_trans1D_c
+csample_PROGRAMS = test3D_r2c_c test3D_c2c_c test_deriv_c test_trans1D_c test3D_c2c_inplace_c
+
+test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 
 test3D_r2c_c_SOURCES = test3D_r2c.c
 

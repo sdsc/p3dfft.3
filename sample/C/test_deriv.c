@@ -21,6 +21,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 */
 
 #include "p3dfft.h"
+#include "compiler_check.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,7 +77,7 @@ main(int argc,char **argv)
      printf("P3DFFT++ C test program. Running on %d cores\n",nprocs);
      printf("GitVersion = %s\n", GIT_VERSION);
      printf("GitDate = %s\n", GIT_DATE);
-     printf("This executable was compiled with %s on %s at %s\n", P3DFFT3_COMPILE_WITH, __DATE__, __TIME__);
+     printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1, idir=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;idir=1;

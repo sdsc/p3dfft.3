@@ -5,16 +5,18 @@ import sys
 import os
 import math
 from subprocess import call
+from itertools import combinations
+from time import strftime, localtime
 
 #TODO bridges
 platforms = ["comet", "bridges","stampede"]
 compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
-options = ['']
+options = ['intel']
 configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc',
 					  "stampede": './configure --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc'
 			}
 sourcedir = "p3dfft.3"
-destdir = "p3dfft++_compiled"
+destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
 
 def usage_exit(msg):
 	print msg
@@ -23,7 +25,7 @@ def usage_exit(msg):
 	print "-h displays usage information"
 	print "-s specifies which platform"
 	print "-c to specify non-default compiler"
-	print "-m to build -mt branch"
+	#print "-m to build -mt branch"
 	print "-p to build performance test"
 	print "-f extra configure flags"
 	sys.exit(1)
@@ -66,6 +68,8 @@ def main():
 		usage_exit("invalid compiler specified")
 	if comp:
 		configline += " --enable-" + comp
+	else:
+		comp = "intel"
 	if extra != None:
 		configline += " " + extra
 	if cflags:
@@ -77,9 +81,9 @@ def main():
 	# ensure that the source dir exists
 	source = sourcedir
 	dest = destdir
+	dest = dest + "_" + comp
 	if perf:
 		dest += "_p"
-	dest = dest + "_" + comp
 	cwd = os.getcwd()
 	if not os.path.isdir(cwd + '/' + source):
 		usage_exit(source + " dir does not exist. Make sure you are at the right directory level")
@@ -91,44 +95,56 @@ def main():
 	print "********** Starting build... **********"
 
 	if perf:
-		d = cwd + '/' + dest
+		d = os.path.join(cwd,dest)
+		dd = os.path.join(d, 'p3dfft++_compiled_p')
 		try:
 			os.mkdir(d)
-		except:
-			pass
-		call('cp -r ' + cwd + '/' + source + '/* ' + d, shell=True)
-		os.chdir(d)
+			os.mkdir(dd)
+		except Exception as e:
+			print e
+			sys.exit(1)
+		call('cp -r ' + cwd + '/' + source + '/* ' + dd, shell=True)
+		os.chdir(dd)
 		c = configline
 		call(c, shell=True)
 		call('make', shell=True)
 	#TODO Modify once options are available
 	else:
-		for i in range(pow(2,len(options))):
-			d = cwd + '/' + dest + str(i)
+		combos = []
+		d = os.path.join(cwd,dest)
+		try:
+			os.mkdir(d)		
+		except Exception as e:
+			print e
+			sys.exit(1)
+		for i in range(len(options)+1):
+			combos += list(combinations(options, i))
+		for combo in combos:
+			dd = os.path.join(d, 'p3dfft++_compiled_' + '-'.join(combo))
 			try:
-				os.mkdir(d)
-			except:
-				pass
-			call('cp -r ' + cwd + '/' + source + '/* ' + d, shell=True)
-			os.chdir(d)
-			b = list(bin(i))[2:]
-			b = map(int,['0']*(len(options)-len(b)) + b)
+				os.mkdir(dd)
+			except Exception as e:
+				print e
+				sys.exit(1)
+			call('cp -r ' + cwd + '/' + source + '/* ' + dd, shell=True)
+			os.chdir(dd)
 			c = configline
-			for i in range(len(options)):
-				if b[i]:
-					c += ' --enable-' + options[i]
-			print "Configuring " + d + " with "
+			for o in combo:
+				c += ' --enable-' + o
+			print "Configuring " + dd + " with "
 			print "\t" + c
-			c += " > config_output"
+			c += " &> config_output"
 			ret = call(c, shell=True)
 			if ret != 0:
-				usage_exit("CONFIG FAILED! CHECK config_output for log")
-			print "Configured " + d
-			print "Making " + d
-			ret = call('make > make_output', shell=True)
+				print "CONFIG FAILED! CHECK config_output for log"
+				continue
+			print "Configured " + dd + " successfully"
+			print "Making " + dd
+			ret = call('make &> make_output', shell=True)
 			if ret != 0:
-				usage_exit("MAKE FAILED! CHECK make_output for log")
-			print "Built " + d
+				print "MAKE FAILED! CHECK make_output for log"
+				continue
+			print "Built " + dd + " successfully"
 
 	print "********** Done. **********"
 

@@ -24,6 +24,10 @@
 !----------------------------------------------------------------------------
 */
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include "p3dfft.h"
 
 using namespace std;

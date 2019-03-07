@@ -87,7 +87,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 fsample_PROGRAMS = test3D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
-	test_deriv_f$(EXEEXT) test_trans1D_f$(EXEEXT)
+	test_deriv_f$(EXEEXT) test_trans1D_f$(EXEEXT) \
+	test3D_c2c_inplace_f$(EXEEXT)
 subdir = sample/FORTRAN
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -106,6 +107,13 @@ test3D_c2c_f_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test3D_c2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_test3D_c2c_inplace_f_OBJECTS = test3D_c2c_inplace.$(OBJEXT) \
+	wrap.$(OBJEXT)
+test3D_c2c_inplace_f_OBJECTS = $(am_test3D_c2c_inplace_f_OBJECTS)
+test3D_c2c_inplace_f_LDADD = $(LDADD)
+test3D_c2c_inplace_f_DEPENDENCIES =  \
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_r2c_f_OBJECTS = test3D_r2c.$(OBJEXT) wrap.$(OBJEXT)
 test3D_r2c_f_OBJECTS = $(am_test3D_r2c_f_OBJECTS)
 test3D_r2c_f_LDADD = $(LDADD)
@@ -148,10 +156,12 @@ AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
-SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(test_deriv_f_SOURCES) $(test_trans1D_f_SOURCES)
-DIST_SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(test_deriv_f_SOURCES) $(test_trans1D_f_SOURCES)
+SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_c2c_inplace_f_SOURCES) \
+	$(test3D_r2c_f_SOURCES) $(test_deriv_f_SOURCES) \
+	$(test_trans1D_f_SOURCES)
+DIST_SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_c2c_inplace_f_SOURCES) \
+	$(test3D_r2c_f_SOURCES) $(test_deriv_f_SOURCES) \
+	$(test_trans1D_f_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -285,6 +295,7 @@ AM_FCFLAGS = -I$(top_builddir)/include -O3
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 AM_LDFLAGS = -cxxlib
 fsampledir = $(datadir)/p3dfft++_samples/
+test3D_c2c_inplace_f_SOURCES = test3D_c2c_inplace.f90 wrap.f90
 test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90
 test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90
 test_deriv_f_SOURCES = test_deriv.f90 wrap.f90
@@ -368,6 +379,10 @@ clean-fsamplePROGRAMS:
 test3D_c2c_f$(EXEEXT): $(test3D_c2c_f_OBJECTS) $(test3D_c2c_f_DEPENDENCIES) $(EXTRA_test3D_c2c_f_DEPENDENCIES) 
 	@rm -f test3D_c2c_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test3D_c2c_f_OBJECTS) $(test3D_c2c_f_LDADD) $(LIBS)
+
+test3D_c2c_inplace_f$(EXEEXT): $(test3D_c2c_inplace_f_OBJECTS) $(test3D_c2c_inplace_f_DEPENDENCIES) $(EXTRA_test3D_c2c_inplace_f_DEPENDENCIES) 
+	@rm -f test3D_c2c_inplace_f$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(test3D_c2c_inplace_f_OBJECTS) $(test3D_c2c_inplace_f_LDADD) $(LIBS)
 
 test3D_r2c_f$(EXEEXT): $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_DEPENDENCIES) $(EXTRA_test3D_r2c_f_DEPENDENCIES) 
 	@rm -f test3D_r2c_f$(EXEEXT)
@@ -600,6 +615,8 @@ uninstall-am: uninstall-fsamplePROGRAMS
 
 
 p3dfft++.o: p3dfft++.f90
+
+test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft++.o
 
 test3D_r2c.o: test3D_r2c.f90 p3dfft++.o
 

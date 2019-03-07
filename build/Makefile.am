@@ -1,4 +1,4 @@
-AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include -include $(top_builddir)/include/config.h 
+AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include
 
 ARFLAGS = -v -r -u
 

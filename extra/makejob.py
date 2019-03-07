@@ -33,7 +33,7 @@ def gettests(mt, perf):
 	p3dfft_dirs = next(os.walk('.'))[1]
 	pattern = re.compile('p3dfft\+\+_compiled\S+')
 	p3dfft_dirs = sorted(filter(pattern.match, p3dfft_dirs))
-	pattern = re.compile('test_\S+_[cf]|cpp|iso')
+	pattern = re.compile('test.+_([cf]|cpp)$')
 	all_tests = []
 	for p3dir in p3dfft_dirs:
 		for root, _, files in os.walk(os.path.join(p3dir, 'sample')):
@@ -60,31 +60,31 @@ def getdims(mt):
 		# perfect square, take the factor in the middle
 		dims.append("'" + str(facs[len(facs)/2]) + " " + str(facs[len(facs)/2]) + "'")
 	dims.append("'" + str(facs[len(facs)-1]) + " " + str(facs[0]) + "'")
-	dims.append("'" + str(facs[0]) + " " +(facs[len(facs)-1]) + "'")
+	dims.append("'" + str(facs[0]) + " " + str(facs[len(facs)-1]) + "'")
 	return dims
 
 # Standard test run line
 def runline(platform, mt, basedir, test):
 	if platform == "comet":
 		if mt:
-			return "ibrun --npernode " + str(MT_RANKSPERNODE) + " " + basedir + "/" + test + "\n"
+			return "ibrun --npernode " + str(MT_RANKSPERNODE) + " " + test + "\n"
 		else:
-			return "ibrun --npernode " + str(TASKSPERNODE * NUMNODES) + " " + basedir + "/" + test + "\n"
+			return "ibrun --npernode " + str(TASKSPERNODE * NUMNODES) + " " + test + "\n"
 	elif platform == "stampede":
 		if mt:
-			return "ibrun -n " + str(MT_RANKSPERNODE) + " -o 0 tacc_affinity " + basedir + "/" + test + "\n"
+			return "ibrun -n " + str(MT_RANKSPERNODE) + " -o 0 tacc_affinity " + test + "\n"
 		else:
-			return "ibrun -n " + str(TASKSPERNODE * NUMNODES) + " -o 0 " + basedir + "/" + test + "\n"
+			return "ibrun -n " + str(TASKSPERNODE * NUMNODES) + " -o 0 " + test + "\n"
 
 # Test for 1x1 dims
 def onebyone(platform, mt, basedir, test):
 	if platform == "comet":
-		return "ibrun --npernode 1 " + basedir + "/" + test + "\n"
+		return "ibrun --npernode 1 " + test + "\n"
 	elif platform == "stampede":
 		if mt:
-			return "ibrun -n 1 -o 0 tacc_affinity " + basedir + "/" + test + "\n"
+			return "ibrun -n 1 -o 0 tacc_affinity " + test + "\n"
 		else:
-			return "ibrun -n 1 -o 0 " + basedir + "/" + test + "\n"
+			return "ibrun -n 1 -o 0 " + test + "\n"
 
 # Write all tests for all dims
 def runall(platform, mt, perf, all_tests, all_dims, batchf):
@@ -194,6 +194,7 @@ def main():
 		elif o == '-h':
 			usage_exit("**Help Message**")
 		elif o == '-m':
+			pass
 			#mt = True
 		elif o == '-p':
 			perf = True

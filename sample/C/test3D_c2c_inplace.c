@@ -1,6 +1,7 @@
 
 /*
 This program exemplifies using P3DFFT++ library. 
+This example is an in-place transform (output overwrites input, at the same array)
 
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs 3D forward Fourier transform, then backward transform,
@@ -23,7 +24,6 @@ This program exemplifies using P3DFFT++ library.
 */
 
 #include "p3dfft.h"
-#include "compiler_check.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -31,6 +31,7 @@ void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
 void normalize(double *,long int,int *);
 double check_res(double*,double *,int *);
+void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
 main(int argc,char **argv)
 {
@@ -47,15 +48,13 @@ main(int argc,char **argv)
   int imo1[3];
   int ldims[3],ldims2[3];
   long int size1,size2;
-  double *IN;
+  double *IN,*INOUT;
   Grid *grid1,*grid2;
   int glob_start[3],glob_start2[3];
-  double *OUT;
   int type_ids1[3];
   int type_ids2[3];
-  Type3D type_rcc,type_ccr;
+  Type3D type_forward,type_backward;
   double t=0.;
-  double *FIN;
   double mydiff;
   double diff = 0.0;
   double gtavg=0.;
@@ -72,9 +71,6 @@ main(int argc,char **argv)
 
    if(myid == 0) {
      printf("P3DFFT++ C test program. Running on %d cores\n",nprocs);
-     printf("GitVersion = %s\n", GIT_VERSION);
-     printf("GitDate = %s\n", GIT_DATE);
-     printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
@@ -136,18 +132,18 @@ main(int argc,char **argv)
 
   //Set up 2 transform types for 3D transforms
 
-  type_ids1[0] = P3DFFT_R2CFFT_D;
+  type_ids1[0] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[1] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[2] = P3DFFT_CFFT_FORWARD_D;
 
-  type_ids2[0] = P3DFFT_C2RFFT_D;
+  type_ids2[0] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[1] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[2] = P3DFFT_CFFT_BACKWARD_D;
 
   //Now initialize 3D transforms (forward and backward) with these types
 
-  type_rcc = p3dfft_init_3Dtype(type_ids1);
-  type_ccr = p3dfft_init_3Dtype(type_ids2);
+  type_forward = p3dfft_init_3Dtype(type_ids1);
+  type_backward = p3dfft_init_3Dtype(type_ids2);
 
   //Set up global dimensions of the grid
 
@@ -177,7 +173,6 @@ main(int argc,char **argv)
 
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
-  gdims2[0] = gdims2[0]/2+1;
 
   //Initialize initial and final grids, based on the above information
 
@@ -186,13 +181,14 @@ main(int argc,char **argv)
   grid2 = p3dfft_init_grid(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,1);
+  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_forward,1);
 
   //Now set up the backward transform
 
-  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,1);
+  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_backward,1);
 
   //Save the local array dimensions. 
+  // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
 
   for(i=0;i<3;i++) {
     glob_start[mem_order[i]] = grid1->glob_start[i];
@@ -201,16 +197,9 @@ main(int argc,char **argv)
 
   size1 = ldims[0]*ldims[1]*ldims[2];
 
-  //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
-  IN=(double *) malloc(sizeof(double)*size1);
-  FIN= (double *) malloc(sizeof(double) *size1);
-
-  //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
-
-
-  init_wave(IN,gdims,ldims,glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
+
 
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2->glob_start[i];
@@ -218,10 +207,18 @@ main(int argc,char **argv)
   }
 
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  OUT=(double *) malloc(sizeof(double) *size2 *2);
 
-  // Warm-up run, forward transform
-  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
+  //Now allocate input/output array with the larger of the two sizes
+  INOUT= (double *) malloc(sizeof(double) *((size1>size2)?size1:size2)*2);
+// Allocate a copy of the input array
+  IN=(double *) malloc(sizeof(double)*size1*2);
+
+  //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
+
+  init_wave(IN,gdims,ldims,glob_start);
+
+for(i=0;i<size1*2;i++)
+  INOUT[i] = IN[i];
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -230,19 +227,19 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_f,INOUT,INOUT,1); // In-place Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       printf("Results of forward transform: \n");
-    print_res(OUT,gdims,ldims2,glob_start2);
-    normalize(OUT,size2,gdims);
+    print_res(INOUT,gdims,ldims2,glob_start2);
+    normalize(INOUT,size2,gdims);
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,0); // Backward (inverse) complex-to-real 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_b,INOUT,INOUT,1); // In-place Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 
-  mydiff = check_res(IN,FIN,ldims);
+  mydiff = check_res(IN,INOUT,ldims);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -259,7 +256,7 @@ main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/(nprocs*Nrep),gtmin/Nrep,gtmax/Nrep);
 
-  free(IN); free(OUT); free(FIN);
+  free(IN); free(INOUT); 
 
   // Clean up grid structures
 
@@ -304,8 +301,10 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
    for(z=0;z < ldims[2];z++)
      for(y=0;y < ldims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++)
+       for(x=0;x < ldims[0];x++) {
           *p++ = sinx[x]*sinyz;
+	  *p++ = 0.0;
+       }
      }
 
    free(sinx); free(siny); free(sinz);
@@ -333,21 +332,25 @@ void print_res(double *A,int *gdims,int *ldims,int *gstart)
 double check_res(double *A,double *B,int *ldims)
 {
   int x,y,z;
-  double *p1,*p2,mydiff;
+  double *p1,*p2,d,mydiff;
   int imo[3],i,j;
   p1 = A;
   p2 = B;
   
+
   mydiff = 0.;
   for(z=0;z < ldims[2];z++)
     for(y=0;y < ldims[1];y++)
       for(x=0;x < ldims[0];x++) {
-	if(fabs(*p1 - *p2) > mydiff)
-	  mydiff = fabs(*p1-*p2);
+	d = (*p1-*p2)*(*p1-*p2);
+	p1++; p2++;
+	d += (*p1-*p2)*(*p1-*p2);
+	if(d > mydiff)
+	  mydiff = d;
 	p1++;
 	p2++;
       }
-  return(mydiff);
+  return(sqrt(mydiff));
 }
 
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
@@ -363,7 +366,7 @@ void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
   for(k=0;k<sz[mo[2]];k++)
     for(j=0;j<sz[mo[1]];j++)
       for(i=0;i<sz[mo[0]];i++) {
-	if(abs(*p) > 1.e-7) {
+	if(fabs(*p) > 1.e-7) {
 	  fprintf(fp,"(%d %d %d) %lg\n",i,j,k,*p);
 	}
 	p++;

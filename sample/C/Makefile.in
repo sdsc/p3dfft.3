@@ -87,7 +87,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 csample_PROGRAMS = test3D_r2c_c$(EXEEXT) test3D_c2c_c$(EXEEXT) \
-	test_deriv_c$(EXEEXT) test_trans1D_c$(EXEEXT)
+	test_deriv_c$(EXEEXT) test_trans1D_c$(EXEEXT) \
+	test3D_c2c_inplace_c$(EXEEXT)
 subdir = sample/C
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -106,6 +107,12 @@ test3D_c2c_c_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test3D_c2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_test3D_c2c_inplace_c_OBJECTS = test3D_c2c_inplace.$(OBJEXT)
+test3D_c2c_inplace_c_OBJECTS = $(am_test3D_c2c_inplace_c_OBJECTS)
+test3D_c2c_inplace_c_LDADD = $(LDADD)
+test3D_c2c_inplace_c_DEPENDENCIES =  \
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_r2c_c_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_c_OBJECTS = $(am_test3D_r2c_c_OBJECTS)
 test3D_r2c_c_LDADD = $(LDADD)
@@ -148,10 +155,12 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(test3D_c2c_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(test_deriv_c_SOURCES) $(test_trans1D_c_SOURCES)
-DIST_SOURCES = $(test3D_c2c_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(test_deriv_c_SOURCES) $(test_trans1D_c_SOURCES)
+SOURCES = $(test3D_c2c_c_SOURCES) $(test3D_c2c_inplace_c_SOURCES) \
+	$(test3D_r2c_c_SOURCES) $(test_deriv_c_SOURCES) \
+	$(test_trans1D_c_SOURCES)
+DIST_SOURCES = $(test3D_c2c_c_SOURCES) $(test3D_c2c_inplace_c_SOURCES) \
+	$(test3D_r2c_c_SOURCES) $(test_deriv_c_SOURCES) \
+	$(test_trans1D_c_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -281,9 +290,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"' -DP3DFFT3_COMPILE_WITH=\"$(CC)\"
+AM_CPPFLAGS = -I$(top_builddir)/include -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 csampledir = $(datadir)/p3dfft++_samples/
+test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c
 test_deriv_c_SOURCES = test_deriv.c
@@ -367,6 +377,10 @@ clean-csamplePROGRAMS:
 test3D_c2c_c$(EXEEXT): $(test3D_c2c_c_OBJECTS) $(test3D_c2c_c_DEPENDENCIES) $(EXTRA_test3D_c2c_c_DEPENDENCIES) 
 	@rm -f test3D_c2c_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_c2c_c_OBJECTS) $(test3D_c2c_c_LDADD) $(LIBS)
+
+test3D_c2c_inplace_c$(EXEEXT): $(test3D_c2c_inplace_c_OBJECTS) $(test3D_c2c_inplace_c_DEPENDENCIES) $(EXTRA_test3D_c2c_inplace_c_DEPENDENCIES) 
+	@rm -f test3D_c2c_inplace_c$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test3D_c2c_inplace_c_OBJECTS) $(test3D_c2c_inplace_c_LDADD) $(LIBS)
 
 test3D_r2c_c$(EXEEXT): $(test3D_r2c_c_OBJECTS) $(test3D_r2c_c_DEPENDENCIES) $(EXTRA_test3D_r2c_c_DEPENDENCIES) 
 	@rm -f test3D_r2c_c$(EXEEXT)

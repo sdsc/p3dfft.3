@@ -10,8 +10,8 @@ AC_CONFIG_HEADERS([config.h])
 DEFINE="#define"
 UNDEFINE="#undef"
 
-git_date=`git --no-pager show --date=short --format="%ad" --name-only | { read first _ ; echo $first ; } `
-git_version=`git --no-pager describe --tags --always --dirty`
+git_date=`git --no-pager show --date=short --format="%ad" --name-only 2> /dev/null | { read first _ ; echo $first ; } `
+git_version=`git --no-pager describe --tags --always --dirty 2> /dev/null`
 AC_SUBST(GIT_DATE, "$git_date")
 AC_SUBST(GIT_VERSION, "$git_version")
 
