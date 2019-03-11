@@ -255,7 +255,7 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d,int inplace)
   //  p3dfft::write_buf<double>(ar,label,dims,imo);
   // }
 
-void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
+void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out) {
 
     gen_transform3D *trans3D = stored_trans3D[plan];
     
@@ -263,31 +263,32 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     if(trans3D->dt1 == 1)
       if(trans3D->dt2 == 1) {
 	transform3D<float,float> *tr3D = (transform3D<float,float> *) trans3D;
-	tr3D->exec(in,out,OW);
+	tr3D->exec(in,out);
       }
       else {
 	transform3D<float,mycomplex> *tr3D = (transform3D<float,mycomplex> *) trans3D;
-	tr3D->exec(in,(mycomplex *) out,OW);
+	tr3D->exec(in,(mycomplex *) out);
       }
     else
       if(trans3D->dt2 == 1) {
 	transform3D<mycomplex,float> *tr3D = (transform3D<mycomplex,float> *) trans3D;
-	tr3D->exec((mycomplex *) in,out,OW);
+	tr3D->exec((mycomplex *) in,out);
       }
       else {
 	transform3D<mycomplex,mycomplex> *tr3D = (transform3D<mycomplex,mycomplex> *) trans3D;
-	tr3D->exec((mycomplex *) in,(mycomplex *) out,OW);
+	tr3D->exec((mycomplex *) in,(mycomplex *) out);
       }
     
     if(trans3D->prec != 4) {
       printf("ERror in p3dfft_exec_3Dtrans_single: expecting single precision data\n");
       MPI_Abort(MPI_COMM_WORLD,0);
+		//trans3D->grid1->mpi_comm_glob,0);
     }
     
     
 }
 
-  void p3dfft_exec_3Dtrans_double(Plan3D plan,double *in,double *out,int OW) {
+  void p3dfft_exec_3Dtrans_double(Plan3D plan,double *in,double *out) {
 
     gen_transform3D *trans3D = stored_trans3D[plan];
     
@@ -295,20 +296,20 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     if(trans3D->dt1 == 1)
       if(trans3D->dt2 == 1) {
 	transform3D<double,double> *tr3D = (transform3D<double,double> *) trans3D;
-	tr3D->exec(in,out,OW);
+	tr3D->exec(in,out);
       }
       else {
 	transform3D<double,complex_double> *tr3D = (transform3D<double,complex_double> *) trans3D;
-	tr3D->exec(in,(complex_double *) out,OW);
+	tr3D->exec(in,(complex_double *) out);
       }
     else
       if(trans3D->dt2 == 1) {
 	transform3D<complex_double,double> *tr3D = (transform3D<complex_double,double> *) trans3D;
-	tr3D->exec((complex_double *)in,out,OW);
+	tr3D->exec((complex_double *)in,out);
       }
       else {
 	transform3D<complex_double,complex_double> *tr3D = (transform3D<complex_double,complex_double> *) trans3D;
-	tr3D->exec((complex_double *)in,(complex_double *)out,OW);
+	tr3D->exec((complex_double *)in,(complex_double *)out);
       }
     
     if(trans3D->prec != 8) {
@@ -319,7 +320,7 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     
 }
 
-  void p3dfft_exec_3Dderiv_single(Plan3D plan,float *in,float *out,int idir,int OW) {
+  void p3dfft_exec_3Dderiv_single(Plan3D plan,float *in,float *out,int idir) {
 
     gen_transform3D *trans3D = stored_trans3D[plan];
     
@@ -327,20 +328,20 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     if(trans3D->dt1 == 1)
       if(trans3D->dt2 == 1) {
 	transform3D<float,float> *tr3D = (transform3D<float,float> *) trans3D;
-	tr3D->exec_deriv(in,out,idir,OW);
+	tr3D->exec_deriv(in,out,idir);
       }
       else {
 	transform3D<float,mycomplex> *tr3D = (transform3D<float,mycomplex> *) trans3D;
-	tr3D->exec_deriv(in,(mycomplex *) out,idir,OW);
+	tr3D->exec_deriv(in,(mycomplex *) out,idir);
       }
     else
       if(trans3D->dt2 == 1) {
 	transform3D<mycomplex,float> *tr3D = (transform3D<mycomplex,float> *) trans3D;
-	tr3D->exec_deriv((mycomplex *) in,out,idir,OW);
+	tr3D->exec_deriv((mycomplex *) in,out,idir);
       }
       else {
 	transform3D<mycomplex,mycomplex> *tr3D = (transform3D<mycomplex,mycomplex> *) trans3D;
-	tr3D->exec_deriv((mycomplex *) in,(mycomplex *) out,idir,OW);
+	tr3D->exec_deriv((mycomplex *) in,(mycomplex *) out,idir);
       }
     
     if(trans3D->prec != 4) {
@@ -351,7 +352,7 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     
 }
 
-  void p3dfft_exec_3Dderiv_double(Plan3D plan,double *in,double *out,int idir,int OW) {
+  void p3dfft_exec_3Dderiv_double(Plan3D plan,double *in,double *out,int idir) {
 
     gen_transform3D *trans3D = stored_trans3D[plan];
     
@@ -359,25 +360,26 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
     if(trans3D->dt1 == 1)
       if(trans3D->dt2 == 1) {
 	transform3D<double,double> *tr3D = (transform3D<double,double> *) trans3D;
-	tr3D->exec_deriv(in,out,idir,OW);
+	tr3D->exec_deriv(in,out,idir);
       }
       else {
 	transform3D<double,complex_double> *tr3D = (transform3D<double,complex_double> *) trans3D;
-	tr3D->exec_deriv(in,(complex_double *) out,idir,OW);
+	tr3D->exec_deriv(in,(complex_double *) out,idir);
       }
     else
       if(trans3D->dt2 == 1) {
 	transform3D<complex_double,double> *tr3D = (transform3D<complex_double,double> *) trans3D;
-	tr3D->exec_deriv((complex_double *)in,out,idir,OW);
+	tr3D->exec_deriv((complex_double *)in,out,idir);
       }
       else {
 	transform3D<complex_double,complex_double> *tr3D = (transform3D<complex_double,complex_double> *) trans3D;
-	tr3D->exec_deriv((complex_double *)in,(complex_double *)out,idir,OW);
+	tr3D->exec_deriv((complex_double *)in,(complex_double *)out,idir);
       }
     
     if(trans3D->prec != 8) {
       printf("ERror in p3dfft_exec_3Dderiv_double: expecting double precision data\n");
       MPI_Abort(MPI_COMM_WORLD,0);
+		//trans3D->grid1->mpi_comm_glob,0);
     }
 
     
@@ -519,19 +521,18 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
   //  return count;
 
   }
-  /*
+
   void p3dfft_compute_deriv_single_f(float *in,float *out,int *igrid,int *idir) {
     grid *grid1 = &stored_grids[*igrid];
 
-    compute_deriv<float>(in,out,grid1,*idir-1);
+    compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,*idir-1);
   }
 
   void p3dfft_compute_deriv_double_f(double *in,double *out,int *igrid,int *idir) {
     grid *grid1 = &stored_grids[*igrid];
 
-    compute_deriv<double>(in,out,grid1,*idir-1);
+    compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,*idir-1);
   }
-  */
 
   void p3dfft_plan_3Dtrans_f(Plan3D *plan,int *Fgr1,int *Fgr2,Type3D *tp,int *inplace){
 
@@ -641,23 +642,23 @@ void p3dfft_exec_3Dtrans_single(Plan3D plan,float *in,float *out,int OW) {
 }
 
 
-  void p3dfft_exec_3Dtrans_double_f(Plan3D *plan,double *in,double *out,int *OW) {
-    return(p3dfft_exec_3Dtrans_double(*plan,in,out,*OW));
+  void p3dfft_exec_3Dtrans_double_f(Plan3D *plan,double *in,double *out) {
+    return(p3dfft_exec_3Dtrans_double(*plan,in,out));
   }
 
 
-void p3dfft_exec_3Dtrans_single_f(Plan3D *plan,float *in,float *out,int *OW) 
+void p3dfft_exec_3Dtrans_single_f(Plan3D *plan,float *in,float *out) 
  {
-    return(p3dfft_exec_3Dtrans_single(*plan,in,out,*OW));
+    return(p3dfft_exec_3Dtrans_single(*plan,in,out));
   }
-  void p3dfft_exec_3Dderiv_double_f(Plan3D *plan,double *in,double *out,int *idir,int *OW) {
-    return(p3dfft_exec_3Dderiv_double(*plan,in,out,*idir,*OW));
+  void p3dfft_exec_3Dderiv_double_f(Plan3D *plan,double *in,double *out,int *idir) {
+    return(p3dfft_exec_3Dderiv_double(*plan,in,out,*idir));
   }
 
 
-  void p3dfft_exec_3Dderiv_single_f(Plan3D *plan,float *in,float *out,int *idir,int *OW) 
+  void p3dfft_exec_3Dderiv_single_f(Plan3D *plan,float *in,float *out,int *idir) 
  {
-   return(p3dfft_exec_3Dderiv_single(*plan,in,out,*idir,*OW));
+   return(p3dfft_exec_3Dderiv_single(*plan,in,out,*idir));
   }
  
   void p3dfft_exec_1Dtrans_double_f(int *plan,double *in,double *out) {

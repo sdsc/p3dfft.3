@@ -32,32 +32,35 @@ namespace p3dfft {
   timer timers;
 #endif
 
+#ifdef DEBUG
 static int cnt_pack=0;
 static int cnt_trans=0;
-  void printbuf(char *,int[3],int,int);
+void printbuf(char *,int[3],int,int);
+#endif
 
-/* Compute derivative in a given dimension idir (1 to 3), physical dimension order. 
-   Input/output: one-dimensional array of doubles, containing contiguously stored 
-                 COMPLEX 3D array of dimensions ldims[0]xldims[1]xldims[2], 
-                 i.e. 2*ldims[0]*ldimsp[1]*ldims[2] double numbers
-   glob_start: 3 numbers corresponding to starting indices of this subarray within the global array (in storage order)
-   gdims: 3 global dimensions (in storage order)
+/* Execute 3D transform, optionally followed by spectral derivative in logical dimension idir.
+   Input/output: buffers containing 3D arrays, contiguously stored according to memory mappings (mo1 and mo2) expected by transform3D class. Can be same buffer, otherwise need to be non-overlapping.
+   OW: if != 0 input buffer can be overwritten (obviously the case if in==out).
 */
 
-  template <class Type1,class Type2> void transform3D<Type1,Type2>::exec_deriv(Type1 *in,Type2 *out,int idir, int OW) 
+  template <class Type1,class Type2> void transform3D<Type1,Type2>::exec_deriv(Type1 *in,Type2 *out,int idir) 
 {
   int ldir,i,j,k,g,mid;
   complex_double *p1,*p2,mult;
 
   int nvar=0;
-  //  int nvar_l = 1;
-  //int nup = upper_ind_var(nstages,trans_plans);
   char *buf[2],*var[2],*buf_in,*buf_out;
   int next,curr,dt_1,dt_2,nextvar,stage_cnt=0;
 
+  if((void *) in == (void *) out && OW == 0) {
+    printf("Warning in transform3D:exec_deriv: input and output are the same, but overwrite priviledge is not set\n");
+    //    OW = 1;
+  }
+
+#ifdef DEBUG
   int taskid;
   MPI_Comm_rank(grid1->mpi_comm_glob,&taskid);
-
+#endif
 
   next = 1; curr = 0;
   buf[curr] = buf_in = (char *) in;
@@ -71,23 +74,6 @@ static int cnt_trans=0;
     printf("stage %d, kind=%d\n",stage_cnt++,curr_stage->kind);
 #endif  
 
-/*
-  for(int nst=0; nst < nstages;nst++) {
-    trans_plan *trans_pl = &trans_plans[nst]; 
-    MPIplan *mpi_pl = &MPIplans[nst];
-    if(nst == nup) {
-    }
-    else {
-    }
-*/
-
-/*
-    if(!curr_stage->is_set) {
-      cout << "Error in transform3D::exec: stage is not set up" << endl;
-      return;
-    }
-*/
-
     if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
 	//	transplan<Type1,Type2> *st = (transplan<Type1,Type2> *) curr_stage;
@@ -96,44 +82,106 @@ static int cnt_trans=0;
 	int size2 = st->dims2[0] * st->dims2[1] * st->dims2[2]; 
 	dt_1 = curr_stage->dt1;
 	dt_2 = curr_stage->dt2;
-	if(!curr_stage->next)
-	  buf[next] = buf_out;
-	else if(!(st->inplace) || (!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1) {
-#ifdef DEBUG
-	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
-#endif
-	  var[nextvar] = new char[size2*dt_2*st->stage_prec];
-	  buf[next] = var[nextvar];
-	  nvar++;
-	  nextvar = 1-nextvar;
+	if(!curr_stage->next) {
+	  buf[next] = buf_out; // Last stage always writes to out destination
+	  if(buf[curr] == buf[next] && !st->inplace) {
+	    printf("Error in transform3D::exec_deriv: stage was intended for out-place transform but is used in-place\n");
+	    MPI_Abort(grid1->mpi_comm_glob,0);
+	  }
 	}
-	else
-	  buf[next] = buf[curr];
-
+	else 
+	  if(st->inplace) { // If this stage was planned as in-place
+	    if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1) {
+	      printf("Error in transform3D::exec_deriv: stage was intended as in-place but needs to be done as out-of-place.\n");
+	      MPI_Abort(grid1->mpi_comm_glob,0);
+	    }
+	    buf[next] = buf[curr];
+	  }
+	  else // This stage was planned as out-place
+	    // check if we can use the destination array as the output buffer
+	    if(size2 <= grid2->ldims[0] *grid2->ldims[1] *grid2->ldims[2]) {
+	      // Check if any of the following stages is out-place
+	      bool outplace=false;
+	      stage *ist;
+	      for(ist=st->next;ist != NULL;ist = ist->next)
+		if(!ist->inplace)
+		  outplace = true;
+	      if(!outplace) {
+		buf[next] = buf_out;
+#ifdef DEBUG
+		printf("%d: Using output buffer in out-of-place transform\n",taskid);
+#endif
+	      }
+  	      else { //  allocate a new buffer
+#ifdef DEBUG
+		printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+		var[nextvar] = new char[size2*dt_2*st->stage_prec];
+		buf[next] = var[nextvar];
+		nvar++;
+		nextvar = 1-nextvar;
+	      }
+	    }
+	    else {
+#ifdef DEBUG
+	      printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+	      var[nextvar] = new char[size2*dt_2*st->stage_prec];
+	      buf[next] = var[nextvar];
+	      nvar++;
+	      nextvar = 1-nextvar;
+	    }
+    
 	if(idir == ((transplan<Type1,Type2> *) st)->trans_dim)
 	  st->myexec_deriv(buf[curr],buf[next]);
 	else
 	  st->myexec(buf[curr],buf[next]);
-
+	
 	dt_1 = dt_2;
 
 
-      }
+    }
     else if(curr_stage->kind == MPI_ONLY) { // Only MPI plan (exchange, no transform)
 	int size1 = curr_stage->dims1[0] * curr_stage->dims1[1] * curr_stage->dims1[2]; 
 	int size2 = curr_stage->dims2[0] * curr_stage->dims2[1] * curr_stage->dims2[2]; 
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
-	else if((!OW && buf[curr] == buf_in) || size2 > size1) {
-	  var[nextvar] = new char[size2*dt_1*curr_stage->stage_prec];
+	else if((!OW && buf[curr] == buf_in) || size2 > size1) { // Out-place
+	  // Check if we can use the destination buffer
+	    if(size2 <= grid2->ldims[0] *grid2->ldims[1] *grid2->ldims[2]) {
+	      // Check if any of the following stages is out-place
+	      bool outplace=false;
+	      stage *ist;
+	      for(ist=curr_stage->next;ist != NULL;ist = ist->next)
+		if(!ist->inplace)
+		  outplace = true;
+	      if(!outplace) {
+		buf[next] = buf_out;
 #ifdef DEBUG
-      	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+		printf("%d: Using output buffer in out-of-place transform\n",taskid);
 #endif
-	  buf[next] = var[nextvar];
-	  nvar++;
-	  nextvar = 1-nextvar;
+	      }
+	      else {
+		var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+#ifdef DEBUG
+		printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+		buf[next] = var[nextvar];
+		nvar++;
+		nextvar = 1-nextvar;
+	      }
+	    }
+	    else {
+		var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+#ifdef DEBUG
+		printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+		buf[next] = var[nextvar];
+		nvar++;
+		nextvar = 1-nextvar;
+	      }
 	}
-	else 
+	else // In-place 
 	  buf[next] = buf[curr];
 
 	curr_stage->myexec(buf[curr],buf[next]);
@@ -145,14 +193,41 @@ static int cnt_trans=0;
 	dt_2 = curr_stage->dt2;
 	if(!curr_stage->next)
 	  buf[next] = buf_out;
-	else if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1*dt_1) {
-	  var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+	else if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1*dt_1) {// out-place
+
+	  // Check if we can use the destination buffer
+	    if(size2 <= grid2->ldims[0] *grid2->ldims[1] *grid2->ldims[2]) {
+	      // Check if any of the following stages is out-place
+	      bool outplace=false;
+	      stage *ist;
+	      for(ist=curr_stage->next;ist != NULL;ist = ist->next)
+		if(!ist->inplace)
+		  outplace = true;
+	      if(!outplace) {
+		buf[next] = buf_out;
 #ifdef DEBUG
-	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+		printf("%d: Using output buffer in out-of-place transform\n",taskid);
 #endif
-	  buf[next] = var[nextvar];
-	  nvar++;
-	  nextvar = 1-nextvar;
+	      }
+	      else {
+		var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+#ifdef DEBUG
+		printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+		buf[next] = var[nextvar];
+		nvar++;
+		nextvar = 1-nextvar;
+	      }
+	    }
+	    else {	
+	      var[nextvar] = new char[size2*dt_2*curr_stage->stage_prec];
+#ifdef DEBUG
+	      printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+#endif
+	      buf[next] = var[nextvar];
+	      nvar++;
+	      nextvar = 1-nextvar;
+	    }
 	}
 	else
 	  buf[next] = buf[curr];
@@ -165,12 +240,7 @@ static int cnt_trans=0;
 	dt_1 = dt_2;
       }
 
-    //	dt_2 = curr_stage->dt2;
-    //	printf("%d: Stage %d\n",taskid,cnt++);
-    //	printbuf(buf[next],curr_stage->dims2,dt_2,taskid);
-
-    
-    if(nvar > 1) {
+    if(nvar > 1) { // Keep track and delete buffers that are no longer used
       delete [] var[nextvar];
       nvar--;
     }
@@ -182,6 +252,7 @@ static int cnt_trans=0;
 }
 
 
+  // Execute local spectral derivative
 // dims are storage dimensions; differentiate in the first dimension, assumed to be local
   template <class Type1,class Type2> void transplan<Type1,Type2>::compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]) 
   {
@@ -244,11 +315,12 @@ static int cnt_trans=0;
   }
 }
 
-template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in,Type2 *out,int OW)
+  // Execute 3D transform
+template <class Type1,class Type2> void transform3D<Type1,Type2>::exec(Type1 *in,Type2 *out)
 //void transform3D::exec(char *in,char *out,int OW)
 {
-
-  exec_deriv(in,out,-1,OW);
+  // Call exec_deriv with -1 (void) for derivative dimension
+  exec_deriv(in,out,-1);
 }
 
 void stage::myexec(char *in,char *out)
@@ -472,39 +544,32 @@ void stage::myexec_deriv(char *in,char *out)
 }
 
 
-// Input: in[dims1[mo1[0]]][dims1[mo1[1]]][dims1[mo1[2]]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
-//template <class Type1,class Type2> 
+  // Execute 1D transform, combined with local transpose as needed
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+
 template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,char *out_)
 {
   int L,N,m,mocurr[3],mc[3];
-  //  lib_plan plan;
-  //void (*doexec)(void *,void *);
   Type1 *in;
   Type2 *out;
   Type2 *buf=NULL;
-  bool alloc=false;
   void swap0(int newmo[3],int mo[3],int L);
 
   in = (Type1 *) in_;
   out = (Type2 *) out_;
 
   L = trans_dim;
-  //  prec = sizeof(Type1)/dt1;
-
-  //  rel_change(mo1,mo2,mc);
-  //int newL = mc[L];
-
-  int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
 
 #ifdef DEBUG
+  int taskid;
+  MPI_Comm_rank(mpicomm,&taskid);
   printf("%d: In transplan::exec, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
 #endif
 
   if(mo1[L] == 0 || mo2[L] == 0) {
 
-    if(!arcmp(mo1,mo2,3)) {
+    if(!arcmp(mo1,mo2,3)) { // If there is no change in memory mapping, there is no need to do transpose. Just call 1D transform.
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
@@ -513,7 +578,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
       timers.trans_exec += MPI_Wtime() -t1;
 #endif
     }
-    else {
+    else { // Otherwise, combine transpose with transform
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
@@ -526,8 +591,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
 
   else { //If first dimension is not the one to be transformed, need to reorder first, combined with transform
     swap0(mocurr,mo1,L);
-  //    Try to organize so out of place transpose is used, if possible
-    //    if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
     buf = new Type2[dims2[0]*dims2[1]*dims2[2]];
 #ifdef TIMERS
       double t1=MPI_Wtime();
@@ -536,11 +599,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
 #ifdef TIMERS
       timers.reorder_trans += MPI_Wtime() -t1;
 #endif
-    /*
-    int currdims[3],i,tmpdims[3];
-    for(i=0; i < 3;i++) 
-      currdims[mocurr[i]] = dims2[mo2[i]];
-    */
 #ifdef TIMERS
       t1=MPI_Wtime();
 #endif
@@ -552,14 +610,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,c
   }
 }
 
-// Input: in[dims1[mo1[0]]][dims1[mo1[1]]][dims1[mo1[2]]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
-//template <class Type1,class Type2> 
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+// Transform in 1D and take spectral derivative in the dimension of transform
 template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char *in_,char *out_)
 {
   int L,N,m,mocurr[3],mc[3];
-  //  lib_plan plan;
-  //void (*doexec)(void *,void *);
   Type1 *in;
   Type2 *out;
   Type2 *buf=NULL;
@@ -570,40 +626,32 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
   out = (Type2 *) out_;
 
   L = trans_dim;
-  //  prec = sizeof(Type1)/dt1;
-
-  //  rel_change(mo1,mo2,mc);
-  //int newL = mc[L];
-
 
 #ifdef DEBUG
   int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
+  MPI_Comm_rank(mpicomm,&taskid);
   printf("%d: In transplan::exec, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
 #endif
 
   if(mo1[L] == 0 || mo2[L] == 0) {
 
-    if(!arcmp(mo1,mo2,3)) {
+    if(!arcmp(mo1,mo2,3)) {  // If there is no change in memory ordering
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
-      (*(trans_type->exec))(lib_plan,in,out);
-      int sdims[3];
+  // Do 1D transform directly on input, into 'out'
+      (*(trans_type->exec))(lib_plan,in,out); 
+      int sdims[3]; // Find storage dimensions
       for(int i=0;i<3;i++)
 	sdims[mo1[i]] = grid2->ldims[i];
-      bool r2c = (grid2->dim_conj_sym == L);
-      /*      if(trans_type->dt1 == 1 && trans_type->dt2 == 2)
-	r2c = true;
-      else
-	r2c = false;
-      */
+      //      bool r2c = (grid2->dim_conj_sym >= 0);
+      // Now compute local derivative
       compute_deriv_loc(out,out,sdims);
 #ifdef TIMERS
       timers.trans_deriv += MPI_Wtime() -t1;
 #endif
     }
-    else {
+    else { // Combine reordering with 1D transform and derivative
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
@@ -625,13 +673,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
     reorder_deriv(in,buf,mo1,mocurr,dims1);   
 #ifdef TIMERS
       timers.reorder_deriv += MPI_Wtime() -t1;
-#endif
-    /*
-    int currdims[3],i,tmpdims[3];
-    for(i=0; i < 3;i++) 
-      currdims[mocurr[i]] = dims2[mo2[i]];
-    */
-#ifdef TIMERS
       t1=MPI_Wtime();
 #endif
     reorder_out(buf,out,mocurr,mo2,dims2);
@@ -642,7 +683,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
   }
 }
 
-
+#ifdef DEBUG
   void printbuf(char *buf,int dims[3],int dt,int taskid)
 {
   int i,j,k;
@@ -657,6 +698,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
       }
 
 }
+#endif
   
 int arcmp(int *A,int *B,int N)
 {
@@ -671,29 +713,27 @@ int arcmp(int *A,int *B,int N)
 #define TRANS_IN 0
 #define TRANS_OUT 1
 
-
-// Input: in[dims1[mo1[0]]][dims1[mo1[1]]][dims1[mo1[2]]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
+  // Reorder (local transpose), followed by 1D transform
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
 template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1)
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
-  //  Type1 *pin,*pin1,*p1;
-  //Type2 *p2,*ptran2;
-  //  libplan plan;
 
   int imo1[3],imo2[3],d1[3],d2[3];
   int scheme,nb13,nb31;
   
-  int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
-
 #ifdef DEBUG
+  int taskid;
+  MPI_Comm_rank(mpicomm,&taskid);
   printf("%d: In transplan::reorder_trans, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
 #endif
 
+  // Find inverse memory mappings
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
+  // Find local storage dimensions
   for(i=0;i<3;i++) {
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
@@ -732,9 +772,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
   if(scheme == TRANS_IN) { // Scheme is transform before reordering
 
-    //    if(sizeof(Type1) == sizeof(Type2)) { // Can assume the transform doesn't change dimensions,
-    // so we can do in-place transforms
-
     Type1 *pin_t1;
     Type2 *tmp,*pin2,*pout2;
     float *pin,*pin1,*pout,*pout1,*ptran2; 
@@ -745,9 +782,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       switch(mc[1]) {
       case 0: //1,0,2
 	
-	  //      m /= dims1[2]; // Need finer grain transform, to reuse cache
-	  //Either find existing plan with suitable parameters, or reate a new one
-	  //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	tmp = new Type2[d2[0]*d2[1]];
 	
 	for(k=0;k <d1[2];k++) {
@@ -800,10 +834,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb31 < 1) nb31 = 1;
 	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
-	//m = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);	
 	tmp = new Type2[d2[2]*d2[1]*nb31];
-	//double *tmp1=(double *) tmp; 
 
 	for(k=0;k <d1[2];k+=nb31) {
 	  k2 = min(k+nb31,d1[2]);
@@ -843,7 +874,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb31 < 1) nb31 = 1;
 	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb13 < 1) nb13 = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
+
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 	(*(trans_type->exec))(lib_plan,in,tmp);
 	
@@ -876,7 +907,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb23 < 1) nb23 = 1;
 	int nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
 	if(nb32 < 1) nb32 = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 	(*(trans_type->exec))(lib_plan,in,tmp);
@@ -913,10 +943,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb32 < 1) nb32 = 1;
 	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb23 < 1) nb23 = 1;
-	//m = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
-	//Type1 *pin;
-	//	Type2 *pout;
 	
 	for(k=0;k <d1[2];k+=nb32) {
 	  k2 = min(k+nb32,d1[2]);
@@ -948,11 +974,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 1:
       switch(mc[1]) {
       case 0: //1,0,2
-	
-      //      m /= dims1[2]; // Need finer grain transform, to reuse cache
-    //Either find existing plan with suitable parameters, or reate a new one
-      //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
-  
+
 	tmp = new Type1[d1[0]*d1[1]];
 	for(k=0;k <d1[2];k++) {
 	  pin = (float *) in + ds*k*d1[0]*d1[1];
@@ -980,8 +1002,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb31 < 1) nb31 = 1;
 	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
-	//m = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 
 	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
 
@@ -1023,7 +1043,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb31 < 1) nb31 = 1;
 	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb13 < 1) nb13 = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
@@ -1058,7 +1077,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb32 < 1) nb32 = 1;
 	int nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb23 < 1) nb23 = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
@@ -1096,8 +1114,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb32 < 1) nb32 = 1;
 	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
 	if(nb23 < 1) nb23 = 1;
-	//m = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
 	
 	for(k=0;k <d1[2];k+=nb32) {
 	  k2 = min(k+nb32,d1[2]);
@@ -1128,39 +1144,37 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 #endif  
 }
 
-// Input: in[dims1[mo1[0]]][dims1[mo1[1]]][dims1[mo1[2]]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+// Reorder (local transpose), perform 1D transform followed by spectral derivative
 template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1)
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,dims[3];
   void rel_change(int *,int *,int *);
-  //  Type1 *pin,*pin1,*p1;
-  //Type2 *p2,*ptran2;
-  //  libplan plan;
 
   int imo1[3],imo2[3],d1[3],d2[3];
   int scheme,nb13,nb31;
   
-  int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
-
 #ifdef DEBUG
-  printf("%d: In transplan::reorder_trans, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
+  int taskid;
+  MPI_Comm_rank(mpicomm,&taskid);
+  printf("%d: In transplan::reorder_deriv, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
 #endif
 
-  inv_mo(mo1,imo1);
+  inv_mo(mo1,imo1); // Find inverse storage dimensions mappings
   inv_mo(mo2,imo2);
-  for(i=0;i<3;i++) {
+//Fins local storage dimensions, i.e. in[d1[0]][d1[1]]d1[2]], out[d2[0]][d2[1]][d2[2]]
+  for(i=0;i<3;i++) { 
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
   
     if(dims1[trans_dim] != *inembed) {
-      printf("Error in reorder_trans: leading dimension on input %d doesn't match transform type %d\n",dims1[trans_dim],*inembed);
+      printf("Error in reorder_deriv: leading dimension on input %d doesn't match transform type %d\n",dims1[trans_dim],*inembed);
       return;
     }
     if(dims2[trans_dim] != *onembed) {
-      printf("Error in reorder_trans: leading dimension on output %d doesnt match transform type %d\n", dims2[trans_dim],*onembed);
+      printf("Error in reorder_deriv: leading dimension on output %d doesnt match transform type %d\n", dims2[trans_dim],*onembed);
       return;
     }
 
@@ -1169,27 +1183,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
   else if(mo2[trans_dim] == 0) 
     scheme = TRANS_OUT;
   else {
-    printf("Error in reorder_trans: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
+    printf("Error in reorder_deriv: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
     return;
    }
 
   rel_change(imo1,imo2,mc);
 
 #ifdef DEBUG
-  printf("In reorder_trans, mc=%d %d %d, scheme=%s\n",mc[0],mc[1],mc[2],(scheme == TRANS_IN) ? "IN" : "OUT"); 
+  printf("In reorder_deriv, mc=%d %d %d, scheme=%s\n",mc[0],mc[1],mc[2],(scheme == TRANS_IN) ? "IN" : "OUT"); 
   char str[80];
   static int cnt_reorder_trans=0;
   /*
-  sprintf(str,"reorder_trans.in%d",cnt_reorder_trans);
+  sprintf(str,"reorder_deriv.in%d",cnt_reorder_trans);
   write_buf<Type1>(in,str,dims1,imo1);
   */
 #endif
 
-
   if(scheme == TRANS_IN) { // Scheme is transform before reordering
-
-    //    if(sizeof(Type1) == sizeof(Type2)) { // Can assume the transform doesn't change dimensions,
-    // so we can do in-place transforms
 
     Type1 *pin_t1;
     Type2 *tmp,*pin2,*pout2;
@@ -1200,10 +1210,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
     case 1:
       switch(mc[1]) {
       case 0: //1,0,2
-	
-	  //      m /= dims1[2]; // Need finer grain transform, to reuse cache
-	  //Either find existing plan with suitable parameters, or reate a new one
-	  //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
+;
 	tmp = new Type2[d2[0]*d2[1]];
 	dims[0] = d2[1];
 	dims[1] = d2[0];
@@ -1260,13 +1267,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	if(nb31 < 1) nb31 = 1;
 	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
-	//m = 1;
-	//      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);	
-	tmp = new Type2[d2[2]*d2[1]*nb31];
-	//double *tmp1=(double *) tmp; 
+
 	// d1[0] -> d2[1]
 	// d1[1] -> d2[2]
 	// d1[2] -> d2[0]
+	tmp = new Type2[d2[2]*d2[1]*nb31];
 	dims[0] = d2[1];
 	dims[1] = d2[2];
 	dims[2] = nb13;
@@ -1317,7 +1322,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[2];
 	dims[1] = d2[1];
 	dims[2] = d2[0];
-	//	int dims[] = {d2[2],d2[1],d2[0]};
+
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 
 	(*(trans_type->exec))(lib_plan,in,tmp);
@@ -1358,7 +1363,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[2];
 	dims[1] = d2[0];
 	dims[2] = d2[1];
-	//	int dims[] = {d2[2],d2[0],d2[1]};
+
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 
 	(*(trans_type->exec))(lib_plan,in,tmp);
@@ -1403,7 +1408,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[0];
 	dims[1] = 1;
 	dims[2] = 1;
-	//int dims[] = {d2[0],1,1};
 	
 	for(k=0;k <d1[2];k+=nb32) {
 	  k2 = min(k+nb32,d1[2]);
@@ -1436,18 +1440,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
     case 1:
       switch(mc[1]) {
       case 0: //1,0,2
-	
-      //      m /= dims1[2]; // Need finer grain transform, to reuse cache
-    //Either find existing plan with suitable parameters, or reate a new one
-      //      plan = find_plan(N,m,.true.,dt1,dt2,prec,1,str1,1,str2,doplan);
-  
+	  
 	// d1[0] -> d2[1]
 	// d1[1] -> d2[0]
 	// d1[2] -> d2[2]
 	dims[0] = d2[0];
 	dims[1] = d2[1];
 	dims[2] = 1;
-	//	int dims[] = {d2[0],d2[1],1};
 
 	tmp = new Type1[d1[0]*d1[1]];
 	for(k=0;k <d1[2];k++) {
@@ -1484,7 +1483,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[0];
 	dims[1] = d2[1];
 	dims[2] = 1;
-	//	int dims[] = {d2[0],d2[1],1};
+
 	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
 
 	for(j=0;j < d1[1];j++) {
@@ -1533,7 +1532,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[0];
 	dims[1] = d2[1];
 	dims[2] = d2[2];
-	//	int dims[] = {d2[0],d2[1],d2[2]};
 
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
@@ -1576,7 +1574,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[0];
 	dims[1] = d2[1];
 	dims[2] = d2[2];
-	//	int dims[] = {d2[0],d2[1],d2[2]};
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
@@ -1622,7 +1619,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
 	dims[0] = d2[0];
 	dims[1] = 1;
 	dims[2] = 1;
-	//	int dims[] = {d2[0],1,1};
 	
 	for(k=0;k <d1[2];k+=nb32) {
 	  k2 = min(k+nb32,d1[2]);
@@ -1650,15 +1646,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_deriv(Ty
   }
 
 #ifdef DEBUG
-  sprintf(str,"reorder_trans.out%d",cnt_reorder_trans++);
+  sprintf(str,"reorder_deriv.out%d",cnt_reorder_trans++);
   write_buf<Type2>(out,str,dims2,imo2);
 #endif  
 }
 
-
-// Input: in[dims1[mo1[0]]][dims1[mo1[1]]][dims1[mo1[2]]]
+  // Reorder (local transpose) out-of-place
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
 // dims2[mo2[i]] = dims1[mo1[i]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
 template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int *dims_init)
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
@@ -1667,18 +1663,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31;
   int ds=sizeof(Type2) /4;
 
-
+  // Inverse storage mapping
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
+  // Find local storage dimensions
   for(i=0;i<3;i++) {
     d1[i] = dims_init[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
 
+  // Find relative change in the memory mapping from input to output
   rel_change(imo1,imo2,mc);
   pin = (float *) in;
-  //  pout = pin+1;
-  //*pout = *pin;
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
@@ -1821,16 +1817,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 
 }
 
-// Input: in[d1[mo1[0]]][d1[mo1[1]]][d1[mo1[2]]]
+  // Reorder (local transpose) in-place (out=in)
+// Input: in[d1[imo1[0]]][d1[imo1[1]]][d1[imo1[2]]]
 // dims2[mo2[i]] = d1[mo1[i]]
-// Output: out[dims2[mo2[0]]][dims2[mo2[1]]][dims2[mo2[2]]]
-
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+// Assume the 'in' buffer is large enough for both input and output
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int d1[3])
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   Type *pin,*pin1,*pout,*pout1,*tmp;
   void rel_change(int *,int *,int *);
 
+  // Find relative change in memory mapping from input to output
   rel_change(mo1,mo2,mc);
 
   int pad = CACHEPAD/sizeof(Type);
@@ -2462,26 +2460,24 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec_deriv(c
   delete [] recvbuf;
 
 #ifdef DEBUG
-  char str[80];
-  sprintf(str,"transmpi.out%d",cnt_trans++);
+  char filename[80],str[80];
+  sprintf(filename,"transmpi.out%d",cnt_trans++);
+  int taskid;
+  MPI_Comm_rank(mpicomm,&taskid);
+  sprintf(str,".%d",taskid);
+  strcat(filename,str);
   int imo2[3];
   inv_mo(mpiplan->mo2,imo2);
-  write_buf<Type2>((Type2 *) out,str,tmpdims,imo2);
+  write_buf<Type2>((Type2 *) out,filename,tmpdims,imo2);
 #endif
 }
 
-template <class Type> void write_buf(Type *buf,char *label,int sz[3],int mo[3]) {
+template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3]) {
   int i,j,k;
   FILE *fp;
-  char str[80],filename[80];
   Type *p=buf;
   complex_double *p1;
-  int taskid;
-  MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
 
-  strcpy(filename,label);
-  sprintf(str,".%d",taskid);
-  strcat(filename,str);
   fp=fopen(filename,"w");
   for(k=0;k<sz[mo[2]];k++)
     for(j=0;j<sz[mo[1]];j++)

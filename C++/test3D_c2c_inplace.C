@@ -214,7 +214,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(AR,AR,1);  // Execute forward in-place real-to-complex FFT
+    trans_f.exec(AR,AR);  // Execute forward in-place real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -223,7 +223,7 @@ main(int argc,char **argv)
     normalize(AR,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(AR,AR,1);  // Execute backward (inverse) in-place complex-to-real FFT
+    trans_b.exec(AR,AR);  // Execute backward (inverse) in-place complex-to-real FFT
     t += MPI_Wtime();
   }
 

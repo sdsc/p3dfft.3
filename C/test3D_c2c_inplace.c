@@ -181,9 +181,11 @@ main(int argc,char **argv)
   grid2 = p3dfft_init_grid(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
+  // Use 1 for in-place
   trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_forward,1);
 
   //Now set up the backward transform
+  // Use 1 for in-place
 
   trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_backward,1);
 
@@ -197,9 +199,7 @@ main(int argc,char **argv)
 
   size1 = ldims[0]*ldims[1]*ldims[2];
 
-
   //Determine local array dimensions and allocate fourier space, complex-valued out array
-
 
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2->glob_start[i];
@@ -227,7 +227,7 @@ for(i=0;i<size1*2;i++)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,INOUT,INOUT,1); // In-place Forward real-to-complex 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_f,INOUT,INOUT); // In-place Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -235,7 +235,7 @@ for(i=0;i<size1*2;i++)
     print_res(INOUT,gdims,ldims2,glob_start2);
     normalize(INOUT,size2,gdims);
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,INOUT,INOUT,1); // In-place Backward (inverse) complex-to-real 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_b,INOUT,INOUT); // In-place Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 

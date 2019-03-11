@@ -219,7 +219,7 @@ main(int argc,char **argv)
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
-  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
+  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -228,7 +228,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT); // Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -236,7 +236,7 @@ main(int argc,char **argv)
     print_res(OUT,gdims,ldims2,glob_start2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,0); // Backward (inverse) complex-to-real 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 

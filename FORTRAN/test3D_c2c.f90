@@ -184,16 +184,16 @@
 
 ! Initialize initial and final grids, based on the above information
 
-      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
 
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,1)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,0)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,1)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,0)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -217,7 +217,7 @@
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
+      call p3dfft_3Dtrans_double(trans_f,BEG,AEND)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
       Nglob = dble(nx * ny)
@@ -237,7 +237,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
+         call p3dfft_3Dtrans_double(trans_f,BEG,AEND)
 
          rtime1 = rtime1 + MPI_wtime()
 
@@ -253,7 +253,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_3Dtrans_double(trans_b,AEND,C,0)
+         call p3dfft_3Dtrans_double(trans_b,AEND,C)
          rtime1 = rtime1 + MPI_wtime()
 
       end do

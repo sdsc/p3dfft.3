@@ -185,9 +185,9 @@
 
 ! Initialize initial and final grids, based on the above information
 
-      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
 
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
@@ -238,7 +238,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT,1)
+         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT)
 
          rtime1 = rtime1 + MPI_wtime()
 
@@ -254,7 +254,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT,1)
+         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT)
          rtime1 = rtime1 + MPI_wtime()
 
       end do

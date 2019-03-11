@@ -30,7 +30,9 @@ namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
 
-  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_,bool OW)
+  // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
+  // 
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_,bool OW_)
 {
 
 #ifdef DEBUG
@@ -83,21 +85,14 @@ void inv_mo(int mo[3],int imo[3]);
   bool reverse_steps;
   bool orig_input=true;
 
-  /*
-  if(!grid1.is_set || !grid2.is_set) {
-    printf("Error in tran3D_plan: grid is not set up\n");
-    return;
-  }
-  */
-
   if((nd = grid1_.nd) != grid2_.nd) {
-    printf("ERror in tran3D_plan: dimensions of grids don't match %d %d\n",nd,grid2_.nd);
-    MPI_Abort(MPI_COMM_WORLD,0);
+    printf("Error in tran3D_plan: dimensions of grids don't match %d %d\n",nd,grid2_.nd);
+    MPI_Abort(grid1_.mpi_comm_glob,0);
   }
   for(i=0; i < nd; i++)
     if(grid1_.P[i] != grid2_.P[i] || grid1_.proc_order[i] != grid2_.proc_order[i]) {
       printf("Error in transform3D: processor grids dont match: %d %d %d\n",i,grid1_.P[i],grid2_.P[i]); 
-      MPI_Abort(MPI_COMM_WORLD,0);
+      MPI_Abort(grid1_.mpi_comm_glob,0);
     }
 
   if(inplace_) OW=true;
@@ -105,6 +100,7 @@ void inv_mo(int mo[3],int imo[3]);
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
   inplace = inplace_;
+  OW = OW_;
   dt = dt_init;
   dt1 = dt;
 
@@ -115,6 +111,7 @@ void inv_mo(int mo[3],int imo[3]);
   stage *prev_stage,*curr_stage;
   int dt_prev = dt;
   bool inpl = false;
+  bool inpl1D;
   int mocurr[3],mo1[3],mo2[3];
   for(i=0; i < 3; i++) {
     mocurr[i] = mo1[i] = grid1_.mem_order[i];
@@ -150,20 +147,20 @@ void inv_mo(int mo[3],int imo[3]);
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
 
-  L[0] = grid1_.L[0];
+  L[0] = grid1_.L[0]; // This is the local dimension as we start
   if(nd == 1 && mocurr[L[0]] != 0)
     if(mocurr[grid1_.L[1]] == 0)
       L[0] = grid1_.L[1];
       
-  Lfin = L[2] = grid2_.L[0];
+  Lfin = L[2] = grid2_.L[0]; // This dimension will be local upon finish
   if(L[2] == L[0])
     if(nd == 1)
       Lfin = L[2] = grid2_.L[1];
     else {
-      reverse_steps=true;
-      L[2] = dist(L[0]);
+      reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+      L[2] = dist(L[0]); // Choose target local dimension for the third step.
     }
-  L[1] = excl(L[0],L[2]);
+  L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
 
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
@@ -172,7 +169,7 @@ void inv_mo(int mo[3],int imo[3]);
   printf("%d: Planning stages: %d %d %d\n",grid1_.taskid,L[0],L[1],L[2]);
 #endif
 
-  // Plan the stages
+  // Plan the stages of the algorithm
   for(int st=0;st < 3;st++) {
     
     for(i=0;i<3;i++) {
@@ -219,25 +216,45 @@ void inv_mo(int mo[3],int imo[3]);
       gdims[L[st]] = (gdims[L[st]]-1)*2;
     }
 
-    inpl = false;
+    inpl = inpl1D = false;
 
     if(d1 >= 0) { // If a transpose is involved
 
-      // Set up the new grid
+      // Set up the new grid (ending grid for this stage)
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid0->pgrid[d1];  ////P[0];  // proc_order[0] ???
 
       tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
+      // Determine if can use inplace transform
+      int size1 = tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2];
+      int size2 = tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2];
+      int dt_1 = tmptype->dt1;
+      int dt_2 = tmptype->dt2;
+      // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
+      if(dt_1 >= dt_2 && (OW || st>0) ) 
+	inpl = true; // Set the 1D transform to be in-place
+
+      // Next determine if the combined trans_MPI is in-place (depends on buffer size after combined trans_MPI, and the ending buffer and transform3D inplace option) 
+      if(size1*dt_1 < size2*dt_2 || (st== 2 && !reverse_steps && !inplace)) {
+      	orig_input = false;
+	inpl1D=false;
+      }
+      else
+	inpl1D = true;
+
 #ifdef DEBUG
       printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
-
+      // Plan/set up 1D transform combined with MPI exchange for this stage
       curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],inpl,prec);
       curr_stage->kind = TRANSMPI;
+      orig_input = false;
+      curr_stage->inplace = inpl1D;
     }
     else { // Only transform
 
+      // Set up the ending grid for this stage
       tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 #ifdef DEBUG
       printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
@@ -249,11 +266,11 @@ void inv_mo(int mo[3],int imo[3]);
       int dt_1 = tmptype->dt1;
       int dt_2 = tmptype->dt2;
       // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
-      if(size1*dt_1 >= size2*dt_2 && (OW || st>0) && ((inplace && orig_input) || st<2) )
+      if(size1*dt_1 >= size2*dt_2 && (OW || st>0) && (st < 2 || reverse_steps || (orig_input && inplace))) //&& ((inplace && orig_input) || st<2)
 	inpl = true;
       else
-	orig_input = false;
-
+      	orig_input = false;
+      // Plan/set up 1D transform, possibly combined with local transpose as needed
       curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],inpl,prec);
 
       curr_stage->kind = TRANS_ONLY;
@@ -270,7 +287,7 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
   }
-
+  // Empty transform?
 
     //If needed, transpose back to the desired layout, specified by grid2
 

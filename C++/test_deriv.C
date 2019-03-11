@@ -41,7 +41,7 @@ void init_wave(double *,int[3],int *,int[3]);
 void print_res(complex_double *,int *,int *,int *);
 void normalize(complex_double *,long int,int *);
 double check_res(double*,int[3],int[3],int[3],int);
-void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
+//void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
 
 main(int argc,char **argv)
 {
@@ -216,7 +216,7 @@ main(int argc,char **argv)
   complex_double *OUT=new complex_double[size2];
 
   // Warm-up run, forward transform
-  trans_f.exec(IN,OUT,0);
+  trans_f.exec(IN,OUT);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -225,7 +225,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec_deriv(IN,OUT,idir-1,0); // Forward R2C 3D FFT and derivative
+    trans_f.exec_deriv(IN,OUT,idir-1); // Forward R2C 3D FFT and derivative, convert idir to C convention (X=0 etc)
 
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
@@ -237,7 +237,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
 
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,0); // Backward (inverse) complex-to-real 3D FFT
+    trans_b.exec(OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 
@@ -274,7 +274,7 @@ main(int argc,char **argv)
    glob_start: 3 numbers corresponding to starting indices of this subarray within the global array (in storage order)
    gdims: 3 global dimensions (in storage order)
 */
-void  compute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob_start[3],int gdims[3],int mem_order[3],int idir)
+void  mycompute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob_start[3],int gdims[3],int mem_order[3],int idir)
 {
   int ldir,i,j,k,g,mid;
   complex_double *p1,*p2,mult;

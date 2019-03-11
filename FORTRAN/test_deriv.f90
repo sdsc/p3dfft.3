@@ -183,9 +183,9 @@
 
 ! Initialize initial and final grids, based on the above information
 
-      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,0,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
 
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
@@ -249,8 +249,8 @@
 ! normalize
          call mult_array(AEND, Ntot,factor)
 
-!         call p3dfft_compute_deriv(AEND,AEND,grid2,idir)
-         call compute_deriv(AEND,AEND,mydims2,gstart2,glob2,mem_order2,idir)
+         call p3dfft_compute_deriv_double(AEND,AEND,grid2,idir)
+!         call compute_deriv(AEND,AEND,mydims2,gstart2,glob2,mem_order2,idir)
 
 !         if(proc_id .eq. 0) then
 !            print *,'After derivative:'

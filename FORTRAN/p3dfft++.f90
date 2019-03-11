@@ -88,15 +88,15 @@ interface
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
+      subroutine p3dfft_exec_3Dtrans_double(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_double_f')
       import
-      integer(C_INT) plan,OW;
+      integer(C_INT) plan
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
+      subroutine p3dfft_exec_3Dtrans_single(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_single_f')
       import
-      integer(C_INT) plan,OW;
+      integer(C_INT) plan
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
@@ -113,6 +113,20 @@ interface
       integer(C_INT) :: trans_ID,inplace
 
       end subroutine
+
+      subroutine p3dfft_compute_deriv_single(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_single_f')
+      import
+      integer(C_INT) grid,idir
+      complex(8), dimension(*) :: in,out
+      end subroutine
+
+      subroutine p3dfft_compute_deriv_double(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_double_f')
+      import
+      integer(C_INT) grid,idir
+      complex(8), dimension(*) :: in,out
+      end subroutine
+
+
 end interface
 
 end module

@@ -200,7 +200,7 @@ main(int argc,char **argv)
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  trans_f.exec(IN,OUT,0);
+  trans_f.exec(IN,OUT);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
@@ -214,7 +214,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,0);  // Execute forward real-to-complex FFT
+    trans_f.exec(IN,OUT);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -223,7 +223,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,0);  // Execute backward (inverse) complex-to-real FFT
+    trans_b.exec(OUT,FIN);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 
@@ -299,7 +299,7 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
    delete [] sinx,siny,sinz;
 }
 
-void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
 {
   int x,y,z;
   complex_double *p;
@@ -311,11 +311,11 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
   Nglob = Nglob *gdims[2];
   p = A;
 
-  for(z=0;z < ldims[imo[2]];z++)
-    for(y=0;y < ldims[imo[1]];y++)
-      for(x=0;x < ldims[imo[0]];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(std::abs(*p) > Nglob *1.25e-4) 
-	  printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],p->real(),p->imag());
+	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
 	p++;
       }
 }

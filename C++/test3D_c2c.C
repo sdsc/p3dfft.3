@@ -199,7 +199,7 @@ main(int argc,char **argv)
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  trans_f.exec(IN,OUT,0);
+  trans_f.exec(IN,OUT);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
@@ -209,7 +209,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,0);  // Execute forward real-to-complex FFT
+    trans_f.exec(IN,OUT);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -218,7 +218,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,0);  // Execute backward (inverse) complex-to-real FFT
+    trans_b.exec(OUT,FIN);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 
