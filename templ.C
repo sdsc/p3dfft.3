@@ -95,14 +95,14 @@ void inv_mo(int mo[3],int imo[3]);
       MPI_Abort(grid1_.mpi_comm_glob,0);
     }
 
-  if(inplace_) OW=true;
-
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
   inplace = inplace_;
   OW = OW_;
   dt = dt_init;
   dt1 = dt;
+
+  if(inplace_) OW=true;
 
   memcpy(pgrid1,grid1_.pgrid,sizeof(int)*3);
   memcpy(pgrid2,grid2_.pgrid,sizeof(int)*3);
@@ -249,7 +249,6 @@ void inv_mo(int mo[3],int imo[3]);
       // Plan/set up 1D transform combined with MPI exchange for this stage
       curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],inpl,prec);
       curr_stage->kind = TRANSMPI;
-      orig_input = false;
       curr_stage->inplace = inpl1D;
     }
     else { // Only transform

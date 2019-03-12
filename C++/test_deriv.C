@@ -1,22 +1,22 @@
-
 /*
-This program exemplifies using P3DFFT++ library for taking a spectral derivative in a given dimension. 
+This program exemplifies using P3DFFT++ library for taking a spectral derivative of a 3D array in a given dimension. 
 
 This program initializes a 3D array with a 3D sine wave, then
-performs 3D forward Fourier transform, takes derivative in spectral space (multiplies by wavenumbers), then backward transform,
+performs 3D real-to-complex forward Fourier transform, takes derivative in spectral space (multiplies by wavenumbers), then backward transform,
 and checks that the results are what we expect (sine in one dimension becomes cosine). 
 
 The program expects 'stdin' file in the working directory, with
-a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here Nx,Ny,Nz
-are box dimensions, Ndim is the dimentionality of processor grid
-(1 or 2), and Nrep is the number of repititions, and idir is the dimension 
-to take derivative in (1 for X, 2 for Y, 3 for Z).
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here 
+  Nx,Ny,Nz are box (grid) dimensions.
+  Ndim is the dimentionality of processor grid (1 or 2).
+  Nrep is the number of repititions.
+  idir is the dimension to take derivative in (1 for X, 2 for Y, 3 for Z).
 
 For example:
 
 128 128 128 2 1 2
 
-for 128^3 grid, 2-dim. decomposition, 1 repetition, derivative in Y direction
+for 128^3 grid, 2-dim. decomposition, 1 repetition, derivative in Y direction.
 
 Optionally a file named 'dims' can also be provided to guide in the choice
 of processor geometry in case of 2D decomposition. It should contain
@@ -25,6 +25,8 @@ of tasks. Otherwise processor grid geometry is chosen automatically.
 For better performance, experiment with this setting, varying
 iproc and jproc. In many cases, minimizing iproc gives best results.
 Setting it to 1 corresponds to one-dimensional decomposition.
+
+If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 */
 
 #include "p3dfft.h"
@@ -41,7 +43,7 @@ void init_wave(double *,int[3],int *,int[3]);
 void print_res(complex_double *,int *,int *,int *);
 void normalize(complex_double *,long int,int *);
 double check_res(double*,int[3],int[3],int[3],int);
-//void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
+void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
 
 main(int argc,char **argv)
 {
@@ -56,7 +58,7 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int ldims[3],ldims2[3];
+  int sdims[3],sdims2[3];
   long int size1,size2;
   double *IN;
   int glob_start[3],glob_start2[3],glob2[3];
@@ -191,10 +193,10 @@ main(int argc,char **argv)
 
   for(i=0;i<3;i++) {
     glob_start[mem_order[i]] = grid1.glob_start[i];
-    ldims[mem_order[i]] = grid1.ldims[i];
+    sdims[mem_order[i]] = grid1.ldims[i];
   }
 
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = sdims[0]*sdims[1]*sdims[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN= new double[size1];
@@ -202,17 +204,17 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
-  init_wave(IN,gdims,ldims,glob_start);
+  init_wave(IN,gdims,sdims,glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2.glob_start[i];
-    ldims2[mem_order2[i]] = grid2.ldims[i];
+    sdims2[mem_order2[i]] = grid2.ldims[i];
     glob2[mem_order2[i]] = grid2.gdims[i];
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = sdims2[0]*sdims2[1]*sdims2[2];
   complex_double *OUT=new complex_double[size2];
 
   // Warm-up run, forward transform
@@ -225,15 +227,15 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec_deriv(IN,OUT,idir-1); // Forward R2C 3D FFT and derivative, convert idir to C convention (X=0 etc)
+    trans_f.exec_deriv(IN,OUT,idir-1); // Forward R2C 3D FFT and derivative
 
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);
+    //    compute_deriv(OUT,OUT,sdims2,glob_start2,glob2,mem_order2,idir);
     if(myid == 0)
       printf("After derviative: \n");
-    print_res(OUT,gdims,ldims2,glob_start2);
+    print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
 
     t -= MPI_Wtime();
@@ -241,7 +243,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  mydiff = check_res(FIN,gdims,ldims,glob_start,idir);
+  mydiff = check_res(FIN,gdims,sdims,glob_start,idir);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -267,109 +269,6 @@ main(int argc,char **argv)
   MPI_Finalize();
 }
 
-/* Compute derivative in a given dimension idir (1 to 3), physical dimension order. 
-   Input/output: one-dimensional array of doubles, containing contiguously stored 
-                 COMPLEX 3D array of dimensions ldims[0]xldims[1]xldims[2], 
-                 i.e. 2*ldims[0]*ldimsp[1]*ldims[2] double numbers
-   glob_start: 3 numbers corresponding to starting indices of this subarray within the global array (in storage order)
-   gdims: 3 global dimensions (in storage order)
-*/
-void  mycompute_deriv(complex_double *IN,complex_double *OUT,int ldims[3],int glob_start[3],int gdims[3],int mem_order[3],int idir)
-{
-  int ldir,i,j,k,g,mid;
-  complex_double *p1,*p2,mult;
-
-  // Find local storage dimension to be differentiated
-  ldir = mem_order[idir-1];
-
-  // Adjust for reduced X space after real-to-complex transform
-  if(idir == 1)
-    g = (gdims[ldir]-1)*2;
-  else
-    g = gdims[ldir];
-
-  //  Compute the middle point in the spectrum (Nyquist frequency)
-  mid = g/2 -glob_start[ldir];
-
-  switch(ldir) {
-  case 0:
-    p1 = IN;
-    p2 = OUT;
-    for(k=0;k<ldims[2];k++)
-      for(j=0;j<ldims[1];j++) {
-// Lower half: complex-multiply by i*k
-	for(i=0;i < min(ldims[0],mid);i++) 
-	  *p2++ = complex_double(0.0,i+glob_start[ldir]) * *p1++;
-
-// Nyquist frequency: zero
-	if(mid >= 0 && mid < ldims[ldir]) {
-	  *p2++=0; p1++;
-	}
-
-// Upper half: complex-multiply by i*(k-N)
-	for(i=max(0,mid+1);i < ldims[0];i++)
-	  *p2++ = complex_double(0.0,i+glob_start[ldir] - g) * *p1++;
-      }
-	  
-    break;
- 
-  case 1:
-    p1 = IN;
-    p2 = OUT;
-    for(k=0;k<ldims[2];k++) {
-// Lower half: complex-multiply by i*k
-      for(j=0;j < min(ldims[1],mid);j++) { 
-	mult = complex_double(0.0,j+glob_start[ldir]);
-	for(i=0;i<ldims[0];i++) 
-	  *p2++ = mult * *p1++;
-      }
-    // Nyquist frequency: zero
-    if(mid >= 0 && mid < ldims[ldir]) 
-      for(i=0;i<ldims[0];i++) {
-	*p2++=0; p1++;
-      }
-
-      // Upper half: complex-multiply by i*(k-N)
-    for(j=max(0,mid+1);j < ldims[1];j++){
-      mult = complex_double(0.0,j+glob_start[ldir] -g);
-	for(i=0;i<ldims[0];i++) 
-	  *p2++ = mult * *p1++;
-      }
-    }
-
-    break;
-
-  case 2:
-    p1 = IN;
-    p2 = OUT;
-// Lower half: complex-multiply by i*k
-    for(k=0;k < min(ldims[2],mid);k++) { 
-      mult = complex_double(0.0,k+glob_start[ldir]);
-      for(j=0;j<ldims[1];j++)
-	for(i=0;i<ldims[0];i++) 
-	  *p2++ = mult * *p1++;
-    }
-// Nyquist frequency: zero
-    if(mid >= 0 && mid < ldims[ldir]) 
-      for(j=0;j<ldims[1];j++)
-	for(i=0;i<ldims[0];i++) {
-	  *p2++=0; p1++;
-	}
-
-// Upper half: complex-multiply by i*(k-N)
-    for(k=max(0,mid+1);k < ldims[2];k++){
-      mult = complex_double(0.0,k+glob_start[ldir] -g);
-	for(j=0;j<ldims[1];j++)
-	  for(i=0;i<ldims[0];i++) 
-	  *p2++ = mult * *p1++;
-    }
-  	  
-    break;
-    
-  }
-  
-}
-
 void normalize(complex_double *A,long int size,int *gdims)
 {
   long int i;
@@ -380,7 +279,7 @@ void normalize(complex_double *A,long int size,int *gdims)
 
 }
 
-void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
+void init_wave(double *IN,int *gdims,int *sdims,int *gstart)
 {
   double *sinx,*siny,*sinz,sinyz,*p;
   int x,y,z;
@@ -390,27 +289,27 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
   siny = (double *) malloc(sizeof(double)*gdims[1]);
   sinz = (double *) malloc(sizeof(double)*gdims[2]);
 
-   for(z=0;z < ldims[2];z++)
+   for(z=0;z < sdims[2];z++)
      sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < ldims[1];y++)
+   for(y=0;y < sdims[1];y++)
      siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < ldims[0];x++)
+   for(x=0;x < sdims[0];x++)
      sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
 
    p = IN;
-   for(z=0;z < ldims[2];z++)
-     for(y=0;y < ldims[1];y++) {
+   for(z=0;z < sdims[2];z++)
+     for(y=0;y < sdims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++)
+       for(x=0;x < sdims[0];x++)
           *p++ = sinx[x]*sinyz;
      }
 
    free(sinx); free(siny); free(sinz);
 }
 
-// ldims: local dimensions in physical storage order
+// sdims: local dimensions in physical storage order
 // gstart: starting indices of the local grid, in the physical storge order
-void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
 {
   int x,y,z;
   complex_double *p;
@@ -422,9 +321,9 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
   Nglob = Nglob *gdims[2];
   p = A;
 
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(std::abs(*p) > Nglob *1.25e-4) 
 	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
 	p++;
@@ -432,7 +331,7 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
 }
 
 /* Assumes mem_order = (0,1,2), i.e. physical = storage */
-double check_res(double *A,int gdims[3],int ldims[3],int glob_start[3],int idir)
+double check_res(double *A,int gdims[3],int sdims[3],int glob_start[3],int idir)
 {
   int x,y,z;
   double *p,mydiff;
@@ -449,15 +348,15 @@ double check_res(double *A,int gdims[3],int ldims[3],int glob_start[3],int idir)
   siny = (double *) malloc(sizeof(double)*gdims[1]);
   sinz = (double *) malloc(sizeof(double)*gdims[2]);
 
-  for(z=0;z < ldims[2];z++) {
+  for(z=0;z < sdims[2];z++) {
     cosz[z] = cos((z+glob_start[2])*twopi/gdims[2]);
     sinz[z] = sin((z+glob_start[2])*twopi/gdims[2]);
   }
-  for(y=0;y < ldims[1];y++) {
+  for(y=0;y < sdims[1];y++) {
     cosy[y] = cos((y+glob_start[1])*twopi/gdims[1]);
     siny[y] = sin((y+glob_start[1])*twopi/gdims[1]);
   }
-  for(x=0;x < ldims[0];x++) {
+  for(x=0;x < sdims[0];x++) {
     cosx[x] = cos((x+glob_start[0])*twopi/gdims[0]);
     sinx[x] = sin((x+glob_start[0])*twopi/gdims[0]);
   }
@@ -467,10 +366,10 @@ double check_res(double *A,int gdims[3],int ldims[3],int glob_start[3],int idir)
   switch(idir) {
   case 1:
 
-    for(z=0;z < ldims[2];z++)
-      for(y=0;y < ldims[1];y++) {
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
 	yz = sinz[z] * siny[y];
-	for(x=0;x < ldims[0];x++) {
+	for(x=0;x < sdims[0];x++) {
 	  if((diff=fabs(*p - cosx[x] * yz)) > mydiff)
 	    mydiff = diff;
 	  p++;
@@ -480,10 +379,10 @@ double check_res(double *A,int gdims[3],int ldims[3],int glob_start[3],int idir)
 
   case 2:
 
-    for(z=0;z < ldims[2];z++)
-      for(y=0;y < ldims[1];y++) {
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
 	yz = sinz[z] * cosy[y];
-	for(x=0;x < ldims[0];x++) {
+	for(x=0;x < sdims[0];x++) {
 	  if((diff=fabs(*p - sinx[x] * yz)) > mydiff)
 	    mydiff = diff;
 	  p++;
@@ -493,10 +392,10 @@ double check_res(double *A,int gdims[3],int ldims[3],int glob_start[3],int idir)
 	
   case 3:
 
-    for(z=0;z < ldims[2];z++)
-      for(y=0;y < ldims[1];y++) {
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
 	yz = cosz[z] * siny[y];
-	for(x=0;x < ldims[0];x++) {
+	for(x=0;x < sdims[0];x++) {
 	  if((diff=fabs(*p - sinx[x] * yz)) > mydiff)
 	    mydiff = diff;
 	  p++;

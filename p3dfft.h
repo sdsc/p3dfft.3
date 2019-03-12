@@ -715,6 +715,7 @@ class gen_transform3D
  public:
   int prec; // Precision
   int dt1,dt2;   //Datatype before and after
+  bool OW;
 };
 
 template<class Type1,class Type2> class transform3D : public gen_transform3D
@@ -730,8 +731,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 
  public:
 
-  void exec(Type1 *in,Type2 *out,int OW);
-  void exec_deriv(Type1 *in,Type2 *out,int OW,int idir);
+  void exec(Type1 *in,Type2 *out);
+  void exec_deriv(Type1 *in,Type2 *out,int idir);
 
   transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type,bool inplace_,bool OW=false); 
   ~transform3D();

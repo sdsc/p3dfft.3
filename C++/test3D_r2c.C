@@ -1,25 +1,29 @@
 
-// This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real transforms using 2D domain decomposition (1D is a specific case).
+// This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real FFT using 2D domain decomposition (1D is a specific case).
 
 /*
-! This program initializes a 3D array with a 3D sine wave, then
-! performs 3D forward Fourier transform, then backward transform,
-! and checks that
-! the results are correct, namely the same as in the start except
-! for a normalization factor. It can be used both as a correctness
-! test and for timing the library functions.
-!
-! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
-! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
-! a file named 'dims' can also be provided to guide in the choice
-! of processor geometry in case of 2D decomposition. It should contain
-! two numbers in a line, with their product equal to the total number
-! of tasks. Otherwise processor grid geometry is chosen automatically.
-! For better performance, experiment with this setting, varying
-! iproc and jproc. In many cases, minimizing iproc gives best results.
-! Setting it to 1 corresponds to one-dimensional decomposition.
+This program initializes a 3D array with a 3D sine wave, then
+performs 3D forward Fourier transform, then backward transform,
+and checks that
+the results are correct, namely the same as in the start except
+for a normalization factor. It can be used both as a correctness
+test and for timing the library functions.
+
+The program expects 'stdin' file in the working directory, with
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here 
+  Nx,Ny,Nz are box (grid) dimensions.
+  Ndim is the dimentionality of processor grid (1 or 2).
+  Nrep is the number of repititions for the timing loop. 
+
+Optionally, a file named 'dims' can also be provided to guide in the choice
+of processor geometry in case of 2D decomposition. It should contain
+two numbers in a line, with their product equal to the total number
+of tasks. Otherwise processor grid geometry is chosen automatically.
+For better performance, experiment with this setting, varying
+iproc and jproc. In many cases, minimizing iproc gives best results.
+Setting it to 1 corresponds to one-dimensional decomposition.
+
+If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 */
 
 #include "p3dfft.h"
@@ -164,13 +168,13 @@ main(int argc,char **argv)
 
   // Save the local grid dimensions and the size o physical space arrays
   
-  int ldims[3],glob_start[3];
+  int sdims[3],glob_start[3];
   for(i=0;i<3;i++) {
     glob_start[mem_order[i]] = grid1.glob_start[i];
-    ldims[mem_order[i]] = grid1.ldims[i];
+    sdims[mem_order[i]] = grid1.ldims[i];
   }
 
-  int size1 = ldims[0]*ldims[1]*ldims[2];
+  int size1 = sdims[0]*sdims[1]*sdims[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -179,17 +183,17 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,ldims,glob_start);
+  init_wave(IN,gdims,sdims,glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-  int ldims2[3],glob_start2[3];
+  int sdims2[3],glob_start2[3];
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2.glob_start[i];
-    ldims2[mem_order2[i]] = grid2.ldims[i];
+    sdims2[mem_order2[i]] = grid2.ldims[i];
   }
 
-  long int size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
   //  cout << "allocating OUT" << endl;
   complex_double *OUT=new complex_double[size2];
   
@@ -219,7 +223,7 @@ main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,ldims2,glob_start2);
+    print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
@@ -227,7 +231,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  double mydiff = check_res(IN,FIN,ldims);
+  double mydiff = check_res(IN,FIN,sdims);
   double diff = 0.0;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -271,7 +275,7 @@ void normalize(complex_double *A,long int size,int *gdims)
 
 }
 
-void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
+void init_wave(double *IN,int *gdims,int *sdims,int *gstart)
 {
   double *sinx,*siny,*sinz,sinyz,*p;
   int x,y,z;
@@ -281,18 +285,18 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
   siny = new double[gdims[1]];
   sinz = new double[gdims[2]];
 
-   for(z=0;z < ldims[2];z++)
+   for(z=0;z < sdims[2];z++)
      sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < ldims[1];y++)
+   for(y=0;y < sdims[1];y++)
      siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < ldims[0];x++)
+   for(x=0;x < sdims[0];x++)
      sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
 
    p = IN;
-   for(z=0;z < ldims[2];z++)
-     for(y=0;y < ldims[1];y++) {
+   for(z=0;z < sdims[2];z++)
+     for(y=0;y < sdims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++)
+       for(x=0;x < sdims[0];x++)
           *p++ = sinx[x]*sinyz;
      }
 
@@ -320,19 +324,17 @@ void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
       }
 }
 
-double check_res(double *A,double *B,int *ldims)
+double check_res(double *A,double *B,int *sdims)
 {
   int x,y,z;
   double *p1,*p2,mydiff;
   p1 = A;
   p2 = B;
 
-  int imo[3],i,j;
-  
   mydiff = 0.;
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(abs(*p1 - *p2) > mydiff)
 	  mydiff = abs(*p1-*p2);
 	p1++;
