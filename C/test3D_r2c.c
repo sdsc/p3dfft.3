@@ -1,25 +1,27 @@
 
 /*
-This program exemplifies using P3DFFT++ library. 
+This program exemplifies using P3DFFT++ library for 3D real-to-complex FFT. 
 
-! This program initializes a 3D array with a 3D sine wave, then
-! performs 3D forward Fourier transform, then backward transform,
-! and checks that
-! the results are correct, namely the same as in the start except
-! for a normalization factor. It can be used both as a correctness
-! test and for timing the library functions.
-!
-! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
-! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
-! a file named 'dims' can also be provided to guide in the choice
-! of processor geometry in case of 2D decomposition. It should contain
-! two numbers in a line, with their product equal to the total number
-! of tasks. Otherwise processor grid geometry is chosen automatically.
-! For better performance, experiment with this setting, varying
-! iproc and jproc. In many cases, minimizing iproc gives best results.
-! Setting it to 1 corresponds to one-dimensional decomposition.
+This program initializes a 3D array with a 3D sine wave, then
+performs 3D forward Fourier transform, then backward transform,
+and checks that
+the results are correct, namely the same as in the start except
+for a normalization factor. It can be used both as a correctness
+test and for timing the library functions.
+
+The program expects 'stdin' file in the working directory, with
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here 
+  Nx,Ny,Nz are box (grid) dimensions.
+  Ndim is the dimentionality of processor grid (1 or 2).
+  Nrep is the number of repititions for the timing loop. 
+
+Optionally, a file named 'dims' can also be provided to guide in the choice
+of processor geometry in case of 2D decomposition. It should contain
+two numbers in a line, with their product equal to the total number
+of tasks. Otherwise processor grid geometry is chosen automatically.
+For better performance, experiment with this setting, varying
+iproc and jproc. In many cases, minimizing iproc gives best results.
+Setting it to 1 corresponds to one-dimensional decomposition.
 */
 
 #include "p3dfft.h"
@@ -78,7 +80,7 @@ main(int argc,char **argv)
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
         fclose(fp);
      }
-     printf("P3DFFT test, 3D wave input\n");
+     printf("P3DFFT test, 3D wave input, 3D real-to-complex FFT\n");
 #ifndef SINGLE_PREC
      printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
 #else

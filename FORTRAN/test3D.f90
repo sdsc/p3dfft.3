@@ -1,16 +1,41 @@
-!This program exemplifies using P3DFFT++ library for taking a spectral derivative of a 3D array in a given dimension. 
+! This file is part of P3DFFT++ library
+!
+!    P3DFFT++
+!
+!    Software Framework for Scalable Fourier Transforms in Three Dimensions
+!
+!    Copyright (C) 2017 Dmitry Pekurovsky
+!    Copyright (C) 2017 University of California
+!
+!    This program is free software: you can redistribute it and/or modify
+!    it under the terms of the GNU General Public License as published by
+!    the Free Software Foundation, either version 3 of the License, or
+!    (at your option) any later version.
+!
+!    This program is distributed in the hope that it will be useful,
+!    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!    GNU General Public License for more details.
+!
+!    You should have received a copy of the GNU General Public License
+!    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!----------------------------------------------------------------------------
 
+! This sample program illustrates the
+! use of P3DFFT++ library for highly scalable parallel 3D FFT.
+!
 ! This program initializes a 3D array with a 3D sine wave, then
-! performs forward transform, takes spectral derivative, then does 
-! backward transform, and checks that
-! the results are correct. It can be used both as a correctness
+! performs forward transform, backward transform, and checks that
+! the results are correct, namely the same as in the start except
+! for a normalization factor. It can be used both as a correctness
 ! test and for timing the library functions.
 !
 ! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here Nx,Ny,Nz
+! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
 ! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions, idir is the dimension
-! to take derivative in (1 for X, 2 for Y, 3 for Z). Optionally
+! (1 or 2), and Nrep is the number of repititions. Optionally
 ! a file named 'dims' can also be provided to guide in the choice
 ! of processor geometry in case of 2D decomposition. It should contain
 ! two numbers in a line, with their product equal to the total number
@@ -27,16 +52,18 @@
       implicit none
       include 'mpif.h'
 
-      integer i,n,nx,ny,nz,idir
+      integer i,n,nx,ny,nz
       integer m,x,y,z
       integer fstatus
       logical flg_inplace
 
       double precision, dimension(:,:,:),  allocatable :: BEG,C
       complex(8), dimension(:,:,:),  allocatable :: AEND
+      double precision pi,twopi,sinyz,diff,cdiff,ccdiff,ans
 
       integer(8) Ntot
       double precision factor
+      double precision,dimension(:),allocatable:: sinx,siny,sinz
       double precision rtime1,rtime2,Nglob,prec
       double precision gt(12,3),gtcomm(3),tc
       integer ierr,nu,ndim,dims(2),nproc,proc_id
@@ -44,14 +71,13 @@
       integer fstart(3),fend(3),fsize(3)
       integer iproc,jproc,nxc,nyc,nzc
       logical iex
-      integer type_ids1(3),type_ids2(3),trans_f,trans_b,pdims(2)
-      integer type_rcc,type_ccr,glob_start1(3),glob_start2(3)
-      integer gstart1(3),gstart2(3),glob2(3)
+      integer type_ids1(3),type_ids2(3),trans_f,trans_b,pdims(2),type_rcc,type_ccr,glob_start(3),glob_start2(3)
       integer(8) size1,size2
-      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims1(3),gdims2(3)
+      integer(C_INT) ldims(3),ldims2(3),imo(3),mem_order(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims(3),gdims2(3)
       integer(C_INT) grid1,grid2
       integer mpicomm,myid
-      integer mydims1(3),mydims2(3)
+      integer a(3)
+      integer mydims(3),mydims2(3)
 
       call MPI_INIT (ierr)
       call MPI_COMM_SIZE (MPI_COMM_WORLD,nproc,ierr)
@@ -71,10 +97,10 @@
          endif
          ndim = 2
 
-        read (3,*) nx, ny, nz, ndim,n,idir
-	print *,'P3DFFT test, 3D wave input, 3D R2C FFT followed by spectral derivative'
+        read (3,*) nx, ny, nz, ndim,n
+	print *,'P3DFFT test, 3D wave input'
         write (*,*) "procs=",nproc," nx=",nx, &
-                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n, " derivative direction=",idir
+                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n
        endif
 
 ! Broadcast parameters
@@ -83,11 +109,9 @@
       call MPI_Bcast(ny,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(nz,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(n,1, MPI_INTEGER,0,mpi_comm_world,ierr)
-      call MPI_Bcast(idir,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ndim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
-      idir = idir +1 ! Fortran convention
 
-! Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
+! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
 !    nproc is devided into a iproc x jproc stencil
 !
@@ -128,7 +152,7 @@
 
       call p3dfft_setup
 
-! Set up 2 transform types for 3D transforms (setting 1D transforms for X, Y and Z)
+! Set up 2 transform types for 3D transforms
 
       type_ids1(1) = P3DFFT_R2CFFT_D;
       type_ids1(2) = P3DFFT_CFFT_FORWARD_D;
@@ -139,21 +163,23 @@
       type_ids2(3) = P3DFFT_CFFT_BACKWARD_D;
 
 ! Now initialize 3D transforms (forward and backward) with these types
-      call p3dfft_init_3Dtype(type_rcc,type_ids1)
-      call p3dfft_init_3Dtype(type_ccr,type_ids2)
+!      print *,'Initializing type RCC'
+      type_rcc = p3dfft_init_3Dtype(type_ids1)
+!      print *,'Initializing type CCR'
+      type_ccr = p3dfft_init_3Dtype(type_ids2)
 
 ! Set up global dimensions of the grid
 
-      gdims1(1)=nx
-      gdims1(2)=ny
-      gdims1(3)=nz
+      gdims(1)=nx
+      gdims(2)=ny
+      gdims(3)=nz
 
-! Set up processor order and memory ordering, as well as the final global grid dimensions (these will be different from the original dimensions in one dimension due to conjugate symmetry, since we are doing real-to-complex transform)
+! Set up processor order and memory ordering, as well as the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 
       do i=1,3
          proc_order(i) = i-1
-         mem_order1(i) = i-1
-         gdims2(i) = gdims1(i)
+         mem_order(i) = i-1
+         gdims2(i) = gdims(i)
       enddo
       gdims2(1) = gdims2(1)/2+1
 
@@ -169,7 +195,7 @@
       pgrid1(2) = iproc
       pgrid1(3) = jproc
 
-! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
+! Define the final processor grid. It can be the same as initial grid, however here it is different - this helps save on interprocessor communication. Again, the Fourier space operations should not be affected that much if they are local. 
 
       pgrid2(1) = iproc
       pgrid2(2) = jproc
@@ -180,42 +206,46 @@
       mpicomm = MPI_COMM_WORLD
 
 ! Initialize initial and final grids, based on the above information
-! Initial grid: no conjugate symmetry (-1)
-      call p3dfft_init_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD)
-! Final grid: conjugate symmetry in X dimension (1)
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+
+!      print *,'Initializing grid1'
+
+      grid1 = p3dfft_init_grid(ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
+
+!      print *,'Initializing grid2'
+
+      grid2 = p3dfft_init_grid(ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_rcc,0)
+!      print *,'Plan rcc'
+      trans_f = p3dfft_plan_3Dtrans_f(grid1,grid2,type_rcc,1)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_ccr,0)
+!      print*,'Plan ccr'
+      trans_b = p3dfft_plan_3Dtrans_f(grid2,grid1,type_ccr,1)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
       do i=1,3
-         mydims1(mem_order1(i)+1) = ldims1(i)
+         mydims(mem_order(i)+1) = ldims(i)
          mydims2(mem_order2(i)+1) = ldims2(i)
-         gstart1(mem_order1(i)+1) = glob_start1(i)
-         gstart2(mem_order2(i)+1) = glob_start2(i)
-         glob2(mem_order2(i)+1) = gdims2(i)
       enddo
 
 ! Now allocate initial and final arrays in physical space (real-valued)
-      allocate(BEG(mydims1(1),mydims1(2),mydims1(3)))
-      allocate(C(mydims1(1),mydims1(2),mydims1(3)))
+      allocate(BEG(mydims(1),mydims(2),mydims(3)))
+      allocate(C(mydims(1),mydims(2),mydims(3)))
 
 ! Initialize the BEG array with a sine wave in 3D
 
-      call init_wave(BEG,gdims1,mydims1,gstart1)
+!      print *,'Initiating wave'
+      call init_wave(BEG,gdims,mydims,glob_start)
 
 ! Now allocate the complex array for holding Fourier space data
 
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_3Dtrans_double(trans_f,BEG,AEND)
+      call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
       Nglob = nx * ny
@@ -235,32 +265,23 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dderiv_double(trans_f,BEG,AEND,idir)
+         call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
 
          rtime1 = rtime1 + MPI_wtime()
 
          if(proc_id .eq. 0) then
-            print *,'Result of derivative in spectral space:'
+            print *,'Result of forward transform:'
          endif
-         call print_all(AEND,Ntot,proc_id,Nglob,mydims2,gstart2)
+         call print_all(AEND,Ntot,proc_id,Nglob,mydims2,glob_start2)
 
 ! normalize
          call mult_array(AEND, Ntot,factor)
-
-!         call p3dfft_compute_deriv(AEND,AEND,grid2,idir)
-!         call compute_deriv(AEND,AEND,mydims2,gstart2,glob2,mem_order2,idir)
-
-!         if(proc_id .eq. 0) then
-!            print *,'After derivative:'
-!         endif
-
-!         call write_buf(AEND,mydims2,gstart2)
 
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_3Dtrans_double(trans_b,AEND,C)
+         call p3dfft_3Dtrans_double(trans_b,AEND,C,0)
          rtime1 = rtime1 + MPI_wtime()
 
       end do
@@ -269,7 +290,7 @@
       call p3dfft_cleanup
 
 ! Check results
-      call check_res(C,gdims1,mydims1,gstart1,Nglob,idir)
+      call check_res(C,gdims,mydims,glob_start,Nglob)
 
 ! Gather timing statistics
       call MPI_Reduce(rtime1,rtime2,1,mpi_real8,MPI_MAX,0, &
@@ -282,25 +303,6 @@
 
     end program fft3d
 
-    subroutine write_buf(A,dims,start)
-
-      integer dims(3),start(3),i,j,k
-      complex(8) A(dims(1),dims(2),dims(3))
-
-      do k=1,dims(3)
-         do j=1,dims(2)
-            do i=1,dims(1)
-               if(abs(A(i,j,k)) .gt. 1e-10) then
-                  print *,'(',i+start(1),j+start(2),k+start(3),')=',A(i,j,k)
-               endif
-            enddo
-         enddo
-      enddo
-
-    end subroutine write_buf
-
-
-
     subroutine intcpy(in,out,n)
 
       integer in(3),out(3),n,i
@@ -312,20 +314,19 @@
     end subroutine intcpy
 
 !=========================================================
-	subroutine check_res(C,gdims,ldims,glob_start,Nglob,idir)
+	subroutine check_res(C,gdims,ldims,glob_start,Nglob)
 !=========================================================
 
         implicit none
         include 'mpif.h'
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision C(glob_start(1)+1:glob_start(1)+ldims(1), &
-     glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
+	double precision C(glob_start(1)+1:glob_start(1)+ldims(1),glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
 	double precision cdiff,ccdiff,sinyz,ans,prec,twopi,Nglob
-	integer x,y,z,ierr,myid,idir
-        double precision sinx(gdims(1)),cosx(gdims(1))
-        double precision siny(gdims(2)),cosy(gdims(2))
-        double precision sinz(gdims(3)),cosz(gdims(3))
+	integer x,y,z,ierr,myid
+        double precision sinx(gdims(1))
+        double precision siny(gdims(2))
+        double precision sinz(gdims(3))
         
         call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
 
@@ -334,56 +335,25 @@
 
       do z=1,gdims(3)
          sinz(z)=sin((z-1)*twopi/gdims(3))
-         cosz(z)=cos((z-1)*twopi/gdims(3))
       enddo
       do y=1,gdims(2)
          siny(y)=sin((y-1)*twopi/gdims(2))
-         cosy(y)=cos((y-1)*twopi/gdims(2))
       enddo
       do x=1,gdims(1)
          sinx(x)=sin((x-1)*twopi/gdims(1))
-         cosx(x)=cos((x-1)*twopi/gdims(1))
       enddo
 
       cdiff=0.0d0
-      if(idir .eq. 1) then
- 
-         do 20 z=glob_start(3)+1,glob_start(3)+ldims(3)
-            do 20 y=glob_start(2)+1,glob_start(2)+ldims(2)
-               sinyz=siny(y)*sinz(z)
-               do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
-                  ans=cosx(x)*sinyz
-                  if(cdiff .lt. abs(C(x,y,z)-ans)) then
-                     cdiff = abs(C(x,y,z)-ans)
-                  endif
+      do 20 z=glob_start(3)+1,glob_start(3)+ldims(3)
+         do 20 y=glob_start(2)+1,glob_start(2)+ldims(2)
+            sinyz=siny(y)*sinz(z)
+            do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
+            ans=sinx(x)*sinyz
+            if(cdiff .lt. abs(C(x,y,z)-ans)) then
+               cdiff = abs(C(x,y,z)-ans)
+!               print *,'x,y,z,cdiff=',x,y,z,cdiff
+            endif
  20   continue
-
-      else if(idir .eq. 2) then
-
-         do 30 z=glob_start(3)+1,glob_start(3)+ldims(3)
-            do 30 y=glob_start(2)+1,glob_start(2)+ldims(2)
-               sinyz=cosy(y)*sinz(z)
-               do 30 x=glob_start(1)+1,glob_start(1)+ldims(1)
-                  ans=sinx(x)*sinyz
-                  if(cdiff .lt. abs(C(x,y,z)-ans)) then
-                     cdiff = abs(C(x,y,z)-ans)
-                  endif
- 30   continue
-
-      else if(idir .eq. 3) then
-
-         do 40 z=glob_start(3)+1,glob_start(3)+ldims(3)
-            do 40 y=glob_start(2)+1,glob_start(2)+ldims(2)
-               sinyz=siny(y)*cosz(z)
-               do 40 x=glob_start(1)+1,glob_start(1)+ldims(1)
-                  ans=sinx(x)*sinyz
-                  if(cdiff .lt. abs(C(x,y,z)-ans)) then
-                     cdiff = abs(C(x,y,z)-ans)
-                  endif
- 40   continue
-
-      endif
-
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)
 
@@ -407,8 +377,7 @@
         implicit none
 
         integer gdims(3),ldims(3),glob_start(3)
-	double precision A(glob_start(1)+1:glob_start(1)+ldims(1), &
-        glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
+	double precision A(glob_start(1)+1:glob_start(1)+ldims(1),glob_start(2)+1:glob_start(2)+ldims(2),glob_start(3)+1:glob_start(3)+ldims(3))
 	integer x,y,z
 	double precision sinyz,twopi
         double precision sinx(gdims(1))
