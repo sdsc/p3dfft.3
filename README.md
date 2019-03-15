@@ -6,3 +6,5 @@ Just like P3DFFT, P3DFFT++ is a parallel software package, using MPI as the prim
 Unlike P3DFFT, which was written in Fortran90, P3DFFT++ is written in C++. Interfaces are provided for C and Fortran. To learn about using the code the user is encouraged to study example programs in C++, C and FORTRAN subdirectories. Consult documentation at the main project website http://www.p3dfft.net. 
 
 Please e-mail Dmitry Pekurovsky (dmitry@sdsc.edu) for any questions or suggestions. Software contributions are welcome, assuming they follow the main ideas of the framework.
+
+This work is supported by the U.S. National Science Foundation
