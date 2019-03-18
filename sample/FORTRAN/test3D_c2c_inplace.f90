@@ -1,5 +1,6 @@
 ! This sample program illustrates the
-! use of P3DFFT++ library for highly scalable parallel 3D FFT.
+! use of P3DFFT++ library for highly scalable parallel 3D FFT,
+! for a 3D complex FFT.
 ! This is an in-place version (output overwrites input at the same location).
 !
 ! This program initializes a 3D complex array with a 3D sine wave, then
@@ -39,23 +40,18 @@
 
       integer(8) Ntot
       double precision factor
-      double precision,dimension(:),allocatable:: sinx,siny,sinz
       double precision rtime1,rtime2,Nglob,prec
       double precision gt(12,3),gtcomm(3),tc
       integer ierr,nu,ndim,dims(2),nproc,proc_id
-      integer istart(3),iend(3),isize(3)
-      integer fstart(3),fend(3),fsize(3)
-      integer iproc,jproc,nxc,nyc,nzc
       logical iex
       integer type_ids1(3),type_ids2(3),trans_f,trans_b,pdims(2)
-      integer type_forward,type_backward,glob_start(3),glob_start2(3)
-      integer gstart(3),gstart2(3)
+      integer type_forward,type_backward,glob_start1(3),glob_start2(3)
+      integer gstart1(3),gstart2(3)
       integer(8) size1,size2
-      integer(C_INT) ldims(3),ldims2(3),imo(3),mem_order(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims(3),gdims2(3)
+      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims1(3),gdims2(3)
       integer(C_INT) grid1,grid2
-      integer mpicomm,myid
-      integer a(3)
-      integer mydims(3),mydims2(3)
+      integer mpicomm,myid,iproc,jproc
+      integer mydims1(3),mydims2(3)
 
       call MPI_INIT (ierr)
       call MPI_COMM_SIZE (MPI_COMM_WORLD,nproc,ierr)
@@ -76,7 +72,7 @@
          ndim = 2
 
         read (3,*) nx, ny, nz, ndim,n
-	print *,'P3DFFT test, 3D wave input'
+	print *,'P3DFFT test, 3D wave input, 3D complex FFT (in-place)'
         write (*,*) "procs=",nproc," nx=",nx, &
                 " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n
        endif
@@ -144,20 +140,18 @@
       call p3dfft_init_3Dtype(type_forward,type_ids1)
       call p3dfft_init_3Dtype(type_backward,type_ids2)
 
-      print *,'type_forward=',type_forward,', type_backward=',type_backward
-
 ! Set up global dimensions of the grid
 
-      gdims(1)=nx
-      gdims(2)=ny
-      gdims(3)=nz
+      gdims1(1)=nx
+      gdims1(2)=ny
+      gdims1(3)=nz
 
 ! Set up processor order and memory ordering, as well as the final global grid dimensions 
 
       do i=1,3
          proc_order(i) = i-1
-         mem_order(i) = i-1
-         gdims2(i) = gdims(i)
+         mem_order1(i) = i-1
+         gdims2(i) = gdims1(i)
       enddo
 
 
@@ -184,10 +178,10 @@
       mpicomm = MPI_COMM_WORLD
 
 ! Initialize initial and final grids, based on the above information
+! No conjugate symmetry (-1)
+      call p3dfft_init_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD)
 
-      call p3dfft_init_grid(grid1,ldims, glob_start,gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD)
-
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
@@ -199,13 +193,13 @@
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
       do i=1,3
-         mydims(mem_order(i)+1) = ldims(i)
+         mydims1(mem_order1(i)+1) = ldims1(i)
          mydims2(mem_order2(i)+1) = ldims2(i)
-         gstart(mem_order(i)+1) = glob_start(i)
+         gstart1(mem_order1(i)+1) = glob_start1(i)
          gstart2(mem_order2(i)+1) = glob_start2(i)
       enddo
 
-      size1 = mydims(1)*mydims(2)*mydims(3)
+      size1 = mydims1(1)*mydims1(2)*mydims1(3)
       size2 = mydims2(1)*mydims2(2)*mydims2(3)
 
 ! Now allocate initial and final arrays in physical space (real-valued)
@@ -214,7 +208,7 @@
 
 ! Initialize the BEG array with a sine wave in 3D
 
-      call init_wave(BEG,gdims,mydims,gstart)
+      call init_wave(BEG,gdims1,mydims1,gstart1)
 
       do i=1,size1
          INOUT(i) = BEG(i)
@@ -238,7 +232,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT,1)
+         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT)
 
          rtime1 = rtime1 + MPI_wtime()
 
@@ -254,7 +248,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT,1)
+         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT)
          rtime1 = rtime1 + MPI_wtime()
 
       end do
@@ -263,7 +257,7 @@
       call p3dfft_cleanup
 
 ! Check results
-      call check_res(INOUT,gdims,mydims,gstart,Nglob)
+      call check_res(INOUT,gdims1,mydims1,gstart1,Nglob)
 
 ! Gather timing statistics
       call MPI_Reduce(rtime1,rtime2,1,mpi_real8,MPI_MAX,0, &
@@ -323,7 +317,7 @@
             sinyz=siny(y)*sinz(z)
             do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
             ans=sinx(x)*sinyz
-            d = abs(C(x,y,z)-cmplx(ans,0.0d0))
+            d = abs(C(x,y,z)-cmplx(ans,0.0d0,8))
             if(cdiff .lt. d) then
                cdiff = d
 !               print *,'x,y,z,cdiff=',x,y,z,cdiff
@@ -379,7 +373,7 @@
          do y=glob_start(2)+1,glob_start(2)+ldims(2)
             sinyz=siny(y)*sinz(z)
             do x=glob_start(1)+1,glob_start(1)+ldims(1)
-               A(x,y,z)=cmplx(sinx(x)*sinyz,0.0d0)
+               A(x,y,z)=cmplx(sinx(x)*sinyz,0.0d0,8)
             enddo
          enddo
       enddo

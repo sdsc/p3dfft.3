@@ -144,7 +144,7 @@ main(int argc,char **argv)
 
   // Initialize the initial grid
 
-  grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
 
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
@@ -163,7 +163,7 @@ main(int argc,char **argv)
 
   // Initialize final grid configuration
 
-  grid grid2(gdims2,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+  grid grid2(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   // Save the local grid dimensions and the size o physical space arrays
 
@@ -218,7 +218,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(AR,AR,1);  // Execute forward in-place real-to-complex FFT
+    trans_f.exec(AR,AR);  // Execute forward in-place real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -227,7 +227,7 @@ main(int argc,char **argv)
     normalize(AR,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(AR,AR,1);  // Execute backward (inverse) in-place complex-to-real FFT
+    trans_b.exec(AR,AR);  // Execute backward (inverse) in-place complex-to-real FFT
     t += MPI_Wtime();
   }
 

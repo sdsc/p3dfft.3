@@ -115,7 +115,11 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 		elif '1D' in basename:
 			batchf.write("rm -f dims\n")
 			for perm in one_dim_perms:
-				batchf.write("echo '128 128 128 " + perm[0] + ' 1 ' + perm + "' > trans.in\n")
+				dim_in = perm.find('0')/2
+				dim_out = perm.find('0', 5)/2
+				batchf.write("echo '128 128 128 " + dim_in + ' 1 ' + perm + "' > trans.in\n")
+				batchf.write(runline(platform, mt, output_dir, test))
+				batchf.write("echo '128 128 128 " + dim_out + ' 1 ' + perm + "' > trans.in\n")
 				batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIM' in basename:
 			batchf.write("echo '128 128 128 2 1' > stdin\n")
