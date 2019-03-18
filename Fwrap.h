@@ -1,4 +1,5 @@
-Title: P3DFFT++
+/*
+Title: P3DFFT++ library
 
 Authors: Dmitry Pekurovsky
 
@@ -75,4 +76,17 @@ All Rights Reserved.
     THAT THE USE OF THE MATERIAL WILL NOT INFRINGE ANY PATENT,        
 
     TRADEMARK OR OTHER RIGHTS.
+*/
 
+  void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
+  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,int *);
+  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,int *);
+void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *, int *);
+void p3dfft_exec_1Dtrans_double_f(int *,double *,double *);
+void p3dfft_exec_1Dtrans_single_f(int *,float *,float *);
+void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *);
+void p3dfft_exec_3Dtrans_single_f(Plan3D *,float *,float *);
+void p3dfft_exec_3Dderiv_double_f(Plan3D *,double *,double *,int *);
+void p3dfft_exec_3Dderiv_single_f(Plan3D *,float *,float *,int *);
+void p3dfft_compute_deriv_single_f(float *,float *,int *,int *);
+void p3dfft_compute_deriv_double_f(double *,double *,int *,int *);

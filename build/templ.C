@@ -1,27 +1,81 @@
 /*
-!
-!    P3DFFT++
-!
-!    Software Framework for Scalable Fourier Transforms in Three Dimensions
-!
-!    Copyright (C) 2017 Dmitry Pekurovsky
-!    Copyright (C) 2017 University of California
-!
-!    This program is free software: you can redistribute it and/or modify
-!    it under the terms of the GNU General Public License as published by
-!    the Free Software Foundation, either version 3 of the License, or
-!    (at your option) any later version.
-!
-!    This program is distributed in the hope that it will be useful,
-!    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!    GNU General Public License for more details.
-!
-!    You should have received a copy of the GNU General Public License
-!    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!
-!----------------------------------------------------------------------------
+Title: P3DFFT++ library
+
+Authors: Dmitry Pekurovsky
+
+Copyright (c) 2006-2019 
+
+The Regents of the University of California.
+
+All Rights Reserved.                        
+
+ 
+
+    Permission to use, copy, modify and  distribute  any part
+
+    of this software for  educational,  research  and  non-profit
+
+    purposes, by individuals or non-profit organizations,
+
+    without fee,  and  without a written  agreement is
+
+    hereby granted,  provided  that the  above  copyright notice,
+
+    this paragraph  and the following  three  paragraphs appear in
+
+    all copies.       
+
+ 
+
+    For-profit organizations desiring to use this software and others
+
+    wishing to incorporate this  software into commercial
+
+    products or use it for  commercial  purposes should contact the:    
+
+          Office of Innovation & Commercialization 
+
+          University of California San Diego
+
+          9500 Gilman Drive,  La Jolla,  California, 92093-0910        
+
+          Phone: (858) 534-5815
+
+          E-mail: innovation@ucsd.edu
+
+ 
+
+    IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE
+
+    TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR    
+
+    CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT
+
+    OF THE USE OF THIS SOFTWARE, EVEN IF THE UNIVERSITY OF
+
+    CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+
+    DAMAGE.
+
+ 
+
+    THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND
+
+    THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE        
+
+    MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS. 
+
+    THE UNIVERSITY OF CALIFORNIA MAKES NO REPRESENTATIONS AND    
+
+    EXTENDS NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR
+
+    IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+
+    OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, OR
+
+    THAT THE USE OF THE MATERIAL WILL NOT INFRINGE ANY PATENT,        
+
+    TRADEMARK OR OTHER RIGHTS.
 */
 
 #if defined(HAVE_CONFIG_H)
@@ -34,7 +88,9 @@ namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
 
-template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_)
+  // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
+  // 
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_,bool OW_)
 {
 
 #ifdef DEBUG
@@ -85,36 +141,26 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   gen_trans_type *tmptype;
   MPI_Comm mpicomm,splitcomm;
   bool reverse_steps;
-
-  /*
-  if(!grid1.is_set || !grid2.is_set) {
-    printf("Error in tran3D_plan: grid is not set up\n");
-    return;
-  }
-  */
+  bool orig_input=true;
 
   if((nd = grid1_.nd) != grid2_.nd) {
-    printf("ERror in tran3D_plan: dimensions of grids don't match %d %d\n",nd,grid2_.nd);
-    MPI_Abort(MPI_COMM_WORLD,0);
+    printf("Error in tran3D_plan: dimensions of grids don't match %d %d\n",nd,grid2_.nd);
+    MPI_Abort(grid1_.mpi_comm_glob,0);
   }
   for(i=0; i < nd; i++)
     if(grid1_.P[i] != grid2_.P[i] || grid1_.proc_order[i] != grid2_.proc_order[i]) {
       printf("Error in transform3D: processor grids dont match: %d %d %d\n",i,grid1_.P[i],grid2_.P[i]); 
-      MPI_Abort(MPI_COMM_WORLD,0);
+      MPI_Abort(grid1_.mpi_comm_glob,0);
     }
 
-  /*
-    int tmp;
-    MPI_Comm_size(grid1_.mpicomm[0],&tmp);
-    printf("size of grid1_ mpicomm=%d\n",tmp);
-    MPI_Comm_size(grid1->mpicomm[0],&tmp);
-    printf("size of grid1 mpicomm=%d\n",tmp);
-  */
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
   inplace = inplace_;
+  OW = OW_;
   dt = dt_init;
   dt1 = dt;
+
+  if(inplace_) OW=true;
 
   memcpy(pgrid1,grid1_.pgrid,sizeof(int)*3);
   memcpy(pgrid2,grid2_.pgrid,sizeof(int)*3);
@@ -123,6 +169,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   stage *prev_stage,*curr_stage;
   int dt_prev = dt;
   bool inpl = false;
+  bool inpl1D;
   int mocurr[3],mo1[3],mo2[3];
   for(i=0; i < 3; i++) {
     mocurr[i] = mo1[i] = grid1_.mem_order[i];
@@ -131,26 +178,47 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
   mpicomm = grid1_.mpi_comm_glob;
 
-  grid *tmpgrid0 = new grid(grid1_);
+
+  if(nd == 3) { // Special treament for 3D decomposition: first transpose to get one local dimension
+    
+    // Find dimension corresponding to rows (adjacent tasks)
+    for(i=0;i<3;i++)
+      if(proc_order[i] == 0)
+	break;
+    grid1->nd = 2;
+    grid1->L[0] = i;
+    grid1->P[0] = grid1->pgrid[i] = 1;
+    grid1->D[0] = grid1->D[1];
+    grid1->D[1] = grid1->D[2];
+    grid1->D[2] = -1;
+    splitcomm = grid1->mpicomm[0];
+
+    curr_stage = init_MPIplan(grid1_,*grid1,splitcomm,d1,d2,dt_prev,prec);
+    Stages = prev_stage = curr_stage;
+    curr_stage->kind = MPI_ONLY;
+
+  } // nd==3
+
+  grid *tmpgrid0 = new grid(*grid1);
   grid *tmpgrid1;
   reverse_steps = false;
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
 
-  L[0] = grid1_.L[0];
+  L[0] = grid1_.L[0]; // This is the local dimension as we start
   if(nd == 1 && mocurr[L[0]] != 0)
     if(mocurr[grid1_.L[1]] == 0)
       L[0] = grid1_.L[1];
       
-  Lfin = L[2] = grid2_.L[0];
+  Lfin = L[2] = grid2_.L[0]; // This dimension will be local upon finish
   if(L[2] == L[0])
     if(nd == 1)
       Lfin = L[2] = grid2_.L[1];
     else {
-      reverse_steps=true;
-      L[2] = dist(L[0]);
+      reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+      L[2] = dist(L[0]); // Choose target local dimension for the third step.
     }
-  L[1] = excl(L[0],L[2]);
+  L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
 
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
@@ -159,7 +227,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
   printf("%d: Planning stages: %d %d %d\n",grid1_.taskid,L[0],L[1],L[2]);
 #endif
 
-  // Plan the stages
+  // Plan the stages of the algorithm
   for(int st=0;st < 3;st++) {
     
     for(i=0;i<3;i++) {
@@ -196,38 +264,70 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 
     //    tmpgrid0->set_mo(monext);
       
+    int dim_conj_sym = -1;
     tmptype = types1D[type->types[L[st]]];
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
       gdims[L[st]] = gdims[L[st]]/2+1;
+      dim_conj_sym = L[st];
     }
     else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
       gdims[L[st]] = (gdims[L[st]]-1)*2;
     }
 
-    inpl = false;
+    inpl = inpl1D = false;
 
     if(d1 >= 0) { // If a transpose is involved
 
-      // Set up the new grid
+      // Set up the new grid (ending grid for this stage)
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid0->pgrid[d1];  ////P[0];  // proc_order[0] ???
 
-      tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+      // Determine if can use inplace transform
+      int size1 = tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2];
+      int size2 = tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2];
+      int dt_1 = tmptype->dt1;
+      int dt_2 = tmptype->dt2;
+      // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
+      if(dt_1 >= dt_2 && (OW || st>0) ) 
+	inpl = true; // Set the 1D transform to be in-place
+
+      // Next determine if the combined trans_MPI is in-place (depends on buffer size after combined trans_MPI, and the ending buffer and transform3D inplace option) 
+      if(size1*dt_1 < size2*dt_2 || (st== 2 && !reverse_steps && !inplace)) {
+      	orig_input = false;
+	inpl1D=false;
+      }
+      else
+	inpl1D = true;
 
 #ifdef DEBUG
       printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
-
+      // Plan/set up 1D transform combined with MPI exchange for this stage
       curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],inpl,prec);
       curr_stage->kind = TRANSMPI;
+      curr_stage->inplace = inpl1D;
     }
     else { // Only transform
 
-      tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      // Set up the ending grid for this stage
+      tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 #ifdef DEBUG
       printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
 
+      // Determine if can use inplace transform
+      int size1 = tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2];
+      int size2 = tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2];
+      int dt_1 = tmptype->dt1;
+      int dt_2 = tmptype->dt2;
+      // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
+      if(size1*dt_1 >= size2*dt_2 && (OW || st>0) && (st < 2 || reverse_steps || (orig_input && inplace))) //&& ((inplace && orig_input) || st<2)
+	inpl = true;
+      else
+      	orig_input = false;
+      // Plan/set up 1D transform, possibly combined with local transpose as needed
       curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],inpl,prec);
 
       curr_stage->kind = TRANS_ONLY;
@@ -236,7 +336,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
     tmpgrid0 = tmpgrid1;
-    if(st == 0) 
+    if(Stages == NULL)
       Stages = prev_stage = curr_stage;
     else {
       prev_stage->next = curr_stage;
@@ -244,7 +344,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
     }
 
   }
-
+  // Empty transform?
 
     //If needed, transpose back to the desired layout, specified by grid2
 
@@ -266,7 +366,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
-      tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
       curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
@@ -292,7 +392,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
         pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
-	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
@@ -312,7 +412,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
-      tmpgrid0 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
       curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
@@ -327,7 +427,7 @@ template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const gr
 	pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
-	tmpgrid1 = new grid(gdims,pgrid,proc_order,monext,mpicomm);
+	tmpgrid1 = new grid(gdims,tmpgrid0->dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,tmpgrid0->mpicomm[0],d1,d2,dt_prev,prec);
@@ -823,7 +923,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 #endif
 #ifdef FFTW
     A = (Type1 *) fftw_malloc(size *sizeof(Type1));
-    Type2 *B = (Type2 *) fftw_malloc(size *sizeof(Type2));
+    Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
@@ -835,7 +935,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
 
     fftw_free(A);
-    fftw_free(B);
+    //    fftw_free(B);
 #endif
   }    
     else { //not inplace
@@ -892,7 +992,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     //delete [] B;
     fftw_free(A);
     fftw_free(B);
-#else
+#else // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);
     A = new Type1[size1];

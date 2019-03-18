@@ -14,10 +14,14 @@ integer, bind(C,name='P3DFFT_CFFT_FORWARD_S') :: P3DFFT_CFFT_FORWARD_S
 integer, bind(C,name='P3DFFT_CFFT_FORWARD_D') :: P3DFFT_CFFT_FORWARD_D
 integer, bind(C,name='P3DFFT_CFFT_BACKWARD_S') :: P3DFFT_CFFT_BACKWARD_S
 integer, bind(C,name='P3DFFT_CFFT_BACKWARD_D') :: P3DFFT_CFFT_BACKWARD_D
-integer, bind(C,name='P3DFFT_COSTRAN_REAL_S') :: P3DFFT_COSTRAN_REAL_S
-integer, bind(C,name='P3DFFT_COSTRAN_REAL_D') :: P3DFFT_COSTRAN_REAL_D
-integer, bind(C,name='P3DFFT_SINTRAN_REAL_S') :: P3DFFT_SINTRAN_REAL_S
-integer, bind(C,name='P3DFFT_SINTRAN_REAL_D') :: P3DFFT_SINTRAN_REAL_D
+integer, bind(C,name='P3DFFT_DCT1_REAL_S') :: P3DFFT_DCT1_REAL_S
+integer, bind(C,name='P3DFFT_DCT1_REAL_D') :: P3DFFT_DCT1_REAL_D
+integer, bind(C,name='P3DFFT_DST1_REAL_S') :: P3DFFT_DST1_REAL_S
+integer, bind(C,name='P3DFFT_DST1_REAL_D') :: P3DFFT_DST1_REAL_D
+integer, bind(C,name='P3DFFT_DCT1_COMPLEX_S') :: P3DFFT_DCT1_COMPLEX_S
+integer, bind(C,name='P3DFFT_DCT1_COMPLEX_D') :: P3DFFT_DCT1_COMPLEX_D
+integer, bind(C,name='P3DFFT_DST1_COMPLEX_S') :: P3DFFT_DST1_COMPLEX_S
+integer, bind(C,name='P3DFFT_DST1_COMPLEX_D') :: P3DFFT_DST1_COMPLEX_D
 
 
 type, public, bind(C) :: grid
@@ -58,12 +62,12 @@ interface
       end subroutine
 
 !      integer(C_INT) 
-      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
+      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
 !        use iso_c_binding
       import 
 !      type(grid) :: gr
       integer(C_INT), dimension(3) :: gdims,pgrid,proc_order,mem_order,ldims,glob_start
-      integer(C_INT) :: mygrid,mpicomm
+      integer(C_INT) :: mygrid,mpicomm,dim_conj_sym
     end subroutine p3dfft_init_grid
 
 !      subroutine p3dfft_free_grid(gr) bind(C,name='p3dfft_free_grid_f')
@@ -94,6 +98,18 @@ interface
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
+      subroutine p3dfft_exec_3Dderiv_single(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_single_f')
+      import
+      integer(C_INT) plan,OW,idir;
+      real(C_FLOAT), dimension(*) :: in,out
+      end subroutine
+
+      subroutine p3dfft_exec_3Dderiv_double(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_double_f')
+      import
+      integer(C_INT) plan,OW,idir;
+      real(C_DOUBLE), dimension(*) :: in,out
+      end subroutine
+
       subroutine p3dfft_exec_3Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
       import
       integer(C_INT) plan,OW;
@@ -113,6 +129,20 @@ interface
       integer(C_INT) :: trans_ID,inplace
 
       end subroutine
+
+      subroutine p3dfft_compute_deriv_single(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_single_f')
+      import
+      integer(C_INT) grid,idir
+      real(C_FLOAT ), dimension(*) :: in,out
+      end subroutine
+
+      subroutine p3dfft_compute_deriv_double(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_double_f')
+      import
+      integer(C_INT) grid,idir
+      real(C_DOUBLE), dimension(*) :: in,out
+      end subroutine
+
+
 end interface
 
 end module

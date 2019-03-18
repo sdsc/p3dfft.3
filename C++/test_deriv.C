@@ -1,39 +1,49 @@
-
 /*
-This program exemplifies using P3DFFT++ library for 3D complex-to-complex FFT. 
+This program exemplifies using P3DFFT++ library for taking a spectral derivative of a 3D array in a given dimension. 
 
 This program initializes a 3D array with a 3D sine wave, then
-performs 3D forward Fourier transform, then backward transform,
-and checks that
-the results are correct, namely the same as in the start except
-for a normalization factor. It can be used both as a correctness
-test and for timing the library functions.
+performs 3D real-to-complex forward Fourier transform, takes derivative in spectral space (multiplies by wavenumbers), then backward transform,
+and checks that the results are what we expect (sine in one dimension becomes cosine). 
 
 The program expects 'stdin' file in the working directory, with
-a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here 
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep,idir. Here 
   Nx,Ny,Nz are box (grid) dimensions.
   Ndim is the dimentionality of processor grid (1 or 2).
-  Nrep is the number of repititions for the timing loop. 
+  Nrep is the number of repititions.
+  idir is the dimension to take derivative in (1 for X, 2 for Y, 3 for Z).
 
-Optionally, a file named 'dims' can also be provided to guide in the choice
+For example:
+
+128 128 128 2 1 2
+
+for 128^3 grid, 2-dim. decomposition, 1 repetition, derivative in Y direction.
+
+Optionally a file named 'dims' can also be provided to guide in the choice
 of processor geometry in case of 2D decomposition. It should contain
 two numbers in a line, with their product equal to the total number
 of tasks. Otherwise processor grid geometry is chosen automatically.
 For better performance, experiment with this setting, varying
 iproc and jproc. In many cases, minimizing iproc gives best results.
 Setting it to 1 corresponds to one-dimensional decomposition.
+
+If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 */
 
 #include "p3dfft.h"
-#include "compiler_check.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+using namespace p3dfft;
+
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#define min(x, y) (((x) < (y)) ? (x) : (y))
 
 void init_wave(double *,int[3],int *,int[3]);
-void print_res(double *,int *,int *,int *);
-void normalize(double *,long int,int *);
-double check_res(double*,double *,int *);
-void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
+void print_res(complex_double *,int *,int *,int *);
+void normalize(complex_double *,long int,int *);
+double check_res(double*,int[3],int[3],int[3],int);
+void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
 
 main(int argc,char **argv)
 {
@@ -48,15 +58,10 @@ main(int argc,char **argv)
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int ldims[3],ldims2[3];
+  int sdims[3],sdims2[3];
   long int size1,size2;
   double *IN;
-  Grid *grid1,*grid2;
-  int glob_start[3],glob_start2[3];
-  double *OUT;
-  int type_ids1[3];
-  int type_ids2[3];
-  Type3D type_forward,type_backward;
+  int glob_start[3],glob_start2[3],glob2[3];
   double t=0.;
   double *FIN;
   double mydiff;
@@ -64,8 +69,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,ndim;
-  Plan3D trans_f,trans_b;
+  int pdims[2],nx,ny,nz,n,ndim,idir;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -75,21 +79,18 @@ main(int argc,char **argv)
 
    if(myid == 0) {
      printf("P3DFFT++ C test program. Running on %d cores\n",nprocs);
-     printf("GitVersion = %s\n", GIT_VERSION);
-     printf("GitDate = %s\n", GIT_DATE);
-     printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
-        printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
-        nx=ny=nz=128; Nrep=1;ndim=2;
+        printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1, idir=1.\n");
+        nx=ny=nz=128; Nrep=1;ndim=2;idir=1;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&idir);
         fclose(fp);
      }
-     printf("P3DFFT test, 3D wave input, 3D complex FFT\n");
+     printf("P3DFFT test, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n",nx,ny,nz,ndim,Nrep,idir);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n",nx,ny,nz,ndim,Nrep,idir);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -97,6 +98,7 @@ main(int argc,char **argv)
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&idir,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -135,22 +137,16 @@ main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup();
+  setup();
 
   //Set up 2 transform types for 3D transforms
 
-  type_ids1[0] = P3DFFT_CFFT_FORWARD_D;
-  type_ids1[1] = P3DFFT_CFFT_FORWARD_D;
-  type_ids1[2] = P3DFFT_CFFT_FORWARD_D;
+  int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
+  int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
 
-  type_ids2[0] = P3DFFT_CFFT_BACKWARD_D;
-  type_ids2[1] = P3DFFT_CFFT_BACKWARD_D;
-  type_ids2[2] = P3DFFT_CFFT_BACKWARD_D;
-
-  //Now initialize 3D transforms (forward and backward) with these types
-
-  type_forward = p3dfft_init_3Dtype(type_ids1);
-  type_backward = p3dfft_init_3Dtype(type_ids2);
+  // Define the transform types for these two transforms
+  trans_type3D type_rcc(type_ids1); 
+  trans_type3D type_ccr(type_ids2); 
 
   //Set up global dimensions of the grid
 
@@ -180,52 +176,49 @@ main(int argc,char **argv)
 
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
+  gdims2[0] = gdims2[0]/2+1;
 
   //Initialize initial and final grids, based on the above information
 
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
-
-  grid2 = p3dfft_init_grid(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_forward,0);
-
-  //Now set up the backward transform
-
-  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_backward,0);
+  // Set up 3D transforms, including stages and plans, for forward trans.
+  transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc,false);
+  // Set up 3D transforms, including stages and plans, for backward trans.
+  transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
 
   //Save the local array dimensions. 
-  // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
 
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1->glob_start[i];
-    ldims[mem_order[i]] = grid1->ldims[i];
+    glob_start[mem_order[i]] = grid1.glob_start[i];
+    sdims[mem_order[i]] = grid1.ldims[i];
   }
 
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = sdims[0]*sdims[1]*sdims[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
-  IN=(double *) malloc(sizeof(double)*size1*2);
-  FIN= (double *) malloc(sizeof(double) *size1*2);
+  IN= new double[size1];
+  FIN= new double[size1];
 
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
-  init_wave(IN,gdims,ldims,glob_start);
-
+  init_wave(IN,gdims,sdims,glob_start);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-
   for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = grid2->glob_start[i];
-    ldims2[mem_order2[i]] = grid2->ldims[i];
+    glob_start2[mem_order2[i]] = grid2.glob_start[i];
+    sdims2[mem_order2[i]] = grid2.ldims[i];
+    glob2[mem_order2[i]] = grid2.gdims[i];
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  OUT=(double *) malloc(sizeof(double) *size2 *2);
+  size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  complex_double *OUT=new complex_double[size2];
 
   // Warm-up run, forward transform
-  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT);
+  trans_f.exec(IN,OUT);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -234,19 +227,23 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT); // Forward real-to-complex 3D FFT
+    trans_f.exec_deriv(IN,OUT,idir-1); // Forward R2C 3D FFT and derivative
+
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
+
+    //    compute_deriv(OUT,OUT,sdims2,glob_start2,glob2,mem_order2,idir);
     if(myid == 0)
-      printf("Results of forward transform: \n");
-    print_res(OUT,gdims,ldims2,glob_start2);
+      printf("After derviative: \n");
+    print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
+
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
+    trans_b.exec(OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 
-  mydiff = check_res(IN,FIN,ldims);
+  mydiff = check_res(FIN,gdims,sdims,glob_start,idir);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -263,31 +260,26 @@ main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/(nprocs*Nrep),gtmin/Nrep,gtmax/Nrep);
 
-  free(IN); free(OUT); free(FIN);
-
-  // Clean up grid structures
-
-  p3dfft_free_grid(grid1);
-  p3dfft_free_grid(grid2);
+  delete [] IN,OUT,FIN; 
 
   // Clean up all P3DFFT++ data
 
-  p3dfft_cleanup();
+  cleanup();
 
   MPI_Finalize();
 }
 
-void normalize(double *A,long int size,int *gdims)
+void normalize(complex_double *A,long int size,int *gdims)
 {
   long int i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
-  for(i=0;i<size*2;i++)
+  for(i=0;i<size;i++)
     A[i] = A[i] * f;
 
 }
 
-void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
+void init_wave(double *IN,int *gdims,int *sdims,int *gstart)
 {
   double *sinx,*siny,*sinz,sinyz,*p;
   int x,y,z;
@@ -297,67 +289,122 @@ void init_wave(double *IN,int *gdims,int *ldims,int *gstart)
   siny = (double *) malloc(sizeof(double)*gdims[1]);
   sinz = (double *) malloc(sizeof(double)*gdims[2]);
 
-   for(z=0;z < ldims[2];z++)
+   for(z=0;z < sdims[2];z++)
      sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < ldims[1];y++)
+   for(y=0;y < sdims[1];y++)
      siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < ldims[0];x++)
+   for(x=0;x < sdims[0];x++)
      sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
 
    p = IN;
-   for(z=0;z < ldims[2];z++)
-     for(y=0;y < ldims[1];y++) {
+   for(z=0;z < sdims[2];z++)
+     for(y=0;y < sdims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++) {
+       for(x=0;x < sdims[0];x++)
           *p++ = sinx[x]*sinyz;
-	  *p++ = 0.0;
-       }
      }
 
    free(sinx); free(siny); free(sinz);
 }
 
-void print_res(double *A,int *gdims,int *ldims,int *gstart)
+// sdims: local dimensions in physical storage order
+// gstart: starting indices of the local grid, in the physical storge order
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
 {
   int x,y,z;
-  double *p;
+  complex_double *p;
   double Nglob;
-  int imo[3],i,j;
+  int i,j;
   
+
   Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+  Nglob = Nglob *gdims[2];
   p = A;
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
-	if(fabs(*p) > Nglob *1.25e-4 || fabs(*(p+1))  > Nglob *1.25e-4) 
-    printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],*p,*(p+1));
-	p+=2;
+
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
+	if(std::abs(*p) > Nglob *1.25e-4) 
+	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
+	p++;
       }
 }
 
-double check_res(double *A,double *B,int *ldims)
+/* Assumes mem_order = (0,1,2), i.e. physical = storage */
+double check_res(double *A,int gdims[3],int sdims[3],int glob_start[3],int idir)
 {
   int x,y,z;
-  double *p1,*p2,d,mydiff;
-  int imo[3],i,j;
-  p1 = A;
-  p2 = B;
-  
+  double *p,mydiff;
+  int imo[3],i,j,k;
+  double *cosx,*cosy,*cosz,yz,diff;
+  double *sinx,*siny,*sinz;
+
+  double twopi = atan(1.0)*8.0;
+
+  cosx = (double *) malloc(sizeof(double)*gdims[0]);
+  cosy = (double *) malloc(sizeof(double)*gdims[1]);
+  cosz = (double *) malloc(sizeof(double)*gdims[2]);
+  sinx = (double *) malloc(sizeof(double)*gdims[0]);
+  siny = (double *) malloc(sizeof(double)*gdims[1]);
+  sinz = (double *) malloc(sizeof(double)*gdims[2]);
+
+  for(z=0;z < sdims[2];z++) {
+    cosz[z] = cos((z+glob_start[2])*twopi/gdims[2]);
+    sinz[z] = sin((z+glob_start[2])*twopi/gdims[2]);
+  }
+  for(y=0;y < sdims[1];y++) {
+    cosy[y] = cos((y+glob_start[1])*twopi/gdims[1]);
+    siny[y] = sin((y+glob_start[1])*twopi/gdims[1]);
+  }
+  for(x=0;x < sdims[0];x++) {
+    cosx[x] = cos((x+glob_start[0])*twopi/gdims[0]);
+    sinx[x] = sin((x+glob_start[0])*twopi/gdims[0]);
+  }
 
   mydiff = 0.;
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
-	d = (*p1-*p2)*(*p1-*p2);
-	p1++; p2++;
-	d += (*p1-*p2)*(*p1-*p2);
-	if(d > mydiff)
-	  mydiff = d;
-	p1++;
-	p2++;
+  p = A;
+  switch(idir) {
+  case 1:
+
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
+	yz = sinz[z] * siny[y];
+	for(x=0;x < sdims[0];x++) {
+	  if((diff=fabs(*p - cosx[x] * yz)) > mydiff)
+	    mydiff = diff;
+	  p++;
+	}
       }
-  return(sqrt(mydiff));
+    break;	
+
+  case 2:
+
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
+	yz = sinz[z] * cosy[y];
+	for(x=0;x < sdims[0];x++) {
+	  if((diff=fabs(*p - sinx[x] * yz)) > mydiff)
+	    mydiff = diff;
+	  p++;
+	}
+      }
+    break;
+	
+  case 3:
+
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++) {
+	yz = cosz[z] * siny[y];
+	for(x=0;x < sdims[0];x++) {
+	  if((diff=fabs(*p - sinx[x] * yz)) > mydiff)
+	    mydiff = diff;
+	  p++;
+	}
+      }
+	
+  }
+      
+  return(mydiff);
 }
 
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
@@ -373,7 +420,7 @@ void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid) {
   for(k=0;k<sz[mo[2]];k++)
     for(j=0;j<sz[mo[1]];j++)
       for(i=0;i<sz[mo[0]];i++) {
-	if(fabs(*p) > 1.e-7) {
+	if(abs(*p) > 1.e-7) {
 	  fprintf(fp,"(%d %d %d) %lg\n",i,j,k,*p);
 	}
 	p++;
