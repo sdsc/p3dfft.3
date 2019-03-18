@@ -87,7 +87,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 fsample_PROGRAMS = test3D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
-	test_deriv_f$(EXEEXT) test_trans1D_f$(EXEEXT) \
+	testIDIR_deriv_f$(EXEEXT) test1D_trans_f$(EXEEXT) \
 	test3D_c2c_inplace_f$(EXEEXT)
 subdir = sample/FORTRAN
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -101,10 +101,15 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(fsampledir)"
 PROGRAMS = $(fsample_PROGRAMS)
+am_test1D_trans_f_OBJECTS = test_trans1D.$(OBJEXT) wrap.$(OBJEXT)
+test1D_trans_f_OBJECTS = $(am_test1D_trans_f_OBJECTS)
+test1D_trans_f_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+test1D_trans_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_c2c_f_OBJECTS = test3D_c2c.$(OBJEXT) wrap.$(OBJEXT)
 test3D_c2c_f_OBJECTS = $(am_test3D_c2c_f_OBJECTS)
 test3D_c2c_f_LDADD = $(LDADD)
-am__DEPENDENCIES_1 =
 test3D_c2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_c2c_inplace_f_OBJECTS = test3D_c2c_inplace.$(OBJEXT) \
@@ -119,15 +124,10 @@ test3D_r2c_f_OBJECTS = $(am_test3D_r2c_f_OBJECTS)
 test3D_r2c_f_LDADD = $(LDADD)
 test3D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_deriv_f_OBJECTS = test_deriv.$(OBJEXT) wrap.$(OBJEXT)
-test_deriv_f_OBJECTS = $(am_test_deriv_f_OBJECTS)
-test_deriv_f_LDADD = $(LDADD)
-test_deriv_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_trans1D_f_OBJECTS = test_trans1D.$(OBJEXT) wrap.$(OBJEXT)
-test_trans1D_f_OBJECTS = $(am_test_trans1D_f_OBJECTS)
-test_trans1D_f_LDADD = $(LDADD)
-test_trans1D_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+am_testIDIR_deriv_f_OBJECTS = test_deriv.$(OBJEXT) wrap.$(OBJEXT)
+testIDIR_deriv_f_OBJECTS = $(am_testIDIR_deriv_f_OBJECTS)
+testIDIR_deriv_f_LDADD = $(LDADD)
+testIDIR_deriv_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -156,12 +156,12 @@ AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
-SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_c2c_inplace_f_SOURCES) \
-	$(test3D_r2c_f_SOURCES) $(test_deriv_f_SOURCES) \
-	$(test_trans1D_f_SOURCES)
-DIST_SOURCES = $(test3D_c2c_f_SOURCES) $(test3D_c2c_inplace_f_SOURCES) \
-	$(test3D_r2c_f_SOURCES) $(test_deriv_f_SOURCES) \
-	$(test_trans1D_f_SOURCES)
+SOURCES = $(test1D_trans_f_SOURCES) $(test3D_c2c_f_SOURCES) \
+	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
+	$(testIDIR_deriv_f_SOURCES)
+DIST_SOURCES = $(test1D_trans_f_SOURCES) $(test3D_c2c_f_SOURCES) \
+	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
+	$(testIDIR_deriv_f_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -298,8 +298,8 @@ fsampledir = $(datadir)/p3dfft++_samples/
 test3D_c2c_inplace_f_SOURCES = test3D_c2c_inplace.f90 wrap.f90
 test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90
 test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90
-test_deriv_f_SOURCES = test_deriv.f90 wrap.f90
-test_trans1D_f_SOURCES = test_trans1D.f90 wrap.f90
+testIDIR_deriv_f_SOURCES = test_deriv.f90 wrap.f90
+test1D_trans_f_SOURCES = test_trans1D.f90 wrap.f90
 all: all-am
 
 .SUFFIXES:
@@ -376,6 +376,10 @@ uninstall-fsamplePROGRAMS:
 clean-fsamplePROGRAMS:
 	-test -z "$(fsample_PROGRAMS)" || rm -f $(fsample_PROGRAMS)
 
+test1D_trans_f$(EXEEXT): $(test1D_trans_f_OBJECTS) $(test1D_trans_f_DEPENDENCIES) $(EXTRA_test1D_trans_f_DEPENDENCIES) 
+	@rm -f test1D_trans_f$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(test1D_trans_f_OBJECTS) $(test1D_trans_f_LDADD) $(LIBS)
+
 test3D_c2c_f$(EXEEXT): $(test3D_c2c_f_OBJECTS) $(test3D_c2c_f_DEPENDENCIES) $(EXTRA_test3D_c2c_f_DEPENDENCIES) 
 	@rm -f test3D_c2c_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test3D_c2c_f_OBJECTS) $(test3D_c2c_f_LDADD) $(LIBS)
@@ -388,13 +392,9 @@ test3D_r2c_f$(EXEEXT): $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_DEPENDENCIES) $(EX
 	@rm -f test3D_r2c_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_LDADD) $(LIBS)
 
-test_deriv_f$(EXEEXT): $(test_deriv_f_OBJECTS) $(test_deriv_f_DEPENDENCIES) $(EXTRA_test_deriv_f_DEPENDENCIES) 
-	@rm -f test_deriv_f$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_deriv_f_OBJECTS) $(test_deriv_f_LDADD) $(LIBS)
-
-test_trans1D_f$(EXEEXT): $(test_trans1D_f_OBJECTS) $(test_trans1D_f_DEPENDENCIES) $(EXTRA_test_trans1D_f_DEPENDENCIES) 
-	@rm -f test_trans1D_f$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_trans1D_f_OBJECTS) $(test_trans1D_f_LDADD) $(LIBS)
+testIDIR_deriv_f$(EXEEXT): $(testIDIR_deriv_f_OBJECTS) $(testIDIR_deriv_f_DEPENDENCIES) $(EXTRA_testIDIR_deriv_f_DEPENDENCIES) 
+	@rm -f testIDIR_deriv_f$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(testIDIR_deriv_f_OBJECTS) $(testIDIR_deriv_f_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

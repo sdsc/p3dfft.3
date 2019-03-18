@@ -88,6 +88,7 @@ main(int argc,char **argv)
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
         fscanf(fp,"%d %d %d\n",mem_order,mem_order+1,mem_order+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
+				printf("Memory Order: %d %d %d %d %d %d\n", mem_order[0], mem_order[1],mem_order[2],mem_order2[0],mem_order2[1],mem_order2[2]);
         fclose(fp);
      }
      printf("P3DFFT test, 1D wave input, 1D FFT\n");

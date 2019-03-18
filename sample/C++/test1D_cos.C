@@ -1,28 +1,30 @@
 /*
-This program exemplifies the use of 1D transforms in P3DFFT++. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+This program exemplifies the use of 1D transforms in P3DFFT++, using cosine 1D transform (DCT-1), for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
 
-!
-! This program initializes a 3D array with a 3D sine wave, then
-! performs forward real-to-complex transform, backward comples-to-real 
-! transform, and checks that
-! the results are correct, namely the same as in the start except
-! for a normalization factor. It can be used both as a correctness
-! test and for timing the library functions.
-!
-! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,dim,Nrep,MOIN(1)-(3),MOOUT(1)-(3). 
-! Here Nx,Ny,Nz are 3D grid dimensions, dim is the dimension of 1D transform 
-! (valid values are 0 through 2, and the logical dimension si specified, i.e. actual storage dimension may be different as specified by MOIN mapping), Nrep is the number of repititions. 
-! MOIN are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating. Similarly, MOOUT is the memory order of the output grid. 
-! Optionally a file named 'dims' can also be provided to guide in the choice
-! of processor geometry in case of 2D decomposition. It should contain
-! two numbers in a line, with their product equal to the total number
-! of tasks. Otherwise processor grid geometry is chosen automatically.
-! For better performance, experiment with this setting, varying
-! iproc and jproc. In many cases, minimizing iproc gives best results.
-! Setting it to 1 corresponds to one-dimensional decomposition.
-!
-! If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
+This program initializes a 3D array with a 1D cosine wave, then
+performs cosine transform twice and checks that
+the results are correct, namely the same as in the start except
+for a normalization factor. It can be used both as a correctness
+test and for timing the library functions.
+
+The program expects 'trans.in' file in the working directory, with
+a single line of numbers : Nx,Ny,Nz,dim,Nrep,mem-order-in(1)-(3),mem-order-out(1)-(3). 
+Here 
+  Nx,Ny,Nz are 3D grid dimensions (Note: the dimension of cosine transform must be odd).
+  dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension is specified, i.e. actual storage dimension may be different as specified by mem-order mapping)
+  Nrep is the number of repititions. 
+  mem-order-in are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating.
+  mem-order-out is the memory order of the output grid. 
+
+Optionally a file named 'dims' can also be provided to guide in the choice
+of processor geometry in case of 2D decomposition. It should contain
+two numbers in a line, with their product equal to the total number
+of tasks. Otherwise processor grid geometry is chosen automatically.
+For better performance, experiment with this setting, varying
+iproc and jproc. In many cases, minimizing iproc gives best results.
+Setting it to 1 corresponds to one-dimensional decomposition.
+
+If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 */
 
 #include "p3dfft.h"
@@ -32,14 +34,15 @@ This program exemplifies the use of 1D transforms in P3DFFT++. 1D transforms are
 
 using namespace p3dfft;
 
-void init_wave1D(double *,int[3],int *,int[3],int,int[3]);
-void print_res(double *,int *,int *,int *, int *,int);
+void init_wave1D(double *,int[3],int *,int,int);
+void print_res(double *,int *,int *,int *, int);
 void normalize(double *,long int,int *,int);
-double check_res(double*,double *,int *, int *);
+double check_res(double*,double *,int *);
 
 main(int argc,char **argv)
 {
-  using namespace p3dfft;
+
+using namespace p3dfft;
 
   int N=64;
   int Nrep = 1;
@@ -55,7 +58,7 @@ main(int argc,char **argv)
   int *ldims,*ldims2;
   long int size1,size2;
   double *IN;
-  int *glob_start,*glob_start2;
+  int glob_start[3],glob_start2[3];
   double *OUT;
   int type_ids1;
   int type_ids2;
@@ -88,10 +91,9 @@ main(int argc,char **argv)
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
         fscanf(fp,"%d %d %d\n",mem_order,mem_order+1,mem_order+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
-				printf("Memory Order: %d %d %d %d %d %d\n", mem_order[0], mem_order[1],mem_order[2],mem_order2[0],mem_order2[1],mem_order2[2]);
         fclose(fp);
      }
-     printf("P3DFFT test, 1D wave input, 1D FFT\n");
+     printf("C++ cosine transform, 1D wave input, 1D FFT\n");
 #ifndef SINGLE_PREC
      printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,n);
 #else
@@ -138,10 +140,9 @@ main(int argc,char **argv)
 
   setup();
 
-  //Set up 2 transform types for 3D transforms
+  //Set up transform types for 1D cosine transform
 
-  type_ids1 = R2CFFT_D;
-  type_ids2 = C2RFFT_D;
+  type_ids1 = type_ids2 = DCT1_REAL_D;
 
   //Set up global dimensions of the grid
 
@@ -169,21 +170,19 @@ main(int argc,char **argv)
 
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
-  gdims2[dim] = gdims2[dim]/2+1;
 
   //Initialize initial and final grids, based on the above information
+  // There is no conjugate symmetry (-1) since the arrays are real-valued
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
 
-  grid grid1(gdims,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
-
-  grid grid2(gdims2,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid grid2(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  //  printf("Plan rcc\n");
-  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim,0);
+  transplan<double,double> trans_f(grid1,grid2,type_ids1,dim,0);
 
   //Now set up the backward transform
 
-  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim,0);
+  transplan<double,double> trans_b(grid2,grid1,type_ids2,dim,0);
 
   //Determine local array dimensions. 
 
@@ -194,17 +193,25 @@ main(int argc,char **argv)
   IN=(double *) malloc(sizeof(double)*size1);
   FIN= (double *) malloc(sizeof(double) *size1);
 
+  int sdims[3],sdims2[3];
+  for(i=0;i<3;i++) {
+    sdims[mem_order[i]] = grid1.ldims[i];
+    sdims2[mem_order2[i]] = grid2.ldims[i];
+    glob_start[mem_order[i]] = grid1.glob_start[i];
+    glob_start2[mem_order2[i]] = grid2.glob_start[i];
+  }
+
   //Initialize the IN array with a sine wave in 3D
 
-  glob_start = grid1.glob_start;
-  init_wave1D(IN,gdims,ldims,glob_start,dim,mem_order);
+  int ld = mem_order[dim];  // Storage mapping of dimension of transform
+  init_wave1D(IN,gdims,sdims,dim,ld);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2.ldims;
-  glob_start2 = grid2.glob_start;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  OUT=(double *) malloc(sizeof(double) *size2 *2);
+  OUT=(double *) malloc(sizeof(double) *size2);
+
 
   // Execution of forward transform
 
@@ -214,13 +221,13 @@ main(int argc,char **argv)
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,gdims,ldims2,glob_start2,mem_order2,dim);
-  normalize(OUT,ldims2[0]*ldims2[1]*ldims2[2],gdims,mem_order2[dim]);
+  print_res(OUT,gdims,sdims2,glob_start2,dim);
+  normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
 
   // Execution of backward transform
   trans_b.exec((char *) OUT,(char *) FIN);
 
-  mydiff = check_res(IN,FIN,ldims,mem_order);
+  mydiff = check_res(IN,FIN,sdims);
   printf("%d: my diff =%lf\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
@@ -244,103 +251,88 @@ main(int argc,char **argv)
 void normalize(double *A,long int size,int *gdims,int dim)
 {
   long int i;
-  double f = 1.0/(((double) gdims[dim]));
+  double f = 0.5/((double) (gdims[dim]-1));
   
-  for(i=0;i<size*2;i++)
+  for(i=0;i<size;i++)
     A[i] = A[i] * f;
 
 }
 
-void init_wave1D(double *IN,int *gdims,int *ldims,int *gstart, int dim, int mem_order[3])
+// Initialize 3D array with a 1D cosine wave in the specified dimension
+void init_wave1D(double *IN,int *gdims,int *sdims, int dim, int ld)
 {
-  double *mysin,*p;
-  int i,x,y,z,ld,d[3];
-  double twopi = atan(1.0)*8.0;
+  double *cos_coords,*p;
+  int i,x,y,z;
+  double pi = atan(1.0)*4.0;
 
-  mysin = (double *) malloc(sizeof(double)*gdims[dim]);
+  cos_coords = (double *) malloc(sizeof(double)*gdims[dim]);
 
   for(x=0;x < gdims[dim];x++)
-    mysin[x] = sin(x*twopi/gdims[dim]);
+    cos_coords[x] = cos(x*pi/(gdims[dim]-1));
 
-  for(i=0;i<3;i++)
-    d[mem_order[i]] = ldims[i];
-
-   ld = mem_order[dim];
    p = IN;
    switch(ld) {
    case 0:
 
-     for(z=0;z < d[2];z++)
-       for(y=0;y < d[1];y++) 
-	 for(x=0;x < d[0];x++)
-	   *p++ = mysin[x];
+     for(z=0;z < sdims[2];z++)
+       for(y=0;y < sdims[1];y++) 
+	 for(x=0;x < sdims[0];x++)
+	   *p++ = cos_coords[x];
        
      break;
 
    case 1:
 
-     for(z=0;z < d[2];z++)
-       for(y=0;y < d[1];y++) 
-	 for(x=0;x < d[0];x++)
-	   *p++ = mysin[y];
+     for(z=0;z < sdims[2];z++)
+       for(y=0;y < sdims[1];y++) 
+	 for(x=0;x < sdims[0];x++)
+	   *p++ = cos_coords[y];
        
      break;
      
    case 2:
 
-     for(z=0;z < d[2];z++)
-       for(y=0;y < d[1];y++) 
-	 for(x=0;x < d[0];x++)
-	   *p++ = mysin[z];
+     for(z=0;z < sdims[2];z++)
+       for(y=0;y < sdims[1];y++) 
+	 for(x=0;x < sdims[0];x++)
+	   *p++ = cos_coords[z];
        
      break;
    default:
      break;
    }
 
-   free(mysin); 
+   free(cos_coords); 
 }
 
-void print_res(double *A,int *gdims,int *ldims,int *gstart, int *mo, int dim)
+void print_res(double *A,int *gdims,int *sdims,int *gstart, int dim)
 {
   int x,y,z;
   double *p;
   double N;
-  int imo[3],i,j;
-  
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(mo[i] == j)
-	imo[j] = i;
 
-  N = gdims[mo[dim]];
+  N = gdims[dim];
   p = A;
-  for(z=0;z < ldims[imo[2]];z++)
-    for(y=0;y < ldims[imo[1]];y++)
-      for(x=0;x < ldims[imo[0]];x++) {
-	if(fabs(*p) > N *1.25e-4 || fabs(*(p+1))  > N *1.25e-4) 
-    printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],*p,*(p+1));
-	p+=2;
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
+	if(fabs(*p) > N *1.25e-4) 
+    printf("(%d %d %d) %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],*p);
+	p++;
       }
 }
 
-double check_res(double *A,double *B,int *ldims, int *mo)
+double check_res(double *A,double *B,int *sdims)
 {
   int x,y,z;
   double *p1,*p2,mydiff;
-  int imo[3],i,j;
   p1 = A;
   p2 = B;
-  
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(mo[i] == j)
-	imo[j] = i;
 
   mydiff = 0.;
-  for(z=0;z < ldims[imo[2]];z++)
-    for(y=0;y < ldims[imo[1]];y++)
-      for(x=0;x < ldims[imo[0]];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(fabs(*p1 - *p2) > mydiff)
 	  mydiff = fabs(*p1-*p2);
 	p1++;

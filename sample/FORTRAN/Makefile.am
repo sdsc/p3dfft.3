@@ -6,7 +6,7 @@ AM_LDFLAGS = -cxxlib
 
 fsampledir = $(datadir)/p3dfft++_samples/
 
-fsample_PROGRAMS = test3D_r2c_f test3D_c2c_f test_deriv_f test_trans1D_f test3D_c2c_inplace_f
+fsample_PROGRAMS = test3D_r2c_f test3D_c2c_f testIDIR_deriv_f test1D_trans_f test3D_c2c_inplace_f
 
 p3dfft++.o: p3dfft++.f90
 
@@ -26,9 +26,9 @@ test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90
 
 test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90
 
-test_deriv_f_SOURCES = test_deriv.f90 wrap.f90
+testIDIR_deriv_f_SOURCES = test_deriv.f90 wrap.f90
 
-test_trans1D_f_SOURCES = test_trans1D.f90 wrap.f90
+test1D_trans_f_SOURCES = test_trans1D.f90 wrap.f90
 
 clean-local:
 	-test -z "*.mod" || rm -f *.mod

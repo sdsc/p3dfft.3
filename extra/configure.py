@@ -11,7 +11,7 @@ from time import strftime, localtime
 #TODO bridges
 platforms = ["comet", "bridges","stampede"]
 compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
-options = ['intel']
+options = []
 configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc',
 					  "stampede": './configure --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc'
 			}
