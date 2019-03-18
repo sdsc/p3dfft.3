@@ -89,7 +89,7 @@ POST_UNINSTALL = :
 cppsample_PROGRAMS = test3D_c2c_cpp$(EXEEXT) test3D_r2c_cpp$(EXEEXT) \
 	test1D_transplan_cpp$(EXEEXT) test1D_cos_cpp$(EXEEXT) \
 	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
-	test3D_c2c_inplace_cpp$(EXEEXT)
+	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_c$(EXEEXT)
 subdir = sample/C++
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -102,19 +102,19 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(cppsampledir)"
 PROGRAMS = $(cppsample_PROGRAMS)
-am_test1D_cos_complex_cpp_OBJECTS = test_cos_complex.$(OBJEXT)
+am_test1D_cos_complex_cpp_OBJECTS = test1D_cos_complex.$(OBJEXT)
 test1D_cos_complex_cpp_OBJECTS = $(am_test1D_cos_complex_cpp_OBJECTS)
 test1D_cos_complex_cpp_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test1D_cos_complex_cpp_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_test1D_cos_cpp_OBJECTS = test_cos.$(OBJEXT)
+am_test1D_cos_cpp_OBJECTS = test1D_cos.$(OBJEXT)
 test1D_cos_cpp_OBJECTS = $(am_test1D_cos_cpp_OBJECTS)
 test1D_cos_cpp_LDADD = $(LDADD)
 test1D_cos_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test1D_sin_cpp_OBJECTS = test_sin.$(OBJEXT)
+am_test1D_sin_cpp_OBJECTS = test1D_sin.$(OBJEXT)
 test1D_sin_cpp_OBJECTS = $(am_test1D_sin_cpp_OBJECTS)
 test1D_sin_cpp_LDADD = $(LDADD)
 test1D_sin_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
@@ -140,6 +140,11 @@ am_test3D_r2c_cpp_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_cpp_OBJECTS = $(am_test3D_r2c_cpp_OBJECTS)
 test3D_r2c_cpp_LDADD = $(LDADD)
 test3D_r2c_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
+testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
+testIDIR_deriv_c_LDADD = $(LDADD)
+testIDIR_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -172,11 +177,12 @@ am__v_CXXLD_1 =
 SOURCES = $(test1D_cos_complex_cpp_SOURCES) $(test1D_cos_cpp_SOURCES) \
 	$(test1D_sin_cpp_SOURCES) $(test1D_transplan_cpp_SOURCES) \
 	$(test3D_c2c_cpp_SOURCES) $(test3D_c2c_inplace_cpp_SOURCES) \
-	$(test3D_r2c_cpp_SOURCES)
+	$(test3D_r2c_cpp_SOURCES) $(testIDIR_deriv_c_SOURCES)
 DIST_SOURCES = $(test1D_cos_complex_cpp_SOURCES) \
 	$(test1D_cos_cpp_SOURCES) $(test1D_sin_cpp_SOURCES) \
 	$(test1D_transplan_cpp_SOURCES) $(test3D_c2c_cpp_SOURCES) \
-	$(test3D_c2c_inplace_cpp_SOURCES) $(test3D_r2c_cpp_SOURCES)
+	$(test3D_c2c_inplace_cpp_SOURCES) $(test3D_r2c_cpp_SOURCES) \
+	$(testIDIR_deriv_c_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -309,13 +315,14 @@ top_srcdir = @top_srcdir@
 AM_CXXFLAGS = -I$(top_builddir)/include -O3 -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 cppsampledir = $(datadir)/p3dfft++_samples/
+testIDIR_deriv_c_SOURCES = test_deriv.C
 test3D_c2c_inplace_cpp_SOURCES = test3D_c2c_inplace.C
 test3D_c2c_cpp_SOURCES = test3D_c2c.C
 test3D_r2c_cpp_SOURCES = test3D_r2c.C
 test1D_transplan_cpp_SOURCES = test_transplan.C
-test1D_cos_cpp_SOURCES = test_cos.C
-test1D_cos_complex_cpp_SOURCES = test_cos_complex.C 
-test1D_sin_cpp_SOURCES = test_sin.C  
+test1D_cos_cpp_SOURCES = test1D_cos.C
+test1D_cos_complex_cpp_SOURCES = test1D_cos_complex.C 
+test1D_sin_cpp_SOURCES = test1D_sin.C  
 all: all-am
 
 .SUFFIXES:
@@ -419,6 +426,10 @@ test3D_c2c_inplace_cpp$(EXEEXT): $(test3D_c2c_inplace_cpp_OBJECTS) $(test3D_c2c_
 test3D_r2c_cpp$(EXEEXT): $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_DEPENDENCIES) $(EXTRA_test3D_r2c_cpp_DEPENDENCIES) 
 	@rm -f test3D_r2c_cpp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_LDADD) $(LIBS)
+
+testIDIR_deriv_c$(EXEEXT): $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv_c_DEPENDENCIES) 
+	@rm -f testIDIR_deriv_c$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

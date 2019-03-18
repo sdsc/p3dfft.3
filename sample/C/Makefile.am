@@ -4,7 +4,13 @@ LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 
 csampledir = $(datadir)/p3dfft++_samples/
 
-csample_PROGRAMS = test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test1D_trans_c test3D_c2c_inplace_c
+csample_PROGRAMS = test1D_cos_c test1D_cos_complex_c test1D_r2c_c test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test3D_c2c_inplace_c
+
+test1D_cos_c_SOURCES = test1D_cos.c
+
+test1D_cos_complex_c_SOURCES = test1D_cos_complex.c
+
+test1D_r2c_c_SOURCES = test1D_r2c.c
 
 test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 
@@ -13,5 +19,3 @@ test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c
 
 testIDIR_deriv_c_SOURCES = test_deriv.c
-
-test1D_trans_c_SOURCES = test_trans1D.c
