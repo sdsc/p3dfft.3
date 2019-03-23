@@ -92,27 +92,27 @@ interface
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
+      subroutine p3dfft_exec_3Dtrans_double(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_double_f')
       import
-      integer(C_INT) plan,OW;
+      integer(C_INT) plan;
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dderiv_single(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_single_f')
+      subroutine p3dfft_exec_3Dderiv_single(plan,in,out,idir) bind(C,name='p3dfft_exec_3Dderiv_single_f')
       import
-      integer(C_INT) plan,OW,idir;
+      integer(C_INT) plan,idir;
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dderiv_double(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_double_f')
+      subroutine p3dfft_exec_3Dderiv_double(plan,in,out,idir) bind(C,name='p3dfft_exec_3Dderiv_double_f')
       import
-      integer(C_INT) plan,OW,idir;
+      integer(C_INT) plan,idir;
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
+      subroutine p3dfft_exec_3Dtrans_single(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_single_f')
       import
-      integer(C_INT) plan,OW;
+      integer(C_INT) plan;
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 

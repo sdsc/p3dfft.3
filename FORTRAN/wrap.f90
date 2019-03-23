@@ -127,3 +127,29 @@
 
       return
       end subroutine
+
+      subroutine p3dfft_3Dderiv_single(plan,IN,OUT,idir)
+      use p3dfft_plus_plus
+
+
+      real, TARGET :: IN(1,1,*)
+      real, TARGET :: OUT(1,1,*)
+      integer plan,idir
+
+      call p3dfft_exec_3Dderiv_single(plan,IN,OUT,idir)
+
+      return
+      end subroutine
+
+      subroutine p3dfft_3Dderiv_double(plan,IN,OUT,idir)
+      use p3dfft_plus_plus
+
+      double precision, TARGET :: IN(1,1,*)
+      double precision, TARGET :: OUT(1,1,*)
+      integer plan,idir
+
+      call p3dfft_exec_3Dderiv_double(plan,IN,OUT,idir)
+
+      return
+      end subroutine
+
