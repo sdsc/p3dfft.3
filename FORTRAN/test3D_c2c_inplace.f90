@@ -203,6 +203,10 @@
       size2 = mydims2(1)*mydims2(2)*mydims2(3)
 
 ! Now allocate initial and final arrays in physical space (real-valued)
+! In this example we allocate one-dimensional arrays with enough space to store
+! local portion of the 3D array contiguously in memory
+! This is for in-place transform, so make sure it is large enough for both 
+! input and output
       allocate(BEG(size1))
       allocate(INOUT(max(size1,size2)))
 

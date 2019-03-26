@@ -45,16 +45,16 @@ main(int argc,char **argv)
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int mem_order2[] = {2,1,0};
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int ldims[3],ldims2[3];
+  int sdims1[3],sdims2[3];
   long int size1,size2;
   double *IN;
   Grid *grid1,*grid2;
-  int glob_start[3],glob_start2[3],glob2[3];
+  int glob_start1[3],glob_start2[3],glob2[3];
   double *OUT;
   int type_ids1[3];
   int type_ids2[3];
@@ -157,7 +157,7 @@ main(int argc,char **argv)
   gdims[1] = ny;
   gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
+    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -183,7 +183,7 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
   // No conjugate symmetry in initial grid (-1)
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); // Conjugate symmetry in X dimension for final grid (after R2C transform)
+  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); // Conjugate symmetry in X dimension for final grid (after R2C transform)
   grid2 = p3dfft_init_grid(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
@@ -193,31 +193,32 @@ main(int argc,char **argv)
 
   trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,0);
 
-  //Save the local array dimensions. 
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
+  // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
 
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1->glob_start[i];
-    ldims[mem_order[i]] = grid1->ldims[i];
+    glob_start1[mem_order1[i]] = grid1->glob_start[i];
+    sdims1[mem_order1[i]] = grid1->ldims[i];
   }
 
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN=(double *) malloc(sizeof(double)*size1);
   FIN= (double *) malloc(sizeof(double) *size1);
 
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
-  init_wave(IN,gdims,ldims,glob_start);
+  init_wave(IN,gdims,sdims1,glob_start1);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = grid2->glob_start[i];
-    ldims2[mem_order2[i]] = grid2->ldims[i];
+    sdims2[mem_order2[i]] = grid2->ldims[i];
     glob2[mem_order2[i]] = grid2->gdims[i];
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = sdims2[0]*sdims2[1]*sdims2[2];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
@@ -235,11 +236,11 @@ main(int argc,char **argv)
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    /*    compute_deriv(OUT,OUT,ldims2,glob_start2,glob2,mem_order2,idir);*/
+    /*    compute_deriv(OUT,OUT,sdims2,glob_start2,glob2,mem_order2,idir);*/
 
     if(myid == 0)
       printf("Results after derivative: \n");
-    print_res(OUT,gdims,ldims2,glob_start2);
+    print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
@@ -247,7 +248,7 @@ main(int argc,char **argv)
   }
 
   /* Check that we recovered initial array */
-  mydiff = check_res(FIN,gdims,ldims,glob_start,idir);
+  mydiff = check_res(FIN,gdims,sdims1,glob_start1,idir);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

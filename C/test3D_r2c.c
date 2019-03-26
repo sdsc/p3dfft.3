@@ -41,16 +41,16 @@ main(int argc,char **argv)
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int mem_order2[] = {2,1,0};
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int ldims[3],ldims2[3];
+  int sdims1[3],ldims2[3];
   long int size1,size2;
   double *IN;
   Grid *grid1,*grid2;
-  int glob_start[3],glob_start2[3];
+  int glob_start1[3],glob_start2[3];
   double *OUT;
   int type_ids1[3];
   int type_ids2[3];
@@ -153,7 +153,7 @@ main(int argc,char **argv)
   gdims[1] = ny;
   gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
+    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -179,7 +179,7 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); 
 
   grid2 = p3dfft_init_grid(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
@@ -190,14 +190,14 @@ main(int argc,char **argv)
 
   trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,0);
 
-  //Save the local array dimensions. 
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1->glob_start[i];
-    ldims[mem_order[i]] = grid1->ldims[i];
+    glob_start1[mem_order1[i]] = grid1->glob_start[i];
+    sdims1[mem_order1[i]] = grid1->ldims[i];
   }
 
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN=(double *) malloc(sizeof(double)*size1);
@@ -206,7 +206,7 @@ main(int argc,char **argv)
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
 
-  init_wave(IN,gdims,ldims,glob_start);
+  init_wave(IN,gdims,sdims1,glob_start1);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -240,7 +240,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  mydiff = check_res(IN,FIN,ldims);
+  mydiff = check_res(IN,FIN,sdims1);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

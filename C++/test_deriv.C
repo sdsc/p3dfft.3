@@ -53,15 +53,15 @@ main(int argc,char **argv)
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int mem_order2[] = {2,1,0};
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int sdims[3],sdims2[3];
+  int sdims1[3],sdims2[3];
   long int size1,size2;
   double *IN;
-  int glob_start[3],glob_start2[3],glob2[3];
+  int glob_start1[3],glob_start2[3],glob2[3];
   double t=0.;
   double *FIN;
   double mydiff;
@@ -154,7 +154,7 @@ main(int argc,char **argv)
   gdims[1] = ny;
   gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
+    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -180,7 +180,7 @@ main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD);  
   grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
@@ -189,14 +189,14 @@ main(int argc,char **argv)
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
 
-  //Save the local array dimensions. 
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1.glob_start[i];
-    sdims[mem_order[i]] = grid1.ldims[i];
+    glob_start1[mem_order1[i]] = grid1.glob_start[i];
+    sdims1[mem_order1[i]] = grid1.ldims[i];
   }
 
-  size1 = sdims[0]*sdims[1]*sdims[2];
+  size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN= new double[size1];
@@ -204,7 +204,7 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D, based on the starting positions of my local grid within the global grid
 
-  init_wave(IN,gdims,sdims,glob_start);
+  init_wave(IN,gdims,sdims1,glob_start1);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -243,7 +243,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  mydiff = check_res(FIN,gdims,sdims,glob_start,idir);
+  mydiff = check_res(FIN,gdims,sdims1,glob_start1,idir);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

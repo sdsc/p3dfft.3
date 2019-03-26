@@ -45,16 +45,16 @@ main(int argc,char **argv)
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int mem_order2[3];
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
-  int *ldims,*ldims2;
+  int *ldims1,*ldims2;
   long int size1,size2;
   double *IN;
   Grid *grid1,*grid2;
-  int *glob_start,*glob_start2;
+  int glob_start1[3],glob_start2[3];
   double *OUT;
   int type_ids1;
   int type_ids2;
@@ -66,7 +66,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,dim,cnt,ar_dim,mydims[3],mydims2[3];
+  int pdims[2],nx,ny,nz,n,dim,cnt,ar_dim,sdims1[3],sdims2[3];
   Plan3D trans_f,trans_b;
   FILE *fp;
 
@@ -83,7 +83,7 @@ main(int argc,char **argv)
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
-        fscanf(fp,"%d %d %d\n",mem_order,mem_order+1,mem_order+2);
+        fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
      }
@@ -102,7 +102,7 @@ main(int argc,char **argv)
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
-   MPI_Bcast(&mem_order,3,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
 
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
@@ -164,12 +164,12 @@ main(int argc,char **argv)
   for(i=0; i < 3;i++) {
     gdims2[i] = gdims[i];
     if(i == dim) 
-      ar_dim = mem_order[i]; // Find storage dimension corresponding to dim
+      ar_dim = mem_order1[i]; // Find storage dimension corresponding to dim
   }
 
   //Initialize initial and final grids, based on the above information
   // No conjugate symmetry (-1)
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); 
 
   grid2 = p3dfft_init_grid(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
@@ -182,30 +182,33 @@ main(int argc,char **argv)
 
   //Determine local array dimensions. 
 
-  ldims = grid1->ldims;
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  ldims1 = grid1->ldims;
+  size1 = ldims1[0]*ldims1[1]*ldims1[2];
 
-  for(i=0;i<3;i++)
-    mydims[mem_order[i]] = ldims[i];
-
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
+  // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
+  for(i=0;i<3;i++) {
+    sdims1[mem_order1[i]] = ldims1[i];
+    glob_start1[mem_order1[i]] = grid1->glob_start[i];
+  }
   //Now allocate initial and final arrays in physical space (real-valued)
   IN=(double *) malloc(sizeof(double)*size1);
   FIN= (double *) malloc(sizeof(double) *size1);
 
   //Initialize the IN array with a sine wave in 3D
 
-  glob_start = grid1->glob_start;
-  init_wave1D(IN,mydims,glob_start,ar_dim);
+  init_wave1D(IN,sdims1,glob_start1,ar_dim);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2->ldims;
-  glob_start2 = grid2->glob_start;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
   OUT=(double *) malloc(sizeof(double) *size2);
 
-  for(i=0;i < 3;i++) 
-    mydims2[mem_order2[i]] = ldims2[i];
+  for(i=0;i < 3;i++) {
+    sdims2[mem_order2[i]] = ldims2[i];
+    glob_start2[mem_order2[i]] = grid2->glob_start[i];
+  }
 
   for(i=0;i<Nrep;i++) {
 
@@ -214,19 +217,19 @@ main(int argc,char **argv)
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,mydims2,glob_start2,mem_order2,mydims[ar_dim]);
-  normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) mydims[ar_dim]-1));
+  print_res(OUT,sdims2,glob_start2,mem_order2,sdims2[ar_dim]);
+  normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) sdims1[ar_dim]-1));
 
   // Execute backward transform
   p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN);
   }
 
-  mydiff = check_res(IN,FIN,mydims);
+  mydiff = check_res(IN,FIN,sdims1);
 
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
-    if(diff > 1.0e-14 * mydims[ar_dim] *0.25)
+    if(diff > 1.0e-14 * sdims1[ar_dim] *0.25)
       printf("Results are incorrect\n");
     else
       printf("Results are correct\n");
