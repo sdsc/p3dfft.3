@@ -170,15 +170,15 @@ main(int argc,char **argv)
 
   grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
-  // Save the local grid dimensions and the size o physical space arrays
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
   
-  int sdims[3],glob_start[3];
+  int sdims1[3],glob_start1[3];
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1.glob_start[i];
-    sdims[mem_order[i]] = grid1.ldims[i];
+    sdims1[mem_order[i]] = grid1.ldims[i];
+    glob_start1[mem_order[i]] = grid1.glob_start[i];
   }
 
-  int size1 = sdims[0]*sdims[1]*sdims[2];
+  int size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -187,7 +187,7 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,sdims,glob_start);
+  init_wave(IN,gdims,sdims1,glob_start1);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -235,7 +235,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  double mydiff = check_res(IN,FIN,sdims);
+  double mydiff = check_res(IN,FIN,sdims1);
   double diff = 0.0;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

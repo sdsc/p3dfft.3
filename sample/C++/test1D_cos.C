@@ -50,7 +50,7 @@ using namespace p3dfft;
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int mem_order2[3];
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
@@ -58,7 +58,7 @@ using namespace p3dfft;
   int *ldims,*ldims2;
   long int size1,size2;
   double *IN;
-  int glob_start[3],glob_start2[3];
+  int glob_start1[3],glob_start2[3];
   double *OUT;
   int type_ids1;
   int type_ids2;
@@ -89,7 +89,7 @@ using namespace p3dfft;
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
-        fscanf(fp,"%d %d %d\n",mem_order,mem_order+1,mem_order+2);
+        fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
      }
@@ -108,7 +108,7 @@ using namespace p3dfft;
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
-   MPI_Bcast(&mem_order,3,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
 
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
@@ -173,7 +173,7 @@ using namespace p3dfft;
 
   //Initialize initial and final grids, based on the above information
   // There is no conjugate symmetry (-1) since the arrays are real-valued
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD); 
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); 
 
   grid grid2(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
@@ -193,18 +193,19 @@ using namespace p3dfft;
   IN=(double *) malloc(sizeof(double)*size1);
   FIN= (double *) malloc(sizeof(double) *size1);
 
-  int sdims[3],sdims2[3];
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
+  int sdims1[3],sdims2[3];
   for(i=0;i<3;i++) {
-    sdims[mem_order[i]] = grid1.ldims[i];
+    sdims1[mem_order1[i]] = grid1.ldims[i];
     sdims2[mem_order2[i]] = grid2.ldims[i];
-    glob_start[mem_order[i]] = grid1.glob_start[i];
+    glob_start1[mem_order1[i]] = grid1.glob_start[i];
     glob_start2[mem_order2[i]] = grid2.glob_start[i];
   }
 
   //Initialize the IN array with a sine wave in 3D
 
-  int ld = mem_order[dim];  // Storage mapping of dimension of transform
-  init_wave1D(IN,gdims,sdims,dim,ld);
+  int ld = mem_order1[dim];  // Storage mapping of dimension of transform
+  init_wave1D(IN,gdims,sdims1,dim,ld);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -227,7 +228,7 @@ using namespace p3dfft;
   // Execution of backward transform
   trans_b.exec((char *) OUT,(char *) FIN);
 
-  mydiff = check_res(IN,FIN,sdims);
+  mydiff = check_res(IN,FIN,sdims1);
   printf("%d: my diff =%lf\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);

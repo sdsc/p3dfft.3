@@ -44,7 +44,7 @@ main(int argc,char **argv)
   int gdims[3],gdims2[3];
   int pgrid1[3],pgrid2[3];
   int proc_order[3];
-  int mem_order[3];
+  int mem_order1[3];
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
@@ -130,7 +130,7 @@ main(int argc,char **argv)
 
   gdims[0] = nx; gdims[1]=ny;gdims[2]=nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
+    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -144,7 +144,7 @@ main(int argc,char **argv)
 
   // Initialize the initial grid
 
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD);  
 
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
@@ -165,15 +165,15 @@ main(int argc,char **argv)
 
   grid grid2(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
 
-  // Save the local grid dimensions and the size o physical space arrays
+  // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
-  int ldims[3],glob_start[3];
+  int sdims1[3],glob_start1[3];
   for(i=0;i<3;i++) {
-    glob_start[mem_order[i]] = grid1.glob_start[i];
-    ldims[mem_order[i]] = grid1.ldims[i];
+    glob_start1[mem_order1[i]] = grid1.glob_start[i];
+    sdims1[mem_order1[i]] = grid1.ldims[i];
   }
 
-  int size1 = ldims[0]*ldims[1]*ldims[2];
+  int size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -197,7 +197,7 @@ main(int argc,char **argv)
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,ldims,grid1.glob_start);
+  init_wave(IN,gdims,sdims1,glob_start1);
   for(i=0;i<size1;i++)
     AR[i] = IN[i];
   
@@ -231,7 +231,7 @@ main(int argc,char **argv)
     t += MPI_Wtime();
   }
 
-  double mydiff = check_res(IN,AR,ldims);
+  double mydiff = check_res(IN,AR,sdims1);
   double diff = 0.0;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
