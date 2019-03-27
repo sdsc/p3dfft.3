@@ -132,7 +132,7 @@ am__v_AR_1 =
 libp3dfft_3_a_AR = $(AR) $(ARFLAGS)
 libp3dfft_3_a_LIBADD =
 am_libp3dfft_3_a_OBJECTS = init.$(OBJEXT) plan.$(OBJEXT) \
-	exec.$(OBJEXT) templ.$(OBJEXT) wrap.$(OBJEXT)
+	exec.$(OBJEXT) templ.$(OBJEXT) wrap.$(OBJEXT) deriv.$(OBJEXT)
 libp3dfft_3_a_OBJECTS = $(am_libp3dfft_3_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -297,7 +297,7 @@ AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include
 ARFLAGS = -v -r -u
 lib_LIBRARIES = libp3dfft.3.a
 LDADD = $(FFTWF_LIB) $(FFTW_LIB) -lm
-libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C
+libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 all: all-am
 
 .SUFFIXES:

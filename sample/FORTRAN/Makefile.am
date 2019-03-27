@@ -1,4 +1,4 @@
-AM_FCFLAGS = -I$(top_builddir)/include -O3
+AM_FCFLAGS = -I$(top_builddir)/include
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 
@@ -8,26 +8,27 @@ fsampledir = $(datadir)/p3dfft++_samples/
 
 fsample_PROGRAMS = test1D_cos_f test1D_cos_complex_f test1D_r2c_f test2D_f test3D_f test3D_c2c_f test3D_r2c_f test3D_c2c_f testIDIR_deriv_f test3D_c2c_inplace_f
 
-p3dfft++.o: p3dfft++.f90
+p3dfft_plus_plus.mod: p3dfft++.o
 
+wrap.o: wrap.f90 p3dfft_plus_plus.mod
 
-test1D_cos.o: test1D_cos.f90 p3dfft++.o
+test1D_cos.o: test1D_cos.f90 p3dfft_plus_plus.mod
 
-test1D_cos_complex.o: test1D_cos_complex.f90 p3dfft++.o
+test1D_cos_complex.o: test1D_cos_complex.f90 p3dfft_plus_plus.mod
 
-test1D_r2c.o: test1D_r2c.f90 p3dfft++.o
+test1D_r2c.o: test1D_r2c.f90 p3dfft_plus_plus.mod
 
 test2D.o: test2D.f90 p3dfft++.o
 
 test3D.o: test3D.f90 p3dfft++.o
 
-test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft++.o
+test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft_plus_plus.mod
 
-test3D_r2c.o: test3D_r2c.f90 p3dfft++.o
+test3D_r2c.o: test3D_r2c.f90 p3dfft_plus_plus.mod
 
-test3D_c2c.o: test3D_c2c.f90 p3dfft++.o
+test3D_c2c.o: test3D_c2c.f90 p3dfft_plus_plus.mod
 
-test_deriv.o: test_deriv.f90 p3dfft++.o
+test_deriv.o: test_deriv.f90 p3dfft_plus_plus.mod
 
 test1D_cos_f_SOURCES = test1D_cos.f90 wrap.f90
 

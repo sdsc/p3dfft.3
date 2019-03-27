@@ -8,7 +8,7 @@ lib_LIBRARIES = libp3dfft.3.a
 
 LDADD = $(FFTWF_LIB) $(FFTW_LIB) -lm
 
-libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C
+libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod

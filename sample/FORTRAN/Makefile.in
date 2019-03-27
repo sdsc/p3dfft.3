@@ -319,7 +319,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_FCFLAGS = -I$(top_builddir)/include -O3
+AM_FCFLAGS = -I$(top_builddir)/include
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 AM_LDFLAGS = -cxxlib
 fsampledir = $(datadir)/p3dfft++_samples/
@@ -662,25 +662,27 @@ uninstall-am: uninstall-fsamplePROGRAMS
 .PRECIOUS: Makefile
 
 
-p3dfft++.o: p3dfft++.f90
+p3dfft_plus_plus.mod: p3dfft++.o
 
-test1D_cos.o: test1D_cos.f90 p3dfft++.o
+wrap.o: wrap.f90 p3dfft_plus_plus.mod
 
-test1D_cos_complex.o: test1D_cos_complex.f90 p3dfft++.o
+test1D_cos.o: test1D_cos.f90 p3dfft_plus_plus.mod
 
-test1D_r2c.o: test1D_r2c.f90 p3dfft++.o
+test1D_cos_complex.o: test1D_cos_complex.f90 p3dfft_plus_plus.mod
+
+test1D_r2c.o: test1D_r2c.f90 p3dfft_plus_plus.mod
 
 test2D.o: test2D.f90 p3dfft++.o
 
 test3D.o: test3D.f90 p3dfft++.o
 
-test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft++.o
+test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft_plus_plus.mod
 
-test3D_r2c.o: test3D_r2c.f90 p3dfft++.o
+test3D_r2c.o: test3D_r2c.f90 p3dfft_plus_plus.mod
 
-test3D_c2c.o: test3D_c2c.f90 p3dfft++.o
+test3D_c2c.o: test3D_c2c.f90 p3dfft_plus_plus.mod
 
-test_deriv.o: test_deriv.f90 p3dfft++.o
+test_deriv.o: test_deriv.f90 p3dfft_plus_plus.mod
 
 clean-local:
 	-test -z "*.mod" || rm -f *.mod

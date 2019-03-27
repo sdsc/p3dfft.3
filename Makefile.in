@@ -336,7 +336,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = README.md AUTHORS _config.yml build/init.C build/exec.C build/plan.C build/templ.C build/wrap.C
-include_HEADERS = include/p3dfft.h include/config.h
+include_HEADERS = include/p3dfft.h include/config.h include/Fwrap.h include/Cwrap.h
 SUBDIRS = build sample
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
