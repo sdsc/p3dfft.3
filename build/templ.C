@@ -264,7 +264,7 @@ void inv_mo(int mo[3],int imo[3]);
 
     //    tmpgrid0->set_mo(monext);
       
-    int dim_conj_sym = -1;
+    int dim_conj_sym = tmpgrid0->dim_conj_sym;
     tmptype = types1D[type->types[L[st]]];
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
       gdims[L[st]] = gdims[L[st]]/2+1;
