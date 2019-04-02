@@ -228,7 +228,7 @@ using namespace p3dfft;
   trans_b.exec((char *) OUT,(char *) FIN);
 
   mydiff = check_res(IN,FIN,sdims1);
-  printf("%d: my diff =%lf\n",myid,mydiff);
+  //  printf("%d: my diff =%lf\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
