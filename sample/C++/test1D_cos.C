@@ -222,14 +222,14 @@ using namespace p3dfft;
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,gdims,sdims2,glob_start2,dim);
+  print_res(OUT,gdims,sdims2,glob_start2,gdims[dim]);
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
 
   // Execution of backward transform
   trans_b.exec((char *) OUT,(char *) FIN);
 
   mydiff = check_res(IN,FIN,sdims1);
-  printf("%d: my diff =%lf\n",myid,mydiff);
+  //printf("%d: my diff =%lf\n",myid,mydiff);
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

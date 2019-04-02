@@ -34,7 +34,7 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 #include <stdio.h>
 
 void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim);
-void print_res(double *A,int *mydims,int *gstart, int *mo, int N     );
+void print_res(double *A,int *mydims,int *gstart, int N     );
 void normalize(double *,long int,double);
 double check_res(double *A,double *B,int *mydims);
 
@@ -93,9 +93,9 @@ main(int argc,char **argv)
      }
      printf("P3DFFT test, 1D wave input, 1D cosine transform\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,n);
+     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
 #else
-     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,n);
+     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
 #endif
    }
 
@@ -214,6 +214,7 @@ main(int argc,char **argv)
     glob_start2[mem_order2[i]] = grid2->glob_start[i];
   }
 
+  //  double Nglob = ldims2[0]*ldims2[1]*ldims2[2];
   for(i=0;i<Nrep;i++) {
 
   // Execute forward transform
@@ -221,7 +222,7 @@ main(int argc,char **argv)
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,sdims2,glob_start2,mem_order2,sdims2[ar_dim]);
+  print_res(OUT,sdims2,glob_start2,sdims1[ar_dim]);
   normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) sdims1[ar_dim]-1));
 
   // Execute backward transform
@@ -310,24 +311,19 @@ void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim)
    free(cos_coords); 
 }
 
-void print_res(double *A,int *mydims,int *gstart, int *mo, int N)
+void print_res(double *A,int *mydims,int *gstart, int N)
 {
   int x,y,z;
   double *p;
   int imo[3],i,j;
   
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
-      if(mo[i] == j)
-	imo[j] = i;
-
   p = A;
   for(z=0;z < mydims[2];z++)
     for(y=0;y < mydims[1];y++)
       for(x=0;x < mydims[0];x++) {
-	if(fabs(*p) > N *1.25e-4 || fabs(*(p+1))  > N *1.25e-4) 
-    printf("(%d %d %d) %lg %lg\n",x+gstart[imo[0]],y+gstart[imo[1]],z+gstart[imo[2]],*p,*(p+1));
-	p+=2;
+	if(fabs(*p) > N *1.25e-4 ) 
+	  printf("(%d %d %d) %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],*p);
+	p++;
       }
 }
 
