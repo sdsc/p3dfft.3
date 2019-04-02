@@ -85,12 +85,12 @@ def runline(platform, mt, output_dir, test):
 def onebyone(platform, mt, output_dir, test):
 	r = ''
 	if platform == "comet":
-		r = "ibrun --npernode 1 " + test + "\n"
+		r = "ibrun --npernode 1 " + test
 	elif platform == "stampede":
 		if mt:
-			r = "ibrun -n 1 -o 0 tacc_affinity " + test + "\n"
+			r = "ibrun -n 1 -o 0 tacc_affinity " + test
 		else:
-			r = "ibrun -n 1 -o 0 " + test + "\n"
+			r = "ibrun -n 1 -o 0 " + test
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Write all tests for all dims
@@ -116,10 +116,10 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 			batchf.write("rm -f dims\n")
 			for perm in one_dim_perms:
 				dim_in = perm.find('0')/2
-				dim_out = perm.find('0', 5)/2
-				batchf.write("echo '128 128 128 " + dim_in + ' 1 ' + perm + "' > trans.in\n")
+				dim_out = perm.find('0', 5)/2 - 3
+				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 				batchf.write(runline(platform, mt, output_dir, test))
-				batchf.write("echo '128 128 128 " + dim_out + ' 1 ' + perm + "' > trans.in\n")
+				batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 				batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIM' in basename:
 			batchf.write("echo '128 128 128 2 1' > stdin\n")

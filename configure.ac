@@ -142,6 +142,12 @@ if test "$fftwval" = "yes" && test "$esslval" = "yes"; then
 	AC_MSG_ERROR([You must only choose either ESSL or FFTW!])
 fi
 
+#AC_MSG_CHECKING([fftw flag])
+#AC_ARG_ENABLE(fftwflag, [AC_HELP_STRING([--with-fftwflag], [flag for FFTW library])], enablefftwflag=$enableval, enablefftwflag="measure")
+#if test "$enablefftwflag" == "measure" || test "$enablefftwflag" == "yes"; then
+#	AC_MSG_RESULT([measure])
+#	AC_DEFINE(FFTW_MEASURE
+
 AC_MSG_CHECKING([fftw location])
 AC_ARG_WITH(fftw, [AC_HELP_STRING([--with-fftw], [path to FFTW directory])], withfftw=$withval, withfftw="")
 if test "$withfftw" != "yes" && test "$withfftw" != ""; then
