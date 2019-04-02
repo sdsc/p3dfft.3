@@ -63,9 +63,7 @@
          endif
          dim = 1
 
-        read (3,*) nx, ny, nz, dim,n
-        read (3,*) mem_order1(1:3)
-        read (3,*) mem_order2(1:3)
+        read (3,*) nx, ny, nz, dim,n, mem_order1(1:3), mem_order2(1:3)
         dim = dim +1
 	print *,'P3DFFT++ test, Fortran, 1D cosine transform, 3D wave input'
         write (*,*) "procs=",nproc," nx=",nx, &
@@ -134,7 +132,7 @@
       do i=1,3
          gdims2(i) = gdims1(i)
       enddo
-      factor = 0.5d0 /(gdims1(dim)-1)
+      factor = 0.5d0 /(gdims1(dim)-1.0d0)
 
       do i=1,3
          proc_order(i) = i-1
@@ -170,10 +168,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim,0)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,0)
 
 ! Now set up the backward transform
-      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim,0)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,0)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -314,7 +312,7 @@
         pi=atan(1.0d0)*4.0d0
         
         do z=1,mydims(ar_dim)
-           cos_coords(z)=cos((z-1)*pi/(mydims(ar_dim)-1))
+           cos_coords(z)=cos((z-1)*pi/(mydims(ar_dim)-1.0d0))
         enddo
 
 ! Initialize with 3D sine wave
