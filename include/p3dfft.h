@@ -80,19 +80,25 @@ All Rights Reserved.
     TRADEMARK OR OTHER RIGHTS.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "p3dfft3config.h"
+#endif
+
 #include "mpi.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-@DEFINE_FFTW@
-@DEFINE_MKL_BLAS@
-@DEFINE_ESSL@
-@DEFINE_TIMERS@
 
 
 #ifdef FFTW
 #include "fftw3.h"
+#if defined FFTW_FLAG_MEASURE
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
+#elif defined FFTW_FLAG_ESTIMATE
+const int DEF_FFT_FLAGS=FFTW_ESTIMATE;
+#elif defined FFTW_FLAG_PATIENT
+const int DEF_FFT_FLAGS=FFTW_PATIENT;
+#endif
 #endif
 
 

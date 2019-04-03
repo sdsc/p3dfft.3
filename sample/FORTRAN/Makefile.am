@@ -1,4 +1,4 @@
-AM_FCFLAGS = -I$(top_builddir)/include
+AM_FCFLAGS = -I$(top_builddir)/include $(FFTW_INC)
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 

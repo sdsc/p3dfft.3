@@ -78,10 +78,6 @@ All Rights Reserved.
     TRADEMARK OR OTHER RIGHTS.
 */
 
-#if defined(HAVE_CONFIG_H)
-#include "config.h"
-#endif
-
 #include "p3dfft.h"
 
 namespace p3dfft {

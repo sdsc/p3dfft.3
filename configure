@@ -650,10 +650,6 @@ ESSL_INC
 FFTWF_LIB
 FFTW_LIB
 FFTW_INC
-DEFINE_ESSL
-DEFINE_FFTW
-DEFINE_TIMERS
-DEFINE_MKL_BLAS
 GIT_VERSION
 GIT_DATE
 AM_BACKSLASH
@@ -734,6 +730,9 @@ enable_mkl_blas
 enable_timers
 enable_fftw
 enable_essl
+enable_fftwmeasure
+enable_fftwestimate
+enable_fftwpatient
 with_fftw
 with_fftw_lib
 with_fftw_inc
@@ -1378,6 +1377,9 @@ Optional Features:
   --enable-timers         for using timers
   --enable-fftw           for using the FFTW library
   --enable-essl           for using the ESSL library
+  --enable-fftwmeasure    measure planner flag for FFTW library
+  --enable-fftwestimate   estimate planner flag for FFTW library
+  --enable-fftwpatient    patient planner flag for FFTW library
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2923,7 +2925,7 @@ END
 fi
 
 
-ac_config_headers="$ac_config_headers config.h"
+ac_config_headers="$ac_config_headers p3dfft3config.h"
 
 
 DEFINE="#define"
@@ -3079,11 +3081,6 @@ if test "$mklblasval" = "yes"; then
 
 $as_echo "#define MKL_BLAS 1" >>confdefs.h
 
-	DEFINE_MKL_BLAS="$DEFINE MKL_BLAS 1"
-
-else
-	DEFINE_MKL_BLAS="$UNDEFINE MKL_BLAS"
-
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklblasval" >&5
 $as_echo "$mklblasval" >&6; }
@@ -3100,11 +3097,6 @@ fi
 if test "$timersval" = "yes"; then
 
 $as_echo "#define TIMERS 1" >>confdefs.h
-
-	DEFINE_TIMERS="$DEFINE TIMERS 1"
-
-else
-	DEFINE_TIMERS="$UNDEFINE TIMERS"
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $timersval" >&5
@@ -3123,11 +3115,6 @@ if test "$fftwval" = "yes"; then
 
 $as_echo "#define FFTW 1" >>confdefs.h
 
-	DEFINE_FFTW="$DEFINE FFTW 1"
-
-else
-	DEFINE_FFTW="$UNDEFINE FFTW"
-
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
 $as_echo "$fftwval" >&6; }
@@ -3145,11 +3132,6 @@ if test "$esslval" = "yes"; then
 
 $as_echo "#define ESSL 1" >>confdefs.h
 
-	DEFINE_ESSL="$DEFINE ESSL 1"
-
-else
-	DEFINE_ESSL="$UNDEFINE ESSL"
-
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $esslval" >&5
 $as_echo "$esslval" >&6; }
@@ -3163,6 +3145,67 @@ fi
 if test "$fftwval" = "yes" && test "$esslval" = "yes"; then
 	as_fn_error $? "You must only choose either ESSL or FFTW!" "$LINENO" 5
 fi
+
+#default value for fftwflag
+fftwflag="measure"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw flag" >&5
+$as_echo_n "checking fftw flag... " >&6; }
+# Check whether --enable-fftwmeasure was given.
+if test "${enable_fftwmeasure+set}" = set; then :
+  enableval=$enable_fftwmeasure; enablefftwmeasure=$enableval
+else
+  enablefftwmeasure=""
+fi
+
+if test "$enablefftwmeasure" == "yes"; then
+	fftwflag="measure"
+fi
+
+# Check whether --enable-fftwestimate was given.
+if test "${enable_fftwestimate+set}" = set; then :
+  enableval=$enable_fftwestimate; enablefftwestimate=$enableval
+else
+  enablefftwestimate=""
+fi
+
+if test "$enablefftwestimate" == "yes"; then
+	fftwflag="estimate"
+fi
+
+# Check whether --enable-fftwpatient was given.
+if test "${enable_fftwpatient+set}" = set; then :
+  enableval=$enable_fftwpatient; enablefftwpatient=$enableval
+else
+  enablefftwpatient=""
+fi
+
+if test "$enablefftwpatient" == "yes"; then
+	fftwflag="patient"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwflag" >&5
+$as_echo "$fftwflag" >&6; }
+
+case "$fftwflag" in
+	measure)
+
+$as_echo "#define FFTW_FLAG_MEASURE 1" >>confdefs.h
+
+		;;
+	estimate)
+
+$as_echo "#define FFTW_FLAG_ESTIMATE 1" >>confdefs.h
+
+		;;
+	patient)
+
+$as_echo "#define FFTW_FLAG_PATIENT 1" >>confdefs.h
+
+		;;
+	*)
+		as_fn_error $? "Not a valid fftw flag" "$LINENO" 5
+esac
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw location" >&5
 $as_echo_n "checking fftw location... " >&6; }
@@ -5541,7 +5584,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile include/p3dfft.h build/Makefile sample/Makefile sample/C++/Makefile sample/C/Makefile sample/FORTRAN/Makefile"
+ac_config_files="$ac_config_files Makefile build/Makefile sample/Makefile sample/C++/Makefile sample/C/Makefile sample/FORTRAN/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6251,9 +6294,8 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "p3dfft3config.h") CONFIG_HEADERS="$CONFIG_HEADERS p3dfft3config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "include/p3dfft.h") CONFIG_FILES="$CONFIG_FILES include/p3dfft.h" ;;
     "build/Makefile") CONFIG_FILES="$CONFIG_FILES build/Makefile" ;;
     "sample/Makefile") CONFIG_FILES="$CONFIG_FILES sample/Makefile" ;;
     "sample/C++/Makefile") CONFIG_FILES="$CONFIG_FILES sample/C++/Makefile" ;;
@@ -6885,6 +6927,6 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-cp config.h include/config.h
+mv p3dfft3config.h include/p3dfft3config.h
 { $as_echo "$as_me:${as_lineno-$LINENO}: configure script complete!" >&5
 $as_echo "$as_me: configure script complete!" >&6;}

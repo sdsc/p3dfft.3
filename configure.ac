@@ -5,7 +5,7 @@ AC_PREREQ([2.69])
 AC_INIT([P3DFFT++], [3.0.0], [dmitry@sdsc.edu])
 AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([p3dfft3config.h])
 
 DEFINE="#define"
 UNDEFINE="#undef"
@@ -96,9 +96,6 @@ AC_MSG_CHECKING([whether to use MKL_BLAS])
 AC_ARG_ENABLE(mkl_blas, [AC_HELP_STRING([--enable-mklblas], [for using mklblas])], mklblasval=$enableval, mklblasval=no)
 if test "$mklblasval" = "yes"; then
 	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
-	AC_SUBST(DEFINE_MKL_BLAS, "$DEFINE MKL_BLAS 1")
-else
-	AC_SUBST(DEFINE_MKL_BLAS, "$UNDEFINE MKL_BLAS")
 fi
 AC_MSG_RESULT([$mklblasval])
 
@@ -106,9 +103,6 @@ AC_MSG_CHECKING([whether to use TIMERS])
 AC_ARG_ENABLE(timers, [AC_HELP_STRING([--enable-timers], [for using timers])], timersval=$enableval, timersval=no)
 if test "$timersval" = "yes"; then
 	AC_DEFINE(TIMERS, 1, [Define if you want to use timers])
-	AC_SUBST(DEFINE_TIMERS, "$DEFINE TIMERS 1")
-else
-	AC_SUBST(DEFINE_TIMERS, "$UNDEFINE TIMERS")
 fi
 AC_MSG_RESULT([$timersval])
 
@@ -116,9 +110,6 @@ AC_MSG_CHECKING([whether to use FFTW library])
 AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
 if test "$fftwval" = "yes"; then
 	AC_DEFINE(FFTW, 1, [Define if you want to use the FFTW library])
-	AC_SUBST(DEFINE_FFTW, "$DEFINE FFTW 1")
-else
-	AC_SUBST(DEFINE_FFTW, "$UNDEFINE FFTW")
 fi
 AC_MSG_RESULT([$fftwval])
 
@@ -126,9 +117,6 @@ AC_MSG_CHECKING([whether to use ESSL library])
 AC_ARG_ENABLE(essl, [AC_HELP_STRING([--enable-essl], [for using the ESSL library])], esslval=$enableval, esslval=no)
 if test "$esslval" = "yes"; then
 	AC_DEFINE(ESSL, 1, [Define if you want to use the ESSL library])
-	AC_SUBST(DEFINE_ESSL, "$DEFINE ESSL 1")
-else
-	AC_SUBST(DEFINE_ESSL, "$UNDEFINE ESSL")
 fi
 AC_MSG_RESULT([$esslval])
 
@@ -142,11 +130,40 @@ if test "$fftwval" = "yes" && test "$esslval" = "yes"; then
 	AC_MSG_ERROR([You must only choose either ESSL or FFTW!])
 fi
 
-#AC_MSG_CHECKING([fftw flag])
-#AC_ARG_ENABLE(fftwflag, [AC_HELP_STRING([--with-fftwflag], [flag for FFTW library])], enablefftwflag=$enableval, enablefftwflag="measure")
-#if test "$enablefftwflag" == "measure" || test "$enablefftwflag" == "yes"; then
-#	AC_MSG_RESULT([measure])
-#	AC_DEFINE(FFTW_MEASURE
+#default value for fftwflag
+fftwflag="measure"
+
+AC_MSG_CHECKING([fftw flag])
+AC_ARG_ENABLE(fftwmeasure, [AC_HELP_STRING([--enable-fftwmeasure], [measure planner flag for FFTW library])], enablefftwmeasure=$enableval, enablefftwmeasure="")
+if test "$enablefftwmeasure" == "yes"; then
+	fftwflag="measure"
+fi
+
+AC_ARG_ENABLE(fftwestimate, [AC_HELP_STRING([--enable-fftwestimate], [estimate planner flag for FFTW library])], enablefftwestimate=$enableval, enablefftwestimate="")
+if test "$enablefftwestimate" == "yes"; then
+	fftwflag="estimate"
+fi
+
+AC_ARG_ENABLE(fftwpatient, [AC_HELP_STRING([--enable-fftwpatient], [patient planner flag for FFTW library])], enablefftwpatient=$enableval, enablefftwpatient="")
+if test "$enablefftwpatient" == "yes"; then
+	fftwflag="patient"
+fi
+AC_MSG_RESULT([$fftwflag])
+
+case "$fftwflag" in
+	measure)
+		AC_DEFINE(FFTW_FLAG_MEASURE, 1, [Define if you want to use the measure fftw planner flag])
+		;;
+	estimate)
+		AC_DEFINE(FFTW_FLAG_ESTIMATE, 1, [Define if you want to use the estimate fftw planner flag])
+		;;
+	patient)
+		AC_DEFINE(FFTW_FLAG_PATIENT, 1, [Define if you want to use the patient fftw planner flag])
+		;;
+	*)
+		AC_MSG_ERROR([Not a valid fftw flag])
+esac
+
 
 AC_MSG_CHECKING([fftw location])
 AC_ARG_WITH(fftw, [AC_HELP_STRING([--with-fftw], [path to FFTW directory])], withfftw=$withval, withfftw="")
@@ -246,12 +263,11 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([sqrt])
 
 AC_CONFIG_FILES([Makefile
-		 include/p3dfft.h
 		 build/Makefile
 		 sample/Makefile
 		 sample/C++/Makefile
                  sample/C/Makefile
                  sample/FORTRAN/Makefile])
 AC_OUTPUT
-cp config.h include/config.h
+mv p3dfft3config.h include/p3dfft3config.h
 AC_MSG_NOTICE([configure script complete!])

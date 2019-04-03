@@ -121,7 +121,7 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 				batchf.write(runline(platform, mt, output_dir, test))
 				batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 				batchf.write(runline(platform, mt, output_dir, test))
-		elif 'IDIM' in basename:
+		elif 'IDIR' in basename:
 			batchf.write("echo '128 128 128 2 1' > stdin\n")
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")

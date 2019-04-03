@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* p3dfft3config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define if you want to compile P3DFFT using Cray compiler */
 #undef Cray
@@ -8,6 +8,15 @@
 
 /* Define if you want to use the FFTW library */
 #undef FFTW
+
+/* Define if you want to use the estimate fftw planner flag */
+#undef FFTW_FLAG_ESTIMATE
+
+/* Define if you want to use the measure fftw planner flag */
+#undef FFTW_FLAG_MEASURE
+
+/* Define if you want to use the patient fftw planner flag */
+#undef FFTW_FLAG_PATIENT
 
 /* Define if you want to compile P3DFFT using GNU compiler */
 #undef GNU

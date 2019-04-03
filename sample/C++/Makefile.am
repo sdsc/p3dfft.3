@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I$(top_builddir)/include -O3 -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) -O3 -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 
 cppsampledir = $(datadir)/p3dfft++_samples/

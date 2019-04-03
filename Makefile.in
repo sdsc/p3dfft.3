@@ -96,8 +96,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = include/p3dfft.h
+CONFIG_HEADER = p3dfft3config.h
+CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -166,7 +166,7 @@ am__recursive_targets = \
 AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
 	cscope distdir dist dist-all distcheck
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
-	$(LISP)config.h.in
+	$(LISP)p3dfft3config.h.in
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -187,9 +187,9 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = $(SUBDIRS)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/include/p3dfft.h.in AUTHORS COPYING ChangeLog \
-	INSTALL NEWS README ar-lib compile depcomp install-sh missing
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/p3dfft3config.h.in \
+	AUTHORS COPYING ChangeLog INSTALL NEWS README ar-lib compile \
+	depcomp install-sh missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -247,10 +247,6 @@ CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
-DEFINE_ESSL = @DEFINE_ESSL@
-DEFINE_FFTW = @DEFINE_FFTW@
-DEFINE_MKL_BLAS = @DEFINE_MKL_BLAS@
-DEFINE_TIMERS = @DEFINE_TIMERS@
 DEFS = @DEFS@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -336,9 +332,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = README.md AUTHORS _config.yml build/init.C build/exec.C build/plan.C build/templ.C build/wrap.C
-include_HEADERS = include/p3dfft.h include/config.h include/Fwrap.h include/Cwrap.h
+include_HEADERS = include/p3dfft.h include/p3dfft3config.h include/Fwrap.h include/Cwrap.h
 SUBDIRS = build sample
-all: config.h
+all: p3dfft3config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
@@ -376,22 +372,20 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
-config.h: stamp-h1
+p3dfft3config.h: stamp-h1
 	@test -f $@ || rm -f stamp-h1
 	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h1
 
-stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
+stamp-h1: $(srcdir)/p3dfft3config.h.in $(top_builddir)/config.status
 	@rm -f stamp-h1
-	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/config.h.in:  $(am__configure_deps) 
+	cd $(top_builddir) && $(SHELL) ./config.status p3dfft3config.h
+$(srcdir)/p3dfft3config.h.in:  $(am__configure_deps) 
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f stamp-h1
 	touch $@
 
 distclean-hdr:
-	-rm -f config.h stamp-h1
-include/p3dfft.h: $(top_builddir)/config.status $(top_srcdir)/include/p3dfft.h.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
+	-rm -f p3dfft3config.h stamp-h1
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -710,7 +704,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(HEADERS) config.h all-local
+all-am: Makefile $(HEADERS) p3dfft3config.h all-local
 installdirs: installdirs-recursive
 installdirs-am:
 	for dir in "$(DESTDIR)$(includedir)"; do \
