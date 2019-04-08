@@ -195,7 +195,6 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	  mo[i] = gr1.mem_order[i];
 	}
 	gdims[trans_dim_] = gdims[trans_dim_]/2+1;
-	double *A=new double[1024];
 	grid *tmpgrid = new grid(gdims,gr1.dim_conj_sym,pgrid,proc_order,mo,mpicomm_glob);
 
       if(prec == 4) {

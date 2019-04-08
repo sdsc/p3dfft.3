@@ -91,7 +91,7 @@ void inv_mo(int mo[3],int imo[3]);
 
 #ifdef DEBUG
   cout << "In transform3D" << endl;
-  <print_type3D(type);
+  print_type3D(type);
 #endif
 
   int prec2,dt;
