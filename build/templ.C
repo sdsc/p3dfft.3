@@ -736,7 +736,6 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 
 template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d,bool inplace_)   
 {
-  double *C = new double[1024];
   kind = TRANSMPI;
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,inplace_);
   stage_prec = trplan->prec;
