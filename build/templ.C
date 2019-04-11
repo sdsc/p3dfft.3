@@ -738,6 +738,9 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(con
 {
   kind = TRANSMPI;
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,inplace_);
+  if(trplan->lib_plan == NULL) 
+    cout << "Error in trans_MPIplan: null plan" << endl;
+
   stage_prec = trplan->prec;
   mpiplan = new MPIplan<Type2>(intergrid,gr2,mpicomm,d1,d2,stage_prec);
   is_set = true;
@@ -924,10 +927,13 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0) 
       //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign);
+      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
     }
     else //R2C or C2R
       plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+
+    if(plan->libplan == NULL) 
+      printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
     //    fftw_free(B);
@@ -985,6 +991,10 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     }
     //    delete [] A; // fftw_free
     //delete [] B;
+
+    if(plan->libplan == NULL) 
+      printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
+
     fftw_free(A);
     fftw_free(B);
 #else // non-FFTW
