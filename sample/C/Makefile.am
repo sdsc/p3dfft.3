@@ -20,4 +20,4 @@ test3D_c2c_c_SOURCES = test3D_c2c.c
 
 testIDIR_deriv_c_SOURCES = test_deriv.c
 
-testIDIR_deriv2_c_SOURCES = test_deriv2.C
+testIDIR_deriv2_c_SOURCES = test_deriv2.c

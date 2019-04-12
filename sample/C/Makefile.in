@@ -160,19 +160,6 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-AM_V_CXX = $(am__v_CXX_@AM_V@)
-am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
-am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 = 
-CXXLD = $(CXX)
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
-AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
-am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
-am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -259,7 +246,6 @@ LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
-MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
@@ -329,12 +315,12 @@ test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c
 testIDIR_deriv_c_SOURCES = test_deriv.c
-testIDIR_deriv2_c_SOURCES = test_deriv2.C
+testIDIR_deriv2_c_SOURCES = test_deriv2.c
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .c .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+.SUFFIXES: .c .o .obj
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -358,9 +344,9 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-$(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
+$(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-$(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
+$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 install-csamplePROGRAMS: $(csample_PROGRAMS)
@@ -432,7 +418,7 @@ test3D_r2c_c$(EXEEXT): $(test3D_r2c_c_OBJECTS) $(test3D_r2c_c_DEPENDENCIES) $(EX
 
 testIDIR_deriv2_c$(EXEEXT): $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv2_c_DEPENDENCIES) 
 	@rm -f testIDIR_deriv2_c$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_LDADD) $(LIBS)
 
 testIDIR_deriv_c$(EXEEXT): $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv_c_DEPENDENCIES) 
 	@rm -f testIDIR_deriv_c$(EXEEXT)
@@ -443,12 +429,6 @@ mostlyclean-compile:
 
 distclean-compile:
 	-rm -f *.tab.c
-
-.C.o:
-	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ $<
-
-.C.obj:
-	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.o:
 	$(AM_V_CC)$(COMPILE) -c -o $@ $<
