@@ -89,7 +89,7 @@ POST_UNINSTALL = :
 csample_PROGRAMS = test1D_cos_c$(EXEEXT) test1D_cos_complex_c$(EXEEXT) \
 	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
 	test3D_c2c_c$(EXEEXT) testIDIR_deriv_c$(EXEEXT) \
-	test3D_c2c_inplace_c$(EXEEXT)
+	test3D_c2c_inplace_c$(EXEEXT) testIDIR_deriv2_c$(EXEEXT)
 subdir = sample/C
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -135,6 +135,11 @@ test3D_r2c_c_OBJECTS = $(am_test3D_r2c_c_OBJECTS)
 test3D_r2c_c_LDADD = $(LDADD)
 test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_testIDIR_deriv2_c_OBJECTS = test_deriv2.$(OBJEXT)
+testIDIR_deriv2_c_OBJECTS = $(am_testIDIR_deriv2_c_OBJECTS)
+testIDIR_deriv2_c_LDADD = $(LDADD)
+testIDIR_deriv2_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
 testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
 testIDIR_deriv_c_LDADD = $(LDADD)
@@ -155,6 +160,19 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -170,11 +188,11 @@ am__v_CCLD_1 =
 SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
 	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
 	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(testIDIR_deriv_c_SOURCES)
+	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
 DIST_SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
 	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
 	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(testIDIR_deriv_c_SOURCES)
+	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -310,10 +328,11 @@ test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c
 testIDIR_deriv_c_SOURCES = test_deriv.c
+testIDIR_deriv2_c_SOURCES = test_deriv2.C
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .C .c .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -410,6 +429,10 @@ test3D_r2c_c$(EXEEXT): $(test3D_r2c_c_OBJECTS) $(test3D_r2c_c_DEPENDENCIES) $(EX
 	@rm -f test3D_r2c_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_r2c_c_OBJECTS) $(test3D_r2c_c_LDADD) $(LIBS)
 
+testIDIR_deriv2_c$(EXEEXT): $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv2_c_DEPENDENCIES) 
+	@rm -f testIDIR_deriv2_c$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_LDADD) $(LIBS)
+
 testIDIR_deriv_c$(EXEEXT): $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv_c_DEPENDENCIES) 
 	@rm -f testIDIR_deriv_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_LDADD) $(LIBS)
@@ -419,6 +442,12 @@ mostlyclean-compile:
 
 distclean-compile:
 	-rm -f *.tab.c
+
+.C.o:
+	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ $<
+
+.C.obj:
+	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.o:
 	$(AM_V_CC)$(COMPILE) -c -o $@ $<

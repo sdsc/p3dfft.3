@@ -344,7 +344,7 @@ def main():
 			unevengrid(platform, mt, all_tests, all_dims, batchf, output_dir)
 		else:
 			buildall(platform, mt, all_tests, all_dims, batchf, output_dir)
-
+	batchf.write("grep -rcwE * -e 'Error|incorrect'\n")
 	# Close the file. Done.
 	batchf.close()
 
