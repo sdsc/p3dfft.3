@@ -7,6 +7,12 @@ AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([p3dfft3config.h])
 
+: ${CFLAGS="-g -O0"}
+
+: ${CXXFLAGS="-g -O0"}
+
+: ${FCFLAGS="-g -O0"}
+
 DEFINE="#define"
 UNDEFINE="#undef"
 

@@ -89,7 +89,7 @@ POST_UNINSTALL = :
 cppsample_PROGRAMS = test3D_c2c_cpp$(EXEEXT) test3D_r2c_cpp$(EXEEXT) \
 	test1D_transplan_cpp$(EXEEXT) test1D_cos_cpp$(EXEEXT) \
 	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
-	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_c$(EXEEXT)
+	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_cpp$(EXEEXT)
 subdir = sample/C++
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -141,10 +141,10 @@ test3D_r2c_cpp_OBJECTS = $(am_test3D_r2c_cpp_OBJECTS)
 test3D_r2c_cpp_LDADD = $(LDADD)
 test3D_r2c_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
-testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
-testIDIR_deriv_c_LDADD = $(LDADD)
-testIDIR_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+am_testIDIR_deriv_cpp_OBJECTS = test_deriv.$(OBJEXT)
+testIDIR_deriv_cpp_OBJECTS = $(am_testIDIR_deriv_cpp_OBJECTS)
+testIDIR_deriv_cpp_LDADD = $(LDADD)
+testIDIR_deriv_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -177,12 +177,12 @@ am__v_CXXLD_1 =
 SOURCES = $(test1D_cos_complex_cpp_SOURCES) $(test1D_cos_cpp_SOURCES) \
 	$(test1D_sin_cpp_SOURCES) $(test1D_transplan_cpp_SOURCES) \
 	$(test3D_c2c_cpp_SOURCES) $(test3D_c2c_inplace_cpp_SOURCES) \
-	$(test3D_r2c_cpp_SOURCES) $(testIDIR_deriv_c_SOURCES)
+	$(test3D_r2c_cpp_SOURCES) $(testIDIR_deriv_cpp_SOURCES)
 DIST_SOURCES = $(test1D_cos_complex_cpp_SOURCES) \
 	$(test1D_cos_cpp_SOURCES) $(test1D_sin_cpp_SOURCES) \
 	$(test1D_transplan_cpp_SOURCES) $(test3D_c2c_cpp_SOURCES) \
 	$(test3D_c2c_inplace_cpp_SOURCES) $(test3D_r2c_cpp_SOURCES) \
-	$(testIDIR_deriv_c_SOURCES)
+	$(testIDIR_deriv_cpp_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -308,10 +308,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) -O3 -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
 cppsampledir = $(datadir)/p3dfft++_samples/
-testIDIR_deriv_c_SOURCES = test_deriv.C
+testIDIR_deriv_cpp_SOURCES = test_deriv.C
 test3D_c2c_inplace_cpp_SOURCES = test3D_c2c_inplace.C
 test3D_c2c_cpp_SOURCES = test3D_c2c.C
 test3D_r2c_cpp_SOURCES = test3D_r2c.C
@@ -423,9 +423,9 @@ test3D_r2c_cpp$(EXEEXT): $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_DEPENDENCIES
 	@rm -f test3D_r2c_cpp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_LDADD) $(LIBS)
 
-testIDIR_deriv_c$(EXEEXT): $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv_c_DEPENDENCIES) 
-	@rm -f testIDIR_deriv_c$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_LDADD) $(LIBS)
+testIDIR_deriv_cpp$(EXEEXT): $(testIDIR_deriv_cpp_OBJECTS) $(testIDIR_deriv_cpp_DEPENDENCIES) $(EXTRA_testIDIR_deriv_cpp_DEPENDENCIES) 
+	@rm -f testIDIR_deriv_cpp$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(testIDIR_deriv_cpp_OBJECTS) $(testIDIR_deriv_cpp_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
