@@ -232,6 +232,8 @@ LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MKL_INC = @MKL_INC@
+MKL_LIB = @MKL_LIB@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -289,10 +291,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include
+AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include $(ESSL_INC) $(MKL_INC) $(MKL_LIB)
 ARFLAGS = -v -r -u
 lib_LIBRARIES = libp3dfft.3.a
-LDADD = $(FFTWF_LIB) $(FFTW_LIB) -lm
+LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm
 libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 all: all-am
 

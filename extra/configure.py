@@ -12,8 +12,9 @@ from time import strftime, localtime
 platforms = ["comet", "bridges","stampede"]
 compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
 options = []
-configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc',
-					  "stampede": './configure --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc'
+configs = { "comet": './configure --with-fftw=$FFTWHOME',
+			"stampede": './configure --with-fftw=$TACC_FFTW3_DIR',
+			"bridges": './configure --with-fftw-lib=$FFTW3_LIB --with-fftw-inc=$FFTW3_INCLUDE'
 			}
 sourcedir = "p3dfft.3"
 destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
@@ -113,7 +114,7 @@ def main():
 		combos = []
 		d = os.path.join(cwd,dest)
 		try:
-			os.mkdir(d)		
+			os.mkdir(d)
 		except Exception as e:
 			print e
 			sys.exit(1)
@@ -150,4 +151,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-

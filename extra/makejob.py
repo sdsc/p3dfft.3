@@ -9,7 +9,7 @@ from time import strftime, localtime
 from fractions import Fraction
 from itertools import product, permutations
 
-platforms = ["comet", "stampede"]
+platforms = ["comet", "stampede", "bridges"]
 one_dim_perms = map(lambda a: a.replace('(', '').replace(')', '').replace(',', '')
 										,[str(p) for p in product(permutations([0,1,2]), repeat=2)])
 current_time = strftime("%d-%m-%Y-%H%M%S", localtime())
@@ -79,6 +79,11 @@ def runline(platform, mt, output_dir, test):
 			r = "ibrun -n " + str(MT_RANKSPERNODE) + " -o 0 tacc_affinity " + test
 		else:
 			r = "ibrun -n " + str(TASKSPERNODE * NUMNODES) + " -o 0 " + test
+	elif platform == "bridges":
+		if mt:
+			r = "mpirun -n " + str(MT_RANKSPERNODE) + " " + test
+		else:
+			r = "mpirun -n " + str(TASKSPERNODE * NUMNODES) + " " + test
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Test for 1x1 dims
@@ -91,6 +96,11 @@ def onebyone(platform, mt, output_dir, test):
 			r = "ibrun -n 1 -o 0 tacc_affinity " + test
 		else:
 			r = "ibrun -n 1 -o 0 " + test
+	elif platform == "bridges":
+		if mt:
+			rt = "mpirun -n 1 " + test
+		else:
+			r = "mpirun -n 1" + test
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Write all tests for all dims
@@ -105,7 +115,7 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 		#else:
 		#	batchf.write("echo '128 128 128 2 1' > stdin\n")
 		basename = os.path.basename(test)
-		if '3D' in basename: 
+		if '3D' in basename:
 			batchf.write("echo '128 128 128 2 1' > stdin\n")
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
@@ -157,6 +167,11 @@ def perftest(platform, mt, test, curr_numcores, num_threads):
 			return "ibrun -n " + str(curr_numcores/num_threads) + " -o 0 tacc_affinity " + test + "\n"
 		else:
 			return "ibrun -n " + str(curr_numcores) + " -o 0 " + test + "\n"
+	elif platform == "bridges":
+		if mt:
+			return "mpirun -n " + str(curr_numcores/num_threads) + " " + test + "\n"
+		else:
+			return "mpirun -n " + str(curr_numcores) + " " + test + "\n"
 
 # Write all tests for performance testing
 #TODO NOT WORKING
@@ -226,6 +241,22 @@ def script_header(platform, batchf, mt, perf, email, output_dir,sd):
 			batchf.write('#SBATCH -n' + str(MT_RANKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
 		else:
 			batchf.write('#SBATCH -n ' + str(TASKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
+		if email:
+			batchf.write('#SBATCH --mail-user=' + email + '\n')
+			batchf.write('#SBATCH --mail-type=ALL\n')
+		batchf.write('#SBATCH -t 01:00:00\n')
+	elif platform == "bridges":
+		batchf.write('#SBATCH --job-name="' + "p3dfft++_compiled" + '"\n')
+		batchf.write('#SBATCH --output="' + os.path.join(output_dir,'out.%j') + '"\n')
+		batchf.write('#SBATCH --partition=RM\n')
+		if perf:
+			batchf.write('#SBATCH --nodes=' + str(int(MAXCORES/(32*PERF_NUMTHREADS))) + '\n')
+			batchf.write('#SBATCH --ntasks-per-node=32\n')
+		else:
+			batchf.write('#SBATCH --nodes=' + str(NUMNODES) + '\n')
+			batchf.write('#SBATCH --ntasks-per-node=' + str(TASKSPERNODE) + '\n')
+		batchf.write('#SBATCH --export=ALL\n')
+		batchf.write('#SBATCH --switches=1\n')
 		if email:
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
 			batchf.write('#SBATCH --mail-type=ALL\n')
@@ -320,7 +351,7 @@ def main():
 		pass
 
 	batchf = open(fname, 'w')
-	
+
 	output_dir = os.path.join(jobs_dir, 'out')
 	try:
 		os.mkdir(output_dir)
@@ -352,4 +383,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-

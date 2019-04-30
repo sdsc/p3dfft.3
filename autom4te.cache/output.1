@@ -645,6 +645,8 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+MKL_LIB
+MKL_INC
 ESSL_LIB
 ESSL_INC
 FFTWF_LIB
@@ -726,17 +728,15 @@ enable_intel
 enable_pgi
 enable_cray
 enable_gnu
-enable_mkl_blas
 enable_timers
-enable_fftw
-enable_essl
-enable_fftwmeasure
-enable_fftwestimate
-enable_fftwpatient
 with_fftw
 with_fftw_lib
 with_fftw_inc
 with_essl
+with_mkl
+enable_fftwmeasure
+enable_fftwestimate
+enable_fftwpatient
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1373,10 +1373,7 @@ Optional Features:
   --enable-pgi            compile P3DFFT using PGI compiler
   --enable-cray           compile P3DFFT using IBM compiler
   --enable-gnu            compile P3DFFT using GNU compiler
-  --enable-mklblas        for using mklblas
-  --enable-timers         for using timers
-  --enable-fftw           for using the FFTW library
-  --enable-essl           for using the ESSL library
+  --enable-timers         for using timers (DEBUGGING PURPOSES ONLY)
   --enable-fftwmeasure    measure planner flag for FFTW library
   --enable-fftwestimate   estimate planner flag for FFTW library
   --enable-fftwpatient    patient planner flag for FFTW library
@@ -1388,6 +1385,7 @@ Optional Packages:
   --with-fftw-lib         path to FFTW directory containing library file
   --with-fftw-inc         path to FFTW include directory
   --with-essl             path to location of ESSL library
+  --with-mkl              path to location of MKL library
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2928,11 +2926,11 @@ fi
 ac_config_headers="$ac_config_headers p3dfft3config.h"
 
 
-: ${CFLAGS="-g -O0"}
+#: ${CFLAGS="-g -O0"}
 
-: ${CXXFLAGS="-g -O0"}
+#: ${CXXFLAGS="-g -O0"}
 
-: ${FCFLAGS="-g -O0"}
+#: ${FCFLAGS="-g -O0"}
 
 DEFINE="#define"
 UNDEFINE="#undef"
@@ -2942,6 +2940,7 @@ git_version=`git --no-pager describe --tags --always --dirty 2> /dev/null`
 GIT_DATE="$git_date"
 
 GIT_VERSION="$git_version"
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use IBM compiler" >&5
@@ -2959,10 +2958,8 @@ if test "$enableibm" = "yes"; then
 	
 $as_echo "@%:@define IBM 1" >>confdefs.h
 
-	if test "$compiler" == ''; then
-		compiler="ibm"
-	else
-		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	if test "$compiler" == ''; then compiler="ibm"
+	else as_fn_error $? "Only choose one compiler!" "$LINENO" 5
 	fi
 fi
 
@@ -2981,10 +2978,8 @@ if test "$enableintel" = "yes"; then
 	
 $as_echo "@%:@define INTEL 1" >>confdefs.h
 
-	if test "$compiler" == ''; then
-		compiler="intel"
-	else
-		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	if test "$compiler" == ''; then compiler="intel"
+	else as_fn_error $? "Only choose one compiler!" "$LINENO" 5
 	fi
 fi
 
@@ -3002,11 +2997,9 @@ $as_echo "$enablepgi" >&6; }
 if test "$enablepgi" = "yes"; then
 	
 $as_echo "@%:@define PGI 1" >>confdefs.h
-	
-	if test "$compiler" == ''; then
-		compiler="pgi"
-	else
-		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+
+	if test "$compiler" == ''; then compiler="pgi"
+	else as_fn_error $? "Only choose one compiler!" "$LINENO" 5
 	fi
 fi
 
@@ -3025,10 +3018,8 @@ if test "$enablecray" = "yes"; then
 	
 $as_echo "@%:@define Cray 1" >>confdefs.h
 
-	if test "$compiler" == ''; then
-		compiler="cray"
-	else
-		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+	if test "$compiler" == ''; then compiler="cray"
+	else as_fn_error $? "Only choose one compiler!" "$LINENO" 5
 	fi
 fi
 
@@ -3046,11 +3037,9 @@ $as_echo "$enablegnu" >&6; }
 if test "$enablegnu" = "yes"; then
 	
 $as_echo "@%:@define GNU 1" >>confdefs.h
-	
-	if test "$compiler" == ''; then
-		compiler="gnu"
-	else
-		as_fn_error $? "Only choose one compiler!" "$LINENO" 5
+
+	if test "$compiler" == ''; then compiler="gnu"
+	else as_fn_error $? "Only choose one compiler!" "$LINENO" 5
 	fi
 fi
 
@@ -3074,23 +3063,6 @@ if test "$FC" = ''; then
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use MKL_BLAS" >&5
-$as_echo_n "checking whether to use MKL_BLAS... " >&6; }
-@%:@ Check whether --enable-mkl_blas was given.
-if test "${enable_mkl_blas+set}" = set; then :
-  enableval=$enable_mkl_blas; mklblasval=$enableval
-else
-  mklblasval=no
-fi
-
-if test "$mklblasval" = "yes"; then
-	
-$as_echo "@%:@define MKL_BLAS 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklblasval" >&5
-$as_echo "$mklblasval" >&6; }
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use TIMERS" >&5
 $as_echo_n "checking whether to use TIMERS... " >&6; }
 @%:@ Check whether --enable-timers was given.
@@ -3100,119 +3072,16 @@ else
   timersval=no
 fi
 
-if test "$timersval" = "yes"; then
-	
+if test "$timersval" = "yes"; then 
 $as_echo "@%:@define TIMERS 1" >>confdefs.h
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $timersval" >&5
 $as_echo "$timersval" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
-$as_echo_n "checking whether to use FFTW library... " >&6; }
-@%:@ Check whether --enable-fftw was given.
-if test "${enable_fftw+set}" = set; then :
-  enableval=$enable_fftw; fftwval=$enableval
-else
-  fftwval=no
-fi
 
-if test "$fftwval" = "yes"; then
-	
-$as_echo "@%:@define FFTW 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
-$as_echo "$fftwval" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use ESSL library" >&5
-$as_echo_n "checking whether to use ESSL library... " >&6; }
-@%:@ Check whether --enable-essl was given.
-if test "${enable_essl+set}" = set; then :
-  enableval=$enable_essl; esslval=$enableval
-else
-  esslval=no
-fi
-
-if test "$esslval" = "yes"; then
-	
-$as_echo "@%:@define ESSL 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $esslval" >&5
-$as_echo "$esslval" >&6; }
-
-# check to see if FFTW or ESSL has been selected
-if test "$fftwval" = "no" && test "$esslval" = "no"; then
-	as_fn_error $? "You must choose to use either ESSL or FFTW!" "$LINENO" 5
-fi
-
-# check to see if FFTW and ESSL have both been selected
-if test "$fftwval" = "yes" && test "$esslval" = "yes"; then
-	as_fn_error $? "You must only choose either ESSL or FFTW!" "$LINENO" 5
-fi
-
-#default value for fftwflag
-fftwflag="measure"
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw flag" >&5
-$as_echo_n "checking fftw flag... " >&6; }
-@%:@ Check whether --enable-fftwmeasure was given.
-if test "${enable_fftwmeasure+set}" = set; then :
-  enableval=$enable_fftwmeasure; enablefftwmeasure=$enableval
-else
-  enablefftwmeasure=""
-fi
-
-if test "$enablefftwmeasure" == "yes"; then
-	fftwflag="measure"
-fi
-
-@%:@ Check whether --enable-fftwestimate was given.
-if test "${enable_fftwestimate+set}" = set; then :
-  enableval=$enable_fftwestimate; enablefftwestimate=$enableval
-else
-  enablefftwestimate=""
-fi
-
-if test "$enablefftwestimate" == "yes"; then
-	fftwflag="estimate"
-fi
-
-@%:@ Check whether --enable-fftwpatient was given.
-if test "${enable_fftwpatient+set}" = set; then :
-  enableval=$enable_fftwpatient; enablefftwpatient=$enableval
-else
-  enablefftwpatient=""
-fi
-
-if test "$enablefftwpatient" == "yes"; then
-	fftwflag="patient"
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwflag" >&5
-$as_echo "$fftwflag" >&6; }
-
-case "$fftwflag" in
-	measure)
-		
-$as_echo "@%:@define FFTW_FLAG_MEASURE 1" >>confdefs.h
-
-		;;
-	estimate)
-		
-$as_echo "@%:@define FFTW_FLAG_ESTIMATE 1" >>confdefs.h
-
-		;;
-	patient)
-		
-$as_echo "@%:@define FFTW_FLAG_PATIENT 1" >>confdefs.h
-
-		;;
-	*)
-		as_fn_error $? "Not a valid fftw flag" "$LINENO" 5
-esac
-
-
+fourlib=""
+##########DEPRECIATED###########################################################
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw location" >&5
 $as_echo_n "checking fftw location... " >&6; }
 
@@ -3223,37 +3092,44 @@ else
   withfftw=""
 fi
 
-if test "$withfftw" != "yes" && test "$withfftw" != ""; then
+if test "$withfftw" != "yes" && test "$withfftw" != "" && test "$withfftw" != "no"; then
+	if test "$fourlib" = ""; then fourlib="fftw"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+	
+$as_echo "@%:@define FFTW 1" >>confdefs.h
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withfftw" >&5
 $as_echo "$withfftw" >&6; }
 	if test -e $withfftw/lib/libfftw3.a  && test -e $withfftw/lib/libfftw3f.a ; then
-		FFTW_INC="-I$withfftw/include"
+ 		FFTW_INC="-I$withfftw/include"
 
-		FFTW_LIB="$withfftw/lib/libfftw3.a"
+ 		FFTW_LIB="$withfftw/lib/libfftw3.a"
 
-		FFTWF_LIB="$withfftw/lib/libfftw3f.a"
+ 		FFTWF_LIB="$withfftw/lib/libfftw3f.a"
 
-	elif test -e $withfftw/lib64/libfftw3.a  && test -e $withfftw/lib64/libfftw3f.a ; then
-                FFTW_INC="-I$withfftw/include"
+ 	elif test -e $withfftw/lib64/libfftw3.a  && test -e $withfftw/lib64/libfftw3f.a ; then
+    FFTW_INC="-I$withfftw/include"
 
-                FFTW_LIB="$withfftw/lib64/libfftw3.a"
+    FFTW_LIB="$withfftw/lib64/libfftw3.a"
 
-                FFTWF_LIB="$withfftw/lib64/libfftw3f.a"
+    FFTWF_LIB="$withfftw/lib64/libfftw3f.a"
 
-	elif test -e $withfftw/lib/x86_64-linux-gnu/libfftw3.a  && test -e $withfftw/lib/x86_64-linux-gnu/libfftw3f.a ; then
-                FFTW_INC="-I$withfftw/include"
+ 	elif test -e $withfftw/lib/x86_64-linux-gnu/libfftw3.a  && test -e $withfftw/lib/x86_64-linux-gnu/libfftw3f.a ; then
+    FFTW_INC="-I$withfftw/include"
 
-		FFTW_LIB="$withfftw/lib/x86_64-linux-gnu/libfftw3.a"
+ 		FFTW_LIB="$withfftw/lib/x86_64-linux-gnu/libfftw3.a"
 
-		FFTWF_LIB="$withfftw/lib/x86_64-linux-gnu/libfftw3f.a"
+ 		FFTWF_LIB="$withfftw/lib/x86_64-linux-gnu/libfftw3f.a"
 
-	else
-		as_fn_error $? "libfftw3.a was not found in given location!" "$LINENO" 5
-	fi
+ 	else
+ 		as_fn_error $? "libfftw3.a was not found in given location!" "$LINENO" 5
+ 	fi
 else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
 $as_echo "none" >&6; }
 fi
+################################################################################
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw lib location" >&5
 $as_echo_n "checking fftw lib location... " >&6; }
@@ -3265,10 +3141,16 @@ else
   withfftwlib=""
 fi
 
-if test "$withfftwlib" != "" && test "$withfftw" != ""; then
+if !( test "$withfftwlib" = "" || test "$withfftwlib" = "no" ) && !( test "$withfftw" = "" || test "$withfftw" = "no" ); then
 	as_fn_error $? "only choose --with-fftw or --with-fftw-lib!" "$LINENO" 5
 fi
-if test "$withfftwlib" != "yes" && test "$withfftwlib" != "" && test "$fftwval" = "yes"; then
+if test "$withfftwlib" != "yes" && test "$withfftwlib" != ""; then
+	if test "$fourlib" = ""; then fourlib="fftw"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+	
+$as_echo "@%:@define FFTW 1" >>confdefs.h
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withfftwlib" >&5
 $as_echo "$withfftwlib" >&6; }
 	if test -e $withfftwlib/libfftw3.a  && test -e $withfftwlib/libfftw3f.a ; then
@@ -3284,9 +3166,6 @@ else
 $as_echo "none" >&6; }
 fi
 
-if test "$fftwval" = "yes" && test "$withfftwlib" = "" && test "$withfftw" = ""; then
-	as_fn_error $? "location to FFTW was not given!" "$LINENO" 5
-fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw inc location" >&5
 $as_echo_n "checking fftw inc location... " >&6; }
@@ -3301,7 +3180,7 @@ fi
 if (test "$withfftwinc" != "" && test "$withfftwlib" = "") || (test "$withfftwinc" = "" && test "$withfftwlib" != ""); then
 	as_fn_error $? "must use both --with-fftw-lib and --with-fftw-inc together!" "$LINENO" 5
 fi
-if test "$withfftwinc" != "yes" && test "$withfftwinc" != "" && test "$fftwval" = "yes"; then
+if test "$withfftwinc" != "yes" && test "$withfftwinc" != ""; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withfftwinc" >&5
 $as_echo "$withfftwinc" >&6; }
 	FFTW_INC="-I$withfftwinc"
@@ -3310,6 +3189,7 @@ else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
 $as_echo "none" >&6; }
 fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking ESSL directory" >&5
 $as_echo_n "checking ESSL directory... " >&6; }
@@ -3321,24 +3201,133 @@ else
   withessl=""
 fi
 
-if test "$withessl" != "yes" && test "$withessl" != ""; then
+if test "$withessl" != "yes" && test "$withessl" != "" && test "$withessl" != "no"; then
+	if test "$fourlib" = ""; then fourlib="essl"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+	
+$as_echo "@%:@define ESSL 1" >>confdefs.h
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $withessl" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withessl" >&5
 $as_echo "$withessl" >&6; }
-        if [ -d $withessl/lib64 ]; then
-                ESSL_INC="-I$withessl/include"
+	if [ -d "$withessl/lib64" ]; then
+		ESSL_INC="-I$withessl/include"
 
-                ESSL_LIB="-L$withessl/lib64 -lesslbg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64"
+    ESSL_LIB="-L$withessl/lib64 -lesslbg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64"
 
-        else
-                as_fn_error $? "essl library was not found in given location!" "$LINENO" 5
-		fi
+  else
+    as_fn_error $? "essl library was not found in given location!" "$LINENO" 5
+	fi
 else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
 $as_echo "none" >&6; }
-        if test "$esslval" == "yes"; then
-                as_fn_error $? "location to ESSL was not given!" "$LINENO" 5
-        fi
+  if test "$esslval" = "yes"; then as_fn_error $? "location to ESSL was not given!" "$LINENO" 5
+	fi
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking MKL directory" >&5
+$as_echo_n "checking MKL directory... " >&6; }
+
+@%:@ Check whether --with-mkl was given.
+if test "${with_mkl+set}" = set; then :
+  withval=$with_mkl; withmkl=$withval
+else
+  withmkl=""
+fi
+
+if test "$withmkl" != "yes" && test "$withmkl" != "" && test "$withmkl" != "no"; then
+	if test "$fourlib" = ""; then fourlib="mkl"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+	
+$as_echo "@%:@define MKL_BLAS 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withmkl" >&5
+$as_echo "$withmkl" >&6; }
+	if test -d $withmkl; then
+		MKL_INC="-I$withmkl/include"
+
+		MKL_LIB="-Wl,--start-group $withmkl/lib/intel64/libmkl_intel_ilp64.a $withmkl/lib/intel64/libmkl_sequential.a $withmkl/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl"
+
+	else
+		as_fn_error $? "mkl library was not found in given location!" "$LINENO" 5
+	fi
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
+$as_echo "none" >&6; }
+	if test "$mklval" = "yes"; then as_fn_error $? "location to MKL was not given!" "$LINENO" 5
+	fi
+fi
+
+
+# check to see if essl or ESSL or MKL has been selected
+if test "$fourlib" = ""; then
+	as_fn_error $? "You must choose to use either ESSL or FFTW or MKL!" "$LINENO" 5
+fi
+
+
+#default value for fftwflag
+fftwflag=""
+if test "$fourlib" = "fftw"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw flag" >&5
+$as_echo_n "checking fftw flag... " >&6; }
+	@%:@ Check whether --enable-fftwmeasure was given.
+if test "${enable_fftwmeasure+set}" = set; then :
+  enableval=$enable_fftwmeasure; fftwmeasureval=$enableval
+else
+  fftwmeasureval=""
+fi
+
+	if test "$fftwmeasureval" = "yes"; then
+		if test "$fftwflag" = ""; then fftwflag="measure"
+		else as_fn_error $? "Only choose one FFTW planner flag!" "$LINENO" 5
+		fi
+		
+$as_echo "@%:@define FFTW_FLAG_MEASURE 1" >>confdefs.h
+
+	fi
+
+	@%:@ Check whether --enable-fftwestimate was given.
+if test "${enable_fftwestimate+set}" = set; then :
+  enableval=$enable_fftwestimate; fftwestimateval=$enableval
+else
+  fftwestimateval=""
+fi
+
+	if test "$fftwestimateval" = "yes"; then
+		if test "$fftwflag" = ""; then fftwflag="estimate"
+		else as_fn_error $? "Only choose one FFTW planner flag!" "$LINENO" 5
+		fi
+		
+$as_echo "@%:@define FFTW_FLAG_ESTIMATE 1" >>confdefs.h
+
+	fi
+
+	@%:@ Check whether --enable-fftwpatient was given.
+if test "${enable_fftwpatient+set}" = set; then :
+  enableval=$enable_fftwpatient; fftwpatientval=$enableval
+else
+  fftwpatientval=""
+fi
+
+	if test "$fftwpatientval" = "yes"; then
+		if test "$fftwflag" = ""; then fftwflag="patient"
+		else as_fn_error $? "Only choose one FFTW planner flag!" "$LINENO" 5
+		fi
+		
+$as_echo "@%:@define FFTW_FLAG_PATIENT 1" >>confdefs.h
+
+	fi
+
+	if test "$fftwflag" = ""; then
+		fftwflag="measure"
+		
+$as_echo "@%:@define FFTW_FLAG_MEASURE 1" >>confdefs.h
+
+	fi
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwflag" >&5
+$as_echo "$fftwflag" >&6; }
 fi
 
 

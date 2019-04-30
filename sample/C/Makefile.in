@@ -107,44 +107,50 @@ test1D_cos_c_OBJECTS = $(am_test1D_cos_c_OBJECTS)
 test1D_cos_c_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test1D_cos_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test1D_cos_complex_c_OBJECTS = test1D_cos_complex.$(OBJEXT)
 test1D_cos_complex_c_OBJECTS = $(am_test1D_cos_complex_c_OBJECTS)
 test1D_cos_complex_c_LDADD = $(LDADD)
 test1D_cos_complex_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test1D_r2c_c_OBJECTS = test1D_r2c.$(OBJEXT)
 test1D_r2c_c_OBJECTS = $(am_test1D_r2c_c_OBJECTS)
 test1D_r2c_c_LDADD = $(LDADD)
 test1D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_c2c_c_OBJECTS = test3D_c2c.$(OBJEXT)
 test3D_c2c_c_OBJECTS = $(am_test3D_c2c_c_OBJECTS)
 test3D_c2c_c_LDADD = $(LDADD)
 test3D_c2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_c2c_inplace_c_OBJECTS = test3D_c2c_inplace.$(OBJEXT)
 test3D_c2c_inplace_c_OBJECTS = $(am_test3D_c2c_inplace_c_OBJECTS)
 test3D_c2c_inplace_c_LDADD = $(LDADD)
 test3D_c2c_inplace_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_c_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_c_OBJECTS = $(am_test3D_r2c_c_OBJECTS)
 test3D_r2c_c_LDADD = $(LDADD)
 test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_testIDIR_deriv2_c_OBJECTS = test_deriv2.$(OBJEXT)
 testIDIR_deriv2_c_OBJECTS = $(am_testIDIR_deriv2_c_OBJECTS)
 testIDIR_deriv2_c_LDADD = $(LDADD)
 testIDIR_deriv2_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
 testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
 testIDIR_deriv_c_LDADD = $(LDADD)
 testIDIR_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -248,6 +254,8 @@ LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MKL_INC = @MKL_INC@
+MKL_LIB = @MKL_LIB@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -305,8 +313,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
+AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(MKL_INC) $(MKL_LIB) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB)
 csampledir = $(datadir)/p3dfft++_samples/
 test1D_cos_c_SOURCES = test1D_cos.c
 test1D_cos_complex_c_SOURCES = test1D_cos_complex.c

@@ -1,5 +1,5 @@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB)
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(MKL_INC) $(MKL_LIB) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB)
 
 cppsampledir = $(datadir)/p3dfft++_samples/
 
@@ -19,6 +19,6 @@ test1D_transplan_cpp_SOURCES = test_transplan.C
 
 test1D_cos_cpp_SOURCES = test1D_cos.C
 
-test1D_cos_complex_cpp_SOURCES = test1D_cos_complex.C 
+test1D_cos_complex_cpp_SOURCES = test1D_cos_complex.C
 
-test1D_sin_cpp_SOURCES = test1D_sin.C  
+test1D_sin_cpp_SOURCES = test1D_sin.C
