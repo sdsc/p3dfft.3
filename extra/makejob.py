@@ -62,8 +62,8 @@ def getdims(mt):
 	else:
 		# perfect square, take the factor in the middle
 		dims.append("'" + str(facs[len(facs)/2]) + " " + str(facs[len(facs)/2]) + "'")
-	dims.append("'1 " + str(n) + "'")
-	dims.append("'" + str(n) + " 1'")
+	#dims.append("'1 " + str(n) + "'")
+	#dims.append("'" + str(n) + " 1'")
 	return dims
 
 # Standard test run line
