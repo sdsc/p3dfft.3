@@ -3085,7 +3085,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $timersval" >&5
 $as_echo "$timersval" >&6; }
 
-
+fourlib=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
 $as_echo_n "checking whether to use FFTW library... " >&6; }
 @%:@ Check whether --enable-fftw was given.
@@ -3117,11 +3117,11 @@ if test "$esslval" = "yes"; then
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
-$as_echo "$fftwval" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $esslval" >&5
+$as_echo "$esslval" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
-$as_echo_n "checking whether to use FFTW library... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use MKL library" >&5
+$as_echo_n "checking whether to use MKL library... " >&6; }
 @%:@ Check whether --enable-mkl was given.
 if test "${enable_mkl+set}" = set; then :
   enableval=$enable_mkl; mklval=$enableval
@@ -3134,8 +3134,8 @@ if test "$mklval" = "yes"; then
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
-$as_echo "$fftwval" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mklval" >&5
+$as_echo "$mklval" >&6; }
 
 ##########DEPRECIATED###########################################################
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw location" >&5
@@ -3149,7 +3149,7 @@ else
 fi
 
 if test "$withfftw" != "yes" && test "$withfftw" != "" && test "$withfftw" != "no"; then
-	if test "$fourlib" = "fftw" || test "fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = "fftw" || test "$fourlib" = ""; then fourlib="fftw"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
@@ -3201,7 +3201,7 @@ if !( test "$withfftwlib" = "" || test "$withfftwlib" = "no" ) && !( test "$with
 	as_fn_error $? "only choose --with-fftw or --with-fftw-lib!" "$LINENO" 5
 fi
 if test "$withfftwlib" != "yes" && test "$withfftwlib" != ""; then
-	if test "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = "fftw" || test "$fourlib" = ""; then fourlib="fftw"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
