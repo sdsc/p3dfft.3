@@ -729,6 +729,9 @@ enable_pgi
 enable_cray
 enable_gnu
 enable_timers
+enable_fftw
+enable_essl
+enable_mkl
 with_fftw
 with_fftw_lib
 with_fftw_inc
@@ -1374,6 +1377,9 @@ Optional Features:
   --enable-cray           compile P3DFFT using IBM compiler
   --enable-gnu            compile P3DFFT using GNU compiler
   --enable-timers         for using timers (DEBUGGING PURPOSES ONLY)
+  --enable-fftw           for using the FFTW library
+  --enable-essl           for using the ESSL library
+  --enable-mkl            for using the MKL library
   --enable-fftwmeasure    measure planner flag for FFTW library
   --enable-fftwestimate   estimate planner flag for FFTW library
   --enable-fftwpatient    patient planner flag for FFTW library
@@ -3080,7 +3086,57 @@ fi
 $as_echo "$timersval" >&6; }
 
 
-fourlib=""
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
+$as_echo_n "checking whether to use FFTW library... " >&6; }
+@%:@ Check whether --enable-fftw was given.
+if test "${enable_fftw+set}" = set; then :
+  enableval=$enable_fftw; fftwval=$enableval
+else
+  fftwval=no
+fi
+
+if test "$fftwval" = "yes"; then
+	if "$fourlib" = ""; then fourlib="fftw"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
+$as_echo "$fftwval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use ESSL library" >&5
+$as_echo_n "checking whether to use ESSL library... " >&6; }
+@%:@ Check whether --enable-essl was given.
+if test "${enable_essl+set}" = set; then :
+  enableval=$enable_essl; esslval=$enableval
+else
+  esslval=no
+fi
+
+if test "$esslval" = "yes"; then
+	if "$fourlib" = ""; then fourlib="essl"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
+$as_echo "$fftwval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
+$as_echo_n "checking whether to use FFTW library... " >&6; }
+@%:@ Check whether --enable-mkl was given.
+if test "${enable_mkl+set}" = set; then :
+  enableval=$enable_mkl; mklval=$enableval
+else
+  mklval=no
+fi
+
+if test "$mklval" = "yes"; then
+	if "$fourlib" = ""; then fourlib="mkl"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
+$as_echo "$fftwval" >&6; }
+
 ##########DEPRECIATED###########################################################
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw location" >&5
 $as_echo_n "checking fftw location... " >&6; }
@@ -3093,7 +3149,7 @@ else
 fi
 
 if test "$withfftw" != "yes" && test "$withfftw" != "" && test "$withfftw" != "no"; then
-	if test "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = "fftw" || test "fourlib" = ""; then fourlib="fftw"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
@@ -3202,8 +3258,7 @@ else
 fi
 
 if test "$withessl" != "yes" && test "$withessl" != "" && test "$withessl" != "no"; then
-	if test "$fourlib" = ""; then fourlib="essl"
-	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	if test "$fourlib" != "essl"; then as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
 $as_echo "@%:@define ESSL 1" >>confdefs.h
@@ -3237,8 +3292,7 @@ else
 fi
 
 if test "$withmkl" != "yes" && test "$withmkl" != "" && test "$withmkl" != "no"; then
-	if test "$fourlib" = ""; then fourlib="mkl"
-	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	if test "$fourlib" != "mkl"; then as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
 $as_echo "@%:@define MKL_BLAS 1" >>confdefs.h
