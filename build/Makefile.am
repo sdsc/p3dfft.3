@@ -16,7 +16,7 @@ deriv.o: $(top_builddir)/include/p3dfft.h
 
 lib_LIBRARIES = libp3dfft.3.a
 
-LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm
+LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm -lstdc++
 
 libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 
