@@ -315,7 +315,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(MKL_INC) $(MKL_LIB) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB)
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lstdc++
 csampledir = $(datadir)/p3dfft++_samples/
 test1D_cos_c_SOURCES = test1D_cos.c
 test1D_cos_complex_c_SOURCES = test1D_cos_complex.c
