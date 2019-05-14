@@ -3127,7 +3127,7 @@ else
 fi
 
 if test "$fftwval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = ""; then fourlib="fftw"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 fi

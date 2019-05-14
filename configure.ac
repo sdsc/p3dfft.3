@@ -101,7 +101,7 @@ fourlib=""
 AC_MSG_CHECKING([whether to use FFTW library])
 AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
 if test "$fftwval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = ""; then fourlib="fftw"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 fi
