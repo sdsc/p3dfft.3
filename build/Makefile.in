@@ -230,6 +230,7 @@ LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
+MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 MKL_INC = @MKL_INC@
@@ -294,13 +295,13 @@ top_srcdir = @top_srcdir@
 AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include $(ESSL_INC) $(MKL_INC) $(MKL_LIB)
 ARFLAGS = -v -r -u
 lib_LIBRARIES = libp3dfft.3.a
-LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm
+LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm -lstdc++
 libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .C .o .obj
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -324,9 +325,9 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-$(top_srcdir)/configure:  $(am__configure_deps)
+$(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
+$(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 install-libLIBRARIES: $(lib_LIBRARIES)
@@ -583,7 +584,17 @@ uninstall-am: uninstall-libLIBRARIES
 .PRECIOUS: Makefile
 
 
-plan.o: templ.C
+plan.o: $(top_builddir)/include/p3dfft.h templ.C
+
+init.o: $(top_builddir)/include/p3dfft.h
+
+exec.o: $(top_builddir)/include/p3dfft.h
+
+templ.o: $(top_builddir)/include/p3dfft.h
+
+wrap.o: $(top_builddir)/include/p3dfft.h
+
+deriv.o: $(top_builddir)/include/p3dfft.h
 
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod

@@ -1,6 +1,6 @@
 AM_FCFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(MKL_INC) $(MKL_LIB)
 
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB)
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lstdc++
 
 AM_LDFLAGS = -cxxlib
 

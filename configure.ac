@@ -6,6 +6,8 @@ AC_INIT([P3DFFT++], [3.0.0], [dmitry@sdsc.edu])
 AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([p3dfft3config.h])
+AM_MAINTAINER_MODE([disable])
+
 
 #: ${CFLAGS="-g -O0"}
 
@@ -95,13 +97,39 @@ if test "$timersval" = "yes"; then AC_DEFINE(TIMERS, 1, [Define if you want to u
 fi
 AC_MSG_RESULT([$timersval])
 
-
 fourlib=""
+AC_MSG_CHECKING([whether to use FFTW library])
+AC_ARG_ENABLE(fftw, [AC_HELP_STRING([--enable-fftw], [for using the FFTW library])], fftwval=$enableval, fftwval=no)
+if test "$fftwval" = "yes"; then
+	if test "$fourlib" = ""; then fourlib="fftw"
+	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	fi
+fi
+AC_MSG_RESULT([$fftwval])
+
+AC_MSG_CHECKING([whether to use ESSL library])
+AC_ARG_ENABLE(essl, [AC_HELP_STRING([--enable-essl], [for using the ESSL library])], esslval=$enableval, esslval=no)
+if test "$esslval" = "yes"; then
+	if "$fourlib" = ""; then fourlib="essl"
+	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	fi
+fi
+AC_MSG_RESULT([$esslval])
+
+AC_MSG_CHECKING([whether to use MKL library])
+AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-mkl], [for using the MKL library])], mklval=$enableval, mklval=no)
+if test "$mklval" = "yes"; then
+	if "$fourlib" = ""; then fourlib="mkl"
+	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	fi
+fi
+AC_MSG_RESULT([$mklval])
+
 ##########DEPRECIATED###########################################################
 AC_MSG_CHECKING([fftw location])
 AC_ARG_WITH(fftw, [AC_HELP_STRING([--with-fftw], [path to FFTW directory])], withfftw=$withval, withfftw="")
 if test "$withfftw" != "yes" && test "$withfftw" != "" && test "$withfftw" != "no"; then
-	if test "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = "fftw" || test "$fourlib" = ""; then fourlib="fftw"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 	AC_DEFINE(FFTW, 1, [Define if you want to use the FFTW library])
@@ -132,7 +160,7 @@ if !( test "$withfftwlib" = "" || test "$withfftwlib" = "no" ) && !( test "$with
 	AC_MSG_ERROR([only choose --with-fftw or --with-fftw-lib!])
 fi
 if test "$withfftwlib" != "yes" && test "$withfftwlib" != ""; then
-	if test "$fourlib" = ""; then fourlib="fftw"
+	if test "$fourlib" = "fftw" || test "$fourlib" = ""; then fourlib="fftw"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 	AC_DEFINE(FFTW, 1, [Define if you want to use the FFTW library])
@@ -164,8 +192,7 @@ fi
 AC_MSG_CHECKING([ESSL directory])
 AC_ARG_WITH(essl, [AC_HELP_STRING([--with-essl], [path to location of ESSL library])], withessl=$withval, withessl="")
 if test "$withessl" != "yes" && test "$withessl" != "" && test "$withessl" != "no"; then
-	if test "$fourlib" = ""; then fourlib="essl"
-	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	if test "$fourlib" != "essl"; then AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 	AC_DEFINE(ESSL, 1, [Define if you want to use the ESSL library])
 	AC_MSG_RESULT([$withessl])
@@ -185,8 +212,7 @@ fi
 AC_MSG_CHECKING([MKL directory])
 AC_ARG_WITH(mkl, [AC_HELP_STRING([--with-mkl], [path to location of MKL library])], withmkl=$withval, withmkl="")
 if test "$withmkl" != "yes" && test "$withmkl" != "" && test "$withmkl" != "no"; then
-	if test "$fourlib" = ""; then fourlib="mkl"
-	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	if test "$fourlib" != "mkl"; then AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
 	AC_MSG_RESULT([$withmkl])
