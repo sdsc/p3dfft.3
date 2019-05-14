@@ -6,7 +6,7 @@ AC_INIT([P3DFFT++], [3.0.0], [dmitry@sdsc.edu])
 AM_INIT_AUTOMAKE([-Wall no-dependencies])
 AC_CONFIG_SRCDIR([build/init.C])
 AC_CONFIG_HEADERS([p3dfft3config.h])
-AM_MAINTAINER_MODE([enable])
+AM_MAINTAINER_MODE([disable])
 
 
 #: ${CFLAGS="-g -O0"}
