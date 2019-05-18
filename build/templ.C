@@ -201,27 +201,130 @@ void inv_mo(int mo[3],int imo[3]);
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
 
-  L[0] = grid1_.L[0]; // This is the local dimension as we start
-  if(nd == 1 && mocurr[L[0]] != 0)
-    if(mocurr[grid1_.L[1]] == 0)
-      L[0] = grid1_.L[1];
-      
-  Lfin = L[2] = grid2_.L[0]; // This dimension will be local upon finish
-  if(L[2] == L[0])
-    if(nd == 1)
-      Lfin = L[2] = grid2_.L[1];
-    else {
-      reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
-      L[2] = dist(L[0]); // Choose target local dimension for the third step.
+  for(i=0;i<3;i++) 
+    L[i] = -1;
+
+  for(i=0;i<3;i++) {
+    tmptype = types1D[type->types[i]];
+  // First, see if we have a R2C 1D transform, and start there
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      if(L[0] >= 0)
+	printf("ERror in transform3D: more than one real-to-complex 1D transform\n");
+      else
+	L[0] = i;
     }
-  L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
+    // End on C2R
+    else if(tmptype->dt1 > tmptype->dt2) { // Complex-to-real
+      if(L[2] >= 0)
+	printf("ERror in transform3D: more than one complex-to-real 1D transforms\n");
+      else
+	L[2] = i;
+    }
+  }
+
+  bool init_steps = false;
+
+  if(L[0] >= 0 && L[2] >= 0)
+    printf("Error in transform3D: can't have both R2C and C2R transforms\n");
+
+// This is the local dimension as we start
+  if(L[0] <0) {
+    if(L[2] != grid1_.L[0]) {
+      L[0] = grid1_.L[0]; 
+      if(nd == 1 && mocurr[L[0]] != 0) // Make sure the first local dimension is also leading dimension in storage order (if we have a choice, as in 1D case)
+	if(mocurr[grid1_.L[1]] == 0)
+	  L[0] = grid1_.L[1];
+    }
+    else if(nd==1)
+      L[0] = grid1_.L[1];
+    else {
+      L[0] = grid1_.D[0];
+      init_steps = true;
+    }
+  }
+
+      // Next choose intermediate and final local dimensions, L[1] and L[2]
+  if(L[2] >= 0) {
+    Lfin = L[2];
+    L[1] = excl(L[0],L[2]);
+  }
+  else  if(mocurr[L[0]] != 0) { //      lead=false;
+    for(i=0;i<3;i++)
+      if(mocurr[i] == 0) {
+	L[1] = i;
+	Lfin = L[2] = excl(L[0],L[1]);
+	break;
+      }
+  }
+  else {
+
+       if(nd == 1) {
+	d1 = grid1_.D[0];
+	d2 = grid2_.D[0];
+	if(d1 == d2 && d1 > 1) 
+	  reverse_steps=true;
+
+	if(L[0] == d2) {
+	  L[1] = (L[0]+1)%3;
+	  if(mocurr[L[1]] == 2)
+	    L[1] = (L[0]+2)%3;
+	  Lfin = L[2] = excl(L[0],L[1]);
+	}
+	else 
+	  if(grid2_.mem_order[d2] <= 1){ // In case of 1D we have a choice, so choose the one with most favorable transmutation  of indices in local reordering
+	    L[1] = d2;
+	    Lfin = L[2] = excl(L[0],L[1]);
+	  }
+	  else {
+	    Lfin = L[2] = d2;
+	    L[1] = excl(L[0],L[2]);
+	  }
+      }
+
+      else { // nd=2
+      
+	Lfin = L[2] = grid2_.L[0]; // This dimension will be local upon finish
+	if(L[2] == L[0]) {
+	  reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
+	}
+	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
+      }
+    }
 
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
 
-#ifdef DEBUG
-  printf("%d: Planning stages: %d %d %d\n",grid1_.taskid,L[0],L[1],L[2]);
-#endif
+  //#ifdef DEBUG
+    printf("%d: Planning stages: %d %d %d\n",grid1_.taskid,L[0],L[1],L[2]);
+    //#endif
+
+    if(init_steps) {
+      if(grid1_.pgrid[L[0]] != 1) { // Plan a transpose
+	for(i=0;i<3;i++) {
+	  gdims[i] = tmpgrid0->gdims[i];
+	  proc_order[i] = tmpgrid0->proc_order[i];
+	  pgrid[i] = tmpgrid0->pgrid[i];
+	}
+	d2 = L[2];
+	pgrid[d2] = pgrid[L[0]];
+	d1 = L[0];
+	pgrid[L[0]] = 1;
+	if(d2 == grid1_.D[0])
+	  splitcomm = grid1_.mpicomm[0];
+	else 
+	  splitcomm = grid1_.mpicomm[1];
+
+	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
+	curr_stage->kind = MPI_ONLY;
+	Stages = prev_stage = curr_stage;
+	delete [] tmpgrid0;
+	tmpgrid0 = tmpgrid1;
+      }
+
+    }
 
   // Plan the stages of the algorithm
   for(int st=0;st < 3;st++) {
@@ -236,18 +339,22 @@ void inv_mo(int mo[3],int imo[3]);
     // Determine if an MPI transpose is involved in this stage
     d1 = -1;
     if(st < 2) { 
-      swap0(monext,mocurr,L[st+1]);
-      for(i=0;i<nd;i++)
-	if(L[st+1] == tmpgrid0->D[i]) {
-	  d1 = L[st+1];
-	  d2 = L[st];
-	  splitcomm = tmpgrid0->mpicomm[i];
-	  break;
-	}
+      swap0(monext,mocurr,L[st]);
+	for(i=0;i<nd;i++)
+	  if(L[st+1] == tmpgrid0->D[i]) {
+	    d1 = L[st+1];
+	    d2 = L[st];
+	    splitcomm = tmpgrid0->mpicomm[i];
+	    break;
+	  }	
+
+
    }
     else   {
       for(i=0;i<3;i++) 
 	monext[i] = grid2_.mem_order[i];
+      if(monext[L[st]] != 0)
+	swap0(monext,mocurr,L[st]);
 
       for(i=0;i<nd;i++)
 	if(L[st] == tmpgrid0->D[i]) {
@@ -340,13 +447,18 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
   }
-  // Empty transform?
 
     //If needed, transpose back to the desired layout, specified by grid2
 
-    if(reverse_steps) {
+  if(!reverse_steps) 
+    for(i=0;i<3;i++) 
+      if(pgrid[i] != grid2_.pgrid[i])
+	reverse_steps = true;
+
+  if(reverse_steps) {
 
     d1 = tmpgrid1->D[1];
+
     df = grid2_.D[1];
 
 #ifdef DEBUG
@@ -434,12 +546,6 @@ void inv_mo(int mo[3],int imo[3]);
     }
     }
 
-      for(i=0;i<3;i++)
-      if(pgrid[i] != grid2_.pgrid[i]) {
-	cout << "Error in transform3D: processor grids dont match" <<endl;
-	return;
-      }
-
     bool iseq = true;
     for(i=0; i < 3; i++) 
       if(monext[i] != grid2_.mem_order[i]) {
@@ -451,9 +557,16 @@ void inv_mo(int mo[3],int imo[3]);
       tmpgrid0 = new grid(grid2_);
       prev_stage = curr_stage;
 #ifdef DEBUG
-      printf("Calling init_transplan, trans_dim=%d\n",L2);
+      printf("Calling init_transplan, trans_dim=%d\n",grid2_.L[0]);
 #endif
-      curr_stage = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
+      inpl = true;
+      gen_trans_type *t=empty_type<Type2>();
+      int trans_dim = grid2_.L[0];
+      if(nd == 1 && tmpgrid1->mem_order[trans_dim] != 0 && tmpgrid0->mem_order[trans_dim] != 0)
+	trans_dim = grid2_.L[1];
+      curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim,inpl);
+
+      // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
       curr_stage->kind = TRANS_ONLY;
       prev_stage->next = curr_stage;
       delete tmpgrid0;
@@ -470,6 +583,7 @@ void inv_mo(int mo[3],int imo[3]);
   return;
 
 }
+
 
 template<class Type1,class Type2> transform3D<Type1,Type2>::~transform3D()
 {
@@ -586,8 +700,8 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
     return;
   }
-
-  lib_plan = find_plan(trans_type); 
+  if(!trans_type->is_empty)
+    lib_plan = find_plan(trans_type); 
 
 }  
 
@@ -665,7 +779,8 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     return;
   }
 
-  lib_plan = find_plan(trans_type); 
+  if(!trans_type->is_empty)
+    lib_plan = find_plan(trans_type); 
 
 }
 
@@ -873,11 +988,21 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
   printf("find_plan: N,m=%d,%d\n",N,m);
 #endif
 
+  /*
   if(inplace) 
     if(sizeof(Type1) != sizeof(Type2) || istride != ostride || (m > 1 && idist != odist)) {
       cout << "Error in find_plan: inplace transforms should have identical dimensions and types" << endl;
       return(-1);
     }
+  */
+
+  if(inplace)
+    for(i=0;i<3;i++)
+      if(mo1[i] != mo2[i]) {
+	inplace = false;
+	break;
+      }
+
   planID = 0;
   for(vector<Plan*>::iterator it=Plans.begin(); it < Plans.end();it++,planID++) {
     //    pl = dynamic_cast<Plantype<Type1,Type2> *> (p);
