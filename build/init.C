@@ -81,7 +81,8 @@ All Rights Reserved.
 #include "p3dfft.h"
 #include <string.h>
 
-int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
+int P3DFFT_EMPTY_TYPE_SINGLE,P3DFFT_EMPTY_TYPE_DOUBLE,P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX,P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX;
+int P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
 int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
 int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
 int P3DFFT_DCT3_REAL_S,P3DFFT_DCT3_REAL_D,P3DFFT_DST3_REAL_S,P3DFFT_DST3_REAL_D,P3DFFT_DCT3_COMPLEX_S,P3DFFT_DCT3_COMPLEX_D,P3DFFT_DST3_COMPLEX_S,P3DFFT_DST3_COMPLEX_D;
@@ -104,7 +105,8 @@ vector<grid> stored_grids; // Defined grids (used in Fortran and C wrappers)
 
 
   //  extern "C" {
-  int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+int EMPTY_TYPE_SINGLE,EMPTY_TYPE_DOUBLE,EMPTY_TYPE_SINGLE_COMPLEX,EMPTY_TYPE_DOUBLE_COMPLEX;
+  int R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
   int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
   int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
   int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
@@ -124,17 +126,51 @@ void setup()
   int types_count=0;
 
 #ifdef DEBUG
-  cout << "p3dfft_setup: adding Empty Type" << endl;
+  cout << "p3dfft_setup: adding Empty Type Single" << endl;
 #endif
-  name = "Empty Type";
-  p = new gen_trans_type(name,0);
-  delete p;
-  p = new gen_trans_type(name,0);
+  name = "Empty Type Single";
+  p = new gen_trans_type(name,1,1,4,0);
   p->is_empty = true;
   types1D.push_back(p);
 
 
-  EMPTY_TYPE = types_count;
+  EMPTY_TYPE_SINGLE = types_count;
+  types_count++;
+
+#ifdef DEBUG
+  cout << "p3dfft_setup: adding Empty Type Double" << endl;
+#endif
+  name = "Empty Type Double";
+  p = new gen_trans_type(name,1,1,8,0);
+  p->is_empty = true;
+  types1D.push_back(p);
+
+
+  EMPTY_TYPE_DOUBLE = types_count;
+  types_count++;
+
+#ifdef DEBUG
+  cout << "p3dfft_setup: adding Empty Type Single Complex" << endl;
+#endif
+  name = "Empty Type Single Complex";
+  p = new gen_trans_type(name,2,2,4,0);
+  p->is_empty = true;
+  types1D.push_back(p);
+
+
+  EMPTY_TYPE_SINGLE_COMPLEX = types_count;
+  types_count++;
+
+#ifdef DEBUG
+  cout << "p3dfft_setup: adding Empty TypeDouble Complex" << endl;
+#endif
+  name = "Empty Type Double Complex";
+  p = new gen_trans_type(name,2,2,8,0);
+  p->is_empty = true;
+  types1D.push_back(p);
+
+
+  EMPTY_TYPE_DOUBLE_COMPLEX = types_count;
   types_count++;
 
   /*
