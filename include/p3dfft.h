@@ -102,7 +102,8 @@ const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #endif
 
 
-extern int P3DFFT_EMPTY_TYPE,P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
+extern int P3DFFT_EMPTY_TYPE_SINGLE,P3DFFT_EMPTY_TYPE_DOUBLE,P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX,P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX;
+extern int P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
 
 extern int P3DFFT_DCT1_REAL_S,P3DFFT_DCT1_REAL_D,P3DFFT_DST1_REAL_S,P3DFFT_DST1_REAL_D,P3DFFT_DCT1_COMPLEX_S,P3DFFT_DCT1_COMPLEX_D,P3DFFT_DST1_COMPLEX_S,P3DFFT_DST1_COMPLEX_D;
 extern int P3DFFT_DCT2_REAL_S,P3DFFT_DCT2_REAL_D,P3DFFT_DST2_REAL_S,P3DFFT_DST2_REAL_D,P3DFFT_DCT2_COMPLEX_S,P3DFFT_DCT2_COMPLEX_D,P3DFFT_DST2_COMPLEX_S,P3DFFT_DST2_COMPLEX_D;
@@ -151,7 +152,8 @@ static const int TRANS_ONLY=1;
 static const int MPI_ONLY=2;
 static const int TRANSMPI=3;
 
- extern int EMPTY_TYPE,R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+extern int EMPTY_TYPE_SINGLE,EMPTY_TYPE_DOUBLE,EMPTY_TYPE_SINGLE_COMPLEX,EMPTY_TYPE_DOUBLE_COMPLEX;
+ extern int R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
  extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
  extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
  extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
@@ -234,7 +236,7 @@ class gen_trans_type {
  public :
   char *name;
   int isign;
-  bool is_set,is_empty;
+  bool is_set,is_empty=false;
   int dt1,dt2;   //Datatype before and after
   int prec;
   inline gen_trans_type(const char *name_,int isign_=0)
@@ -244,6 +246,16 @@ class gen_trans_type {
     is_set = true;
     isign = isign_;
   }
+  inline gen_trans_type(const char *name_,int dt1_, int dt2_,int prec_,int isign_=0)
+  {
+    name = new char[strlen(name_)+1];
+    strcpy(name,name_);
+    is_set = true;
+    isign = isign_;
+    dt1 = dt1_;
+    dt2 = dt2_;
+    prec = prec_;
+  }
   ~gen_trans_type() { delete [] name;}
   bool operator==(const gen_trans_type &) const;
   inline bool operator==(const gen_trans_type &rhs) {
@@ -252,6 +264,7 @@ class gen_trans_type {
       return(true);
     else
       return(false);
+    
   }
 
 };
@@ -481,9 +494,10 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
 
   trans_type1D(const trans_type1D &rhs) 
     {
-      ID = 0;
+      ID = -1;
       dt1 = rhs.dt1;
       dt2 = rhs.dt2;
+      prec = rhs.prec;
       name = new char[sizeof(rhs.name)];
       strcpy(name,rhs.name);
       //    splan = rhs.splan;
@@ -492,6 +506,7 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
       //dexec = rhs.dexec;
       isign = rhs.isign;
       is_set = rhs.is_set;
+      is_empty = rhs.is_empty;
     }
   
   ~trans_type1D()
@@ -568,12 +583,12 @@ template <class Type1,class Type2>   class transplan : public stage {
   int N,m,istride,idist,ostride,odist,isign;
   int *inembed,*onembed;
   unsigned fft_flag;
-  int mo1[3],mo2[3];
   void compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]);
 
   public :
 
   int trans_dim;  // Rank of dimension of the transform
+  int mo1[3],mo2[3];
   bool is_set;
   long lib_plan;
   trans_type1D<Type1,Type2> *trans_type;
@@ -581,7 +596,7 @@ template <class Type1,class Type2>   class transplan : public stage {
   transplan(const grid &gr1,const grid &gr2,int type_ID,int d, bool inplace_); 
   transplan() {};
   ~transplan() {delete grid1,grid2;};
-  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
+  //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
   void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
@@ -824,12 +839,28 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3
 template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir); 
 // template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir);
 
+
 extern vector<Plan *> Plans;
 extern vector<gen_trans_type *> types1D;
 extern vector<gen_transform3D *> stored_trans3D;
 extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
 extern vector<grid> stored_grids;
+
+template<class Type> gen_trans_type *empty_type();
+template<class Type> gen_trans_type *empty_type()
+{
+  gen_trans_type *t;
+  if(typeid(Type) == type_float)
+    t = types1D[EMPTY_TYPE_SINGLE];
+  else   if(typeid(Type) == type_double)
+    t = types1D[EMPTY_TYPE_DOUBLE];
+  if(typeid(Type) == type_complex)
+    t = types1D[EMPTY_TYPE_SINGLE_COMPLEX];
+  if(typeid(Type) == type_complex_double)
+    t = types1D[EMPTY_TYPE_DOUBLE_COMPLEX];
+  return t;
+}
 
  //CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 

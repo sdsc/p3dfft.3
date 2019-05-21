@@ -153,10 +153,22 @@ stage *init_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int 
 
 stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_, bool inplace,int prec)
 {
+
+
   if(type->dt1 == REAL)
     if(type->dt2 == REAL) {
       if(prec == 4) {
-	trans_MPIplan<float,float> *p = new trans_MPIplan<float,float>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	trans_MPIplan<float,float> *p;
+	if(gr1.mem_order[trans_dim_] == 0)
+	  p = new trans_MPIplan<float,float>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	else if(gr2.mem_order[trans_dim_] == 0) {
+	  grid tmpgrid(gr1);
+	  for(int i=0;i<3;i++)
+	    tmpgrid.mem_order[i] = gr2.mem_order[i];
+	  p = new trans_MPIplan<float,float>(gr1,tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	}
+  else 
+    printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	//	(p->trplan)->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -170,7 +182,17 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	return(p);
       }
       else if(prec == 8) {
-	trans_MPIplan<double,double> *p=new trans_MPIplan<double,double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	trans_MPIplan<double,double> *p;
+  if(gr1.mem_order[trans_dim_] == 0)
+	p=new trans_MPIplan<double,double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+  else if(gr2.mem_order[trans_dim_] == 0) {
+	  grid tmpgrid(gr1);
+	  for(int i=0;i<3;i++)
+	    tmpgrid.mem_order[i] = gr2.mem_order[i];
+	  p=new trans_MPIplan<double,double>(gr1,tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+  }
+  else 
+    printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -192,13 +214,19 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	  gdims[i] = gr1.gdims[i];
 	  pgrid[i] = gr1.pgrid[i];
 	  proc_order[i] = gr1.proc_order[i];
-	  mo[i] = gr1.mem_order[i];
+	  if(gr1.mem_order[trans_dim_] == 0)
+	    mo[i] = gr1.mem_order[i];
+	  else if(gr2.mem_order[trans_dim_] == 0)
+	    mo[i] = gr2.mem_order[i];
+	  else 
+	    printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	}
 	gdims[trans_dim_] = gdims[trans_dim_]/2+1;
 	grid *tmpgrid = new grid(gdims,gr1.dim_conj_sym,pgrid,proc_order,mo,mpicomm_glob);
 
       if(prec == 4) {
 	trans_MPIplan<float,mycomplex> *p= new trans_MPIplan<float,mycomplex>(gr1,*tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+
 	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	delete tmpgrid;
 	if(p->trplan->lib_plan == NULL) {
@@ -241,7 +269,12 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	  gdims[i] = gr1.gdims[i];
 	  pgrid[i] = gr1.pgrid[i];
 	  proc_order[i] = gr1.proc_order[i];
-	  mo[i] = gr1.mem_order[i];
+	  if(gr1.mem_order[trans_dim_] == 0)
+	    mo[i] = gr1.mem_order[i];
+	  else if(gr2.mem_order[trans_dim_] == 0)
+	    mo[i] = gr2.mem_order[i];
+	  else 
+	    printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	}
 	gdims[trans_dim_] = (gdims[trans_dim_]-1)*2;
 	grid *tmpgrid = new grid(gdims,gr1.dim_conj_sym,pgrid,proc_order,mo,mpicomm_glob);
@@ -279,7 +312,17 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
     }
     else if(type->dt2 == COMPLEX) {
       if(prec == 4) {
-	trans_MPIplan<mycomplex,mycomplex> *p= new trans_MPIplan<mycomplex,mycomplex>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	trans_MPIplan<mycomplex,mycomplex> *p;
+	  if(gr1.mem_order[trans_dim_] == 0)
+	p= new trans_MPIplan<mycomplex,mycomplex>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	  else if(gr2.mem_order[trans_dim_] == 0) {
+	  grid tmpgrid(gr1);
+	  for(int i=0;i<3;i++)
+	    tmpgrid.mem_order[i] = gr2.mem_order[i];
+	p= new trans_MPIplan<mycomplex,mycomplex>(gr1,tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	  }
+	  else 
+	    printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
@@ -293,7 +336,17 @@ stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d
 	return(p);
       }
       else if(prec == 8) {
-	trans_MPIplan<complex_double,complex_double> *p= new trans_MPIplan<complex_double,complex_double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	trans_MPIplan<complex_double,complex_double> *p;
+	if(gr1.mem_order[trans_dim_] == 0)
+	  p= new trans_MPIplan<complex_double,complex_double>(gr1,gr1,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	else if(gr2.mem_order[trans_dim_] == 0) {
+	  grid tmpgrid(gr1);
+	  for(int i=0;i<3;i++)
+	    tmpgrid.mem_order[i] = gr2.mem_order[i];
+	  p= new trans_MPIplan<complex_double,complex_double>(gr1,tmpgrid,gr2,mpicomm,d1,d2,type,trans_dim_,inplace);
+	}
+	else 
+	  printf("Error in init_trans_MPIplan: neither input %d nor output %d has current dimension as leading\n",gr1.mem_order[trans_dim_],gr2.mem_order[trans_dim_]);
 	//	p->trplan->lib_plan = p->trplan->find_plan(p->trplan->trans_type); 
 	if(p->trplan->lib_plan == NULL) {
 	  cout << "Error in trans_plan: null plan" << endl;
