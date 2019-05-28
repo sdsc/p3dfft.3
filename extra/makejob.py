@@ -123,7 +123,7 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 			batchf.write("echo '1 1' > dims\n")
 			batchf.write(onebyone(platform, mt, output_dir, test))
 		elif '1D' in basename:
-			batchf.write("rm -f dims\n")
+			#batchf.write("rm -f dims\n")
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
 				for perm in one_dim_perms:
@@ -234,8 +234,8 @@ def script_header(platform, batchf, mt, perf, email, output_dir,sd):
 		batchf.write('#SBATCH -t 01:00:00\n')
 	elif platform == "stampede":
 		batchf.write('#SBATCH -J ' + "p3dfft++_compiled" + '\n')
-		batchf.write('#SBATCH -o out/out.%j\n')
-		batchf.write('#SBATCH -e out/out.%j\n')
+		batchf.write('#SBATCH -o' + os.path.join(output_dir,'out.%j') + '"\n')
+		batchf.write('#SBATCH -e' + os.path.join(output_dir,'out.%j') + '"\n')
 		batchf.write('#SBATCH -p normal\n')
 		if perf:
 			batchf.write('#SBATCH -N ' + str(int(MAXCORES/(16*PERF_NUMTHREADS))) + '\n')
