@@ -22,7 +22,7 @@ While P3DFFT had the assumption of predetermined 2D pencils in X and in Z dimens
 A basic P3DFFT++ descriptor is the "grid" construct. It defines all necessary information about decomposition of a grid among parallel tasks/processors. In C++ it is defined as a class, while in C and in Fortran it is defined through handles to a C++ object through inter-language wrappers. Below is the technical description of the definition for each language.
 
 C++
-===
+^^^
 The following is the main constructor call for the grid class:
 
 grid(int gdims[3],int dim_conj_sym, int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm);
@@ -77,8 +77,8 @@ and other useful information.  The grid class also provides a copy constructor.
 
 To release a grid object, simply delete it. 
 
-C
-=
+C 
+^^
 For C users grid initialization is accomplished by a call to p3dfft_init_grid, returning a pointer to an object of type Grid. This type is a C structure containing a large part of the C++ class grid. Calling p3dfft_init_grid initializes the C++ grid object and also copies the information into a Grid object accessible from C, returning its pointer. For example:
 
 int xdim;
@@ -94,7 +94,7 @@ To release a grid object simply execute
 p3dfft_free_grid(Grid \*gr);
 
 Fortran
-=======
+^^^^^^^
 For Fortran users the grid object is represented as a handle of type integer(C_INT). For example:
 
 integer(C_INT) grid1
@@ -251,8 +251,8 @@ Once a 3D transform has been defined and planned, execution of a 3D transform ca
 
  Here in and out are initial and final data arrays of appropriate types. These are assumed to be one-dimensional contiguous arrays containing the three-dimensional grid for input and output, local to the memory of the given MPI task, and stored according to the dimensions and memory ordering specified in the gridIn and gridOut objects, respectively.  For example, if grid1.ldims={2,2,4} and grid1.mem_order={2,1,0}, then the in array will contain the following sequence: G000, G001, G002, G003, G010, G011, G012, G013, G100, G101, G102, G103, G110, G111, G112, G113. Again, we follow the Fortran convention that the fastest running index is the first, (i.e. G012 means the grid element at X=0, Y=1, Z=2).   
 
- C
- =
+C
+^^
  In C a unique datatype Type3D is used to define the 3D transform needed.  p3dfft_init_3Dtype function is used to initialize a new 3D transform type, based on the three 1D transform types, as in the following example:
 
  int type_rcc,  type_ids[3];
@@ -277,8 +277,8 @@ Once a 3D transform has been defined and planned, execution of a 3D transform ca
 
  Here in and out are pointers to input and output arrays, as before, assumed to be the local portion of the 3D grid array stored according to gridIn and gridOut descriptors. For single precision use p3dfft_exec_3Dtrans_single.
 
- Fortran
- =======
+Fortran
+=======
  In Fortran, similar to C, to define a 3D transform the following routine is used:
 
  mytrans = p3dfft_plan_3Dtrans_f(gridIn,gridOut,type,inplace, overwrite)
