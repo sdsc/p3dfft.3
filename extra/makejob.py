@@ -100,7 +100,7 @@ def onebyone(platform, mt, output_dir, test):
 		if mt:
 			rt = "mpirun -n 1 " + test
 		else:
-			r = "mpirun -n 1" + test
+			r = "mpirun -n 1 " + test
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Write all tests for all dims

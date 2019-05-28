@@ -2963,7 +2963,7 @@ fi
 
 #: ${CFLAGS="-g -O0"}
 
-#: ${CXXFLAGS="-g -O0"}
+CXXFLAGS="${CXXFLAGS} -std=c++11"
 
 #: ${FCFLAGS="-g -O0"}
 
@@ -3145,7 +3145,7 @@ else
 fi
 
 if test "$esslval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="essl"
+	if test "$fourlib" = ""; then fourlib="essl"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
   
@@ -3165,7 +3165,7 @@ else
 fi
 
 if test "$mklval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="mkl"
+	if test "$fourlib" = ""; then fourlib="mkl"
 	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
 	fi
 	
@@ -4420,7 +4420,6 @@ fi
 
 
   FFTW3_INC=
-  echo ${withfftwinc}
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'

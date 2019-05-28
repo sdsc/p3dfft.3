@@ -111,7 +111,7 @@ AC_MSG_RESULT([$fftwval])
 AC_MSG_CHECKING([whether to use ESSL library])
 AC_ARG_ENABLE(essl, [AC_HELP_STRING([--enable-essl], [for using the ESSL library])], esslval=$enableval, esslval=no)
 if test "$esslval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="essl"
+	if test "$fourlib" = ""; then fourlib="essl"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
   AC_DEFINE(ESSL, 1, [Define if you want to use the ESSL library])
@@ -121,7 +121,7 @@ AC_MSG_RESULT([$esslval])
 AC_MSG_CHECKING([whether to use MKL library])
 AC_ARG_ENABLE(mkl, [AC_HELP_STRING([--enable-mkl], [for using the MKL library])], mklval=$enableval, mklval=no)
 if test "$mklval" = "yes"; then
-	if "$fourlib" = ""; then fourlib="mkl"
+	if test "$fourlib" = ""; then fourlib="mkl"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
 	fi
 	AC_DEFINE(MKL_BLAS, 1, [Define if you want to use the MKL library])
