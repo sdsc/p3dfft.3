@@ -12,9 +12,9 @@ from time import strftime, localtime
 platforms = ["comet", "bridges","stampede"]
 compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
 options = []
-configs = { "comet": './configure --with-fftw=$FFTWHOME',
-			"stampede": './configure --with-fftw=$TACC_FFTW3_DIR',
-			"bridges": './configure --with-fftw-lib=$FFTW3_LIB --with-fftw-inc=$FFTW3_INCLUDE'
+configs = { "comet": './configure --enable-fftw',
+			"stampede": './configure --enable-fftw',
+			"bridges": './configure --enable-fftw'
 			}
 sourcedir = "p3dfft.3"
 destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
