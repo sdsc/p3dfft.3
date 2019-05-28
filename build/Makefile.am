@@ -1,4 +1,4 @@
-AM_CXXFLAGS = $(FFTW_INC) -I$(top_builddir)/include $(ESSL_INC) $(MKL_INC) $(MKL_LIB)
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC)
 
 ARFLAGS = -v -r -u
 
@@ -16,7 +16,7 @@ deriv.o: $(top_builddir)/include/p3dfft.h
 
 lib_LIBRARIES = libp3dfft.3.a
 
-LDADD = $(FFTWF_LIB) $(FFTW_LIB) $(ESSL_LIB) -lm -lstdc++
+LDADD = $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lm -lstdc++
 
 libp3dfft_3_a_SOURCES = init.C plan.C exec.C templ.C wrap.C deriv.C
 
