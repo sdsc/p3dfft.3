@@ -124,13 +124,15 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 			batchf.write(onebyone(platform, mt, output_dir, test))
 		elif '1D' in basename:
 			batchf.write("rm -f dims\n")
-			for perm in one_dim_perms:
-				dim_in = perm.find('0')/2
-				dim_out = perm.find('0', 5)/2 - 3
-				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
-				batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
+			for dims in all_dims:
+				batchf.write("echo " + dims + " > dims\n")
+				for perm in one_dim_perms:
+					dim_in = perm.find('0')/2
+					dim_out = perm.find('0', 5)/2 - 3
+					batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
+					batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIR' in basename:
 			batchf.write("echo '128 128 128 2 1 3' > stdin\n")
 			for dims in all_dims:
@@ -231,19 +233,23 @@ def script_header(platform, batchf, mt, perf, email, output_dir,sd):
 			batchf.write('#SBATCH --mail-type=ALL\n')
 		batchf.write('#SBATCH -t 01:00:00\n')
 	elif platform == "stampede":
-		batchf.write('#SBATCH -J ' + "p3dfft++_compiled_p_" + '\n')
+		batchf.write('#SBATCH -J ' + "p3dfft++_compiled" + '\n')
 		batchf.write('#SBATCH -o out/out.%j\n')
 		batchf.write('#SBATCH -e out/out.%j\n')
 		batchf.write('#SBATCH -p normal\n')
 		if perf:
-			batchf.write('#SBATCH -n' + str(MAXCORES/PERF_NUMTHREADS) + ' -N' + str(int(MAXCORES/(16*PERF_NUMTHREADS))) + '\n')
-		elif mt:
-			batchf.write('#SBATCH -n' + str(MT_RANKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
+			batchf.write('#SBATCH -N ' + str(int(MAXCORES/(16*PERF_NUMTHREADS))) + '\n')
 		else:
-			batchf.write('#SBATCH -n ' + str(TASKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
+			batchf.write('#SBATCH -N ' + str(NUMNODES) + '\n')
+		if perf:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(MAXCORES/PERF_NUMTHREADS) + '\n')
+		elif mt:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(MT_RANKSPERNODE) + '\n')
+		else:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(TASKSPERNODE) + '\n')
 		if email:
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
-			batchf.write('#SBATCH --mail-type=ALL\n')
+			batchf.write('#SBATCH --mail-type=all\n')
 		batchf.write('#SBATCH -t 01:00:00\n')
 	elif platform == "bridges":
 		batchf.write('#SBATCH --job-name="' + "p3dfft++_compiled" + '"\n')
@@ -375,7 +381,7 @@ def main():
 			unevengrid(platform, mt, all_tests, all_dims, batchf, output_dir)
 		else:
 			buildall(platform, mt, all_tests, all_dims, batchf, output_dir)
-	batchf.write("grep -rcwE * -e 'Error|incorrect'\n")
+	batchf.write("grep -rcwE * -e 'Error|incorrect|BAD'\n")
 	# Close the file. Done.
 	batchf.close()
 

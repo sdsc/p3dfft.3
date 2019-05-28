@@ -13,7 +13,7 @@ platforms = ["comet", "bridges","stampede"]
 compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
 options = []
 configs = { "comet": './configure --enable-fftw',
-			"stampede": './configure --enable-fftw',
+			"stampede": './configure --enable-fftw --with-fftw-lib=$TACC_FFTW3_LIB --with-fftw-inc=$TACC_FFTW3_INC',
 			"bridges": './configure --enable-fftw'
 			}
 sourcedir = "p3dfft.3"
