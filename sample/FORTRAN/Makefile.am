@@ -2,7 +2,7 @@ AM_FCFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC)
 
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lstdc++
 
-AM_LDFLAGS = -cxxlib
+AM_LDFLAGS = #-cxxlib
 
 fsampledir = $(datadir)/p3dfft++_samples/
 
