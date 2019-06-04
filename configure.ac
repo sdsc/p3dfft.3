@@ -11,7 +11,7 @@ AM_MAINTAINER_MODE([disable])
 
 #: ${CFLAGS="-g -O0"}
 
-CXXFLAGS="${CXXFLAGS} -std=c++11"
+#CXXFLAGS="${CXXFLAGS} -std=c++11"
 
 #: ${FCFLAGS="-g -O0"}
 
