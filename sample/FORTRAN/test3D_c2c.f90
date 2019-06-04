@@ -156,7 +156,11 @@
       enddo
 
 
-! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have 
+! the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the 
+! operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible 
+! to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C 
+! indeices, i.e. starting from 0
 
       mem_order2(1) = 2
       mem_order2(2) = 1
@@ -168,7 +172,11 @@
       pgrid1(2) = iproc
       pgrid1(3) = jproc
 
-! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to 
+! have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect 
+! the operations in the Fourier space very much, requiring basically a change in the loop order. However, note 
+! that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the 
+! memory ordering is specified in C indices, i.e. starting from 0.
 
       pgrid2(1) = iproc
       pgrid2(2) = jproc

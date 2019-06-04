@@ -2000,11 +2000,12 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
   
     break;
   case 2:
+		int nb31, nb13;
     switch(mc[1]) {
     case 1: //2,1,0
-      int nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
       if(nb31 < 1) nb31 = 1;
-      int nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+      nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
       if(nb13 < 1) nb13 = 1;
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;

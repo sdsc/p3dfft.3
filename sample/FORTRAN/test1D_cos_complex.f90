@@ -1,5 +1,9 @@
 !
-!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for complex-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for complex-valued 
+!arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an 
+!isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. 
+!arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI 
+!for that). 
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs cosine transform twice, and checks that
@@ -11,7 +15,8 @@
 ! a single line of numbers : Nx,Ny,Nz,dim,Nrep,MOIN(1)-(3),MOOUT(1)-(3). 
 ! Here 
 !    Nx,Ny,Nz are 3D grid dimensions (note: dimension fo cosine transform must be odd)
-!    dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension si specified, i.e. actual storage dimension may be different as specified by MOIN mapping)
+!    dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension si specified, 
+!    i.e. actual storage dimension may be different as specified by MOIN mapping)
 !    Nrep is the number of repititions. 
 !    MOIN are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating. 
 !    MOOUT is the memory order of the output grid. 

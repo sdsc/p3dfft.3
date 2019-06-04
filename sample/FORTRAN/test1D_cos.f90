@@ -1,5 +1,8 @@
 !
-!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for real-valued arrays.
+! 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 
+!1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary 
+!input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs cosine transform twice, and checks that
@@ -11,7 +14,8 @@
 ! a single line of numbers : Nx,Ny,Nz,dim,Nrep,MOIN(1)-(3),MOOUT(1)-(3). 
 ! Here 
 !    Nx,Ny,Nz are 3D grid dimensions (note: dimension fo cosine transform must be odd)
-!    dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension si specified, i.e. actual storage dimension may be different as specified by MOIN mapping)
+!    dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension si specified, 
+!    i.e. actual storage dimension may be different as specified by MOIN mapping)
 !    Nrep is the number of repititions. 
 !    MOIN are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating. 
 !    MOOUT is the memory order of the output grid. 
@@ -41,7 +45,8 @@
       integer(8) Ntot
       double precision factor,rtime1,rtime2
       double precision gt(12,3),gtcomm(3),tc
-      integer ierr,dim,dims(2),nproc,proc_id,cnt,iex
+      logical iex
+      integer ierr,dim,dims(2),nproc,proc_id,cnt
       integer type_ids1,type_ids2,trans_f,trans_b,pdims(2),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
       integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid(3),gdims1(3),gdims2(3)
