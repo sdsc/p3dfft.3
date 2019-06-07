@@ -201,13 +201,13 @@ main(int argc,char **argv)
   complex_double *OUT=new complex_double[size2];
   
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(grid1,grid2,&type_forward,false);
+  transform3D<complex_double,complex_double> trans_f(grid1,grid2,&type_forward);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(grid2,grid1,&type_backward,false);
+  transform3D<complex_double,complex_double> trans_b(grid2,grid1,&type_backward);
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  trans_f.exec(IN,OUT);
+  //  trans_f.exec(IN,OUT,false);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
@@ -217,7 +217,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT);  // Execute forward real-to-complex FFT
+    trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -226,7 +226,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN);  // Execute backward (inverse) complex-to-real FFT
+    trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 

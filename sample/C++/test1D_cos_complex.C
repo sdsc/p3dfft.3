@@ -178,11 +178,11 @@ using namespace p3dfft;
   grid grid2(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  transplan<complex_double,complex_double> trans_f(grid1,grid2,type_ids1,dim,false);
+  transplan<complex_double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
 
   //Now set up the backward transform
 
-  transplan<complex_double,complex_double> trans_b(grid2,grid1,type_ids2,dim,false);
+  transplan<complex_double,complex_double> trans_b(grid2,grid1,type_ids2,dim);
 
   //Determine local array dimensions. 
 
@@ -215,7 +215,7 @@ using namespace p3dfft;
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT);
+  trans_f.exec((char *) IN,(char *) OUT,true);
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
@@ -225,7 +225,7 @@ using namespace p3dfft;
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
 
   // Execution of backward transform
-  trans_b.exec((char *) OUT,(char *) FIN);
+  trans_b.exec((char *) OUT,(char *) FIN,true);
 
   mydiff = check_res(IN,FIN,sdims1);
   //  printf("%d: my diff =%lf\n",myid,mydiff);

@@ -528,7 +528,7 @@ class stage {
   //  int mo1[3],mo2[3];
  public :
   int stage_prec;
-  bool inplace;
+  //  bool inplace;
   int dt1,dt2;
   int dims1[3],dims2[3];
   //  bool is_set;
@@ -537,8 +537,8 @@ class stage {
   stage *next;
   int kind;
   stage() {next = NULL;};
-   void myexec(char *in,char *out);
-   void myexec_deriv(char *in,char *out);
+  void myexec(char *in,char *out,bool OW);
+  void myexec_deriv(char *in,char *out, bool OW);
 };
 
 
@@ -575,7 +575,6 @@ template <class Type1,class Type2>   class transplan : public stage {
  protected:
 
   int prec;
-  Plantype<Type1,Type2> *plan;
 #ifdef ESSL
   double *work1,double *work2;
 #endif
@@ -590,19 +589,19 @@ template <class Type1,class Type2>   class transplan : public stage {
   int trans_dim;  // Rank of dimension of the transform
   int mo1[3],mo2[3];
   bool is_set;
-  long lib_plan;
   trans_type1D<Type1,Type2> *trans_type;
-  transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d, bool inplace_);
-  transplan(const grid &gr1,const grid &gr2,int type_ID,int d, bool inplace_); 
+  Plantype<Type1,Type2> *plan;
+  transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
+  transplan(const grid &gr1,const grid &gr2,int type_ID,int d); //, bool inplace_); 
   transplan() {};
   ~transplan() {delete grid1,grid2;};
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
-  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1);
-  long find_plan(trans_type1D<Type1,Type2> *type);
-  void exec(char *in,char *out);
-  void exec_deriv(char *in,char *out);
+  void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
+  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
+  void find_plan(trans_type1D<Type1,Type2> *type);
+  void exec(char *in,char *out,bool OW=false);
+  void exec_deriv(char *in,char *out, bool OW=false);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
   //template <class Type1,class Type2>  
@@ -615,8 +614,8 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
  private : 
 
-  void pack_sendbuf_trans(Type2 *sendbuf,char *in);
-  void pack_sendbuf_deriv(Type2 *sendbuf,char *in);
+  void pack_sendbuf_trans(Type2 *sendbuf,char *in,bool OW);
+  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
   
 
@@ -626,10 +625,10 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
 
-  trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_,bool inplace_);
+  trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
   ~trans_MPIplan();
-  void exec(char *in,char *out);
-  void exec_deriv(char *in,char *out);
+  void exec(char *in,char *out, bool OW);
+  void exec_deriv(char *in,char *out, bool OW);
 
   template <class TypeIn1,class TypeOut1> friend class transplan;
   template <class Type> friend class MPIplan;
@@ -689,7 +688,7 @@ class Plan {
   */
   //  friend class trans_type1D;
  public :
-  long libplan;
+  long libplan_in,libplan_out,libplan_inout;
   Plan() {};
   };
 
@@ -698,7 +697,7 @@ template <class Type1,class Type2> class Plantype : public Plan
   int dt1,dt2;
   int prec;
   int N,m;
-  bool inplace;
+  //  bool inplace;
   int istride,idist,ostride,odist;
   int *inembed,*onembed;
   int isign,fft_flag;
@@ -712,10 +711,10 @@ template <class Type1,class Type2> class Plantype : public Plan
 
   //int rank,const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,
 
-  inline Plantype(long (*doplan_)(...),void (*exec_)(...),int N_,int m_,bool inplace_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS) 
+  inline Plantype(long (*doplan_)(...),void (*exec_)(...),int N_,int m_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS) 
   { doplan = doplan_;
     exec = exec_; 
-    N = N_;m=m_;inplace=inplace_;istride = istride_;istride = istride_;idist = idist_;
+    N = N_;m=m_;istride = istride_;istride = istride_;idist = idist_;
     ostride = ostride_;odist = odist_;isign = isign_;fft_flag = fft_flag_;
     inembed = inembed_;
     onembed = onembed_;
@@ -750,7 +749,7 @@ template <class Type1,class Type2> class Plantype : public Plan
   inline Plantype(const Plantype &rhs);
   inline ~Plantype();
   //template <class _TypeIn,class _TypeOut> 
-  friend long transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
+  friend void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
  //  template <class Type1,class Type2> friend  long trans_MPIplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type);
 
 };
@@ -787,9 +786,9 @@ class variable { // Do we need this?
 };
 */
 
-  stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d, bool inplace,int prec);
+  stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d,int prec);
   stage *init_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2, int dt,int prec);
-  stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2, const gen_trans_type *type,int d, bool inplace,int prec);
+  stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2, const gen_trans_type *type,int d, int prec);
 
 class gen_transform3D
 {
@@ -805,17 +804,17 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 //  MPIplan MPI_plans[7];
 //  trans_plan trans_plans[7];
 //  int nstages=0;
-  bool inplace,is_set;
+  bool is_set;
   grid *grid1,*grid2;
   //  int trans_type[7];
   friend class stage;
 
  public:
 
-  void exec(Type1 *in,Type2 *out);
-  void exec_deriv(Type1 *in,Type2 *out,int idir);
+  void exec(Type1 *in,Type2 *out, bool OW=false);
+  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false);
 
-  transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type,bool inplace_,bool OW=false); 
+  transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type);
   ~transform3D();
 };
 

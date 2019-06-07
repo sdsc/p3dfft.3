@@ -178,11 +178,11 @@ main(int argc,char **argv)
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument sets this as out-of-place transform, i.e. input and output spaces are different
 
-  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim,0);
+  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim);
 
   //Now set up the backward transform
 
-  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim,0);
+  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim);
 
   //Determine local array dimensions. 
 
@@ -218,7 +218,7 @@ main(int argc,char **argv)
   for(i=0;i<Nrep;i++) {
 
   // Execute forward transform
-  p3dfft_exec_1Dtrans_double(trans_f,IN,OUT);
+    p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,0);
 
   if(myid == 0)
     printf("Results of forward transform: \n");
@@ -226,7 +226,7 @@ main(int argc,char **argv)
   normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) sdims1[ar_dim]-1));
 
   // Execute backward transform
-  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN);
+  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,1);
   }
 
   // Check that we have recovered the input
