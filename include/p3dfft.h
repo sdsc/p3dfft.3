@@ -236,13 +236,14 @@ class gen_trans_type {
  public :
   char *name;
   int isign;
-  bool is_set,is_empty=false;
+  bool is_set,is_empty;
   int dt1,dt2;   //Datatype before and after
   int prec;
   inline gen_trans_type(const char *name_,int isign_=0)
   {
     name = new char[strlen(name_)+1];
     strcpy(name,name_);
+    is_empty=false;
     is_set = true;
     isign = isign_;
   }
@@ -251,6 +252,7 @@ class gen_trans_type {
     name = new char[strlen(name_)+1];
     strcpy(name,name_);
     is_set = true;
+    is_empty=false;
     isign = isign_;
     dt1 = dt1_;
     dt2 = dt2_;
