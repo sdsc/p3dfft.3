@@ -216,7 +216,7 @@ using namespace p3dfft;
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT,true);
+  trans_f.exec((char *) IN,(char *) OUT,false);
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 

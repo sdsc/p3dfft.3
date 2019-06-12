@@ -545,22 +545,17 @@ void printbuf(char *,int[3],int,int);
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
-      if(!OW || dt2* dims2[0]*dims2[1]*dims2[2] > dt1 *dims1[0]*dims1[1]*dims1[2]) { // out-of-place
+      if((void *) in != (void *) out)
 	if(trans_type->is_empty) 
 	  memcpy(out,in,prec*dims1[0]*dims1[1]*dims1[2]);
 	
 	else
 	  (*(trans_type->exec))(plan->libplan_out,in,out);
-      }
+      else if(!trans_type->is_empty) 
 
-      else // in-place
-
-	if(trans_type->is_empty)  {
-	  if((void *) in != (void *) out)
-	    memcpy(out,in,prec*dims1[0]*dims1[1]*dims1[2]);
-	}
-	else
-	  (*(trans_type->exec))(plan->libplan_in,in,(Type2 *) in);
+	//      if(!OW || dt2* dims2[0]*dims2[1]*dims2[2] > dt1 *dims1[0]*dims1[1]*dims1[2]) { // out-of-place
+      
+	  (*(trans_type->exec))(plan->libplan_in,in,out);
 
 #ifdef TIMERS
       timers.trans_exec += MPI_Wtime() -t1;

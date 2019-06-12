@@ -95,9 +95,9 @@ main(int argc,char **argv)
      }
      printf("P3DFFT test, 1D wave input, 1D FFT\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,n);
+     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
 #else
-     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,n);
+     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
 #endif
    }
 
@@ -216,7 +216,7 @@ main(int argc,char **argv)
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT,true);
+  trans_f.exec((char *) IN,(char *) OUT,false);
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
