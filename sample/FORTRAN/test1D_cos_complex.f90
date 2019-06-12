@@ -1,5 +1,7 @@
 !
-!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for complex-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for complex-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as 
+!an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. 
+!However it does not do an inter-processor transpose (see test_transMPI for that). 
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs cosine transform twice, and checks that
