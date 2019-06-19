@@ -62,7 +62,8 @@ interface
       end subroutine
 
 !      integer(C_INT) 
-      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
+      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) &
+          &bind(C,name='p3dfft_init_grid_f')
 !        use iso_c_binding
       import 
 !      type(grid) :: gr

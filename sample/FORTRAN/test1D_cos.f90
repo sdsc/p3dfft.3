@@ -43,7 +43,8 @@
       integer(8) Ntot
       double precision factor,rtime1,rtime2
       double precision gt(12,3),gtcomm(3),tc
-      integer ierr,dim,dims(2),nproc,proc_id,cnt,iex
+      logical iex
+      integer ierr,dim,dims(2),nproc,proc_id,cnt
       integer type_ids1,type_ids2,trans_f,trans_b,pdims(2),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
       integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid(3),gdims1(3),gdims2(3)

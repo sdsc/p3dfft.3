@@ -7,8 +7,27 @@ To install P3DFFT, run the following:
 2. run 'make'
 3. run 'make install'
 
+Common Configurations
+=====================
+**Comet**
+To build with Intel and FFTW::
+
+  ./configure --enable-fftw
+
+**Bridges**
+To build with Intel and FFTW::
+
+  ./configure --enable-fftw CXX=mpiicpc CC=mpiicc FC=mpiifort
+
+**Stampede2**
+To build with Intel and FFTW::
+
+  ./configure --enable-fftw --with-fftw-lib=$TACC_FFTW3_LIB --with-fftw-inc=$TACC_FFTW3_INC
+
+NOTE: Make sure you have the correct modules loaded (i.e. make sure you have FFTW module loaded if using FFTW)
+
 Configuration Options
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Run "configure --help" for a complete list of options
 
@@ -25,9 +44,8 @@ Fourier Transform Library
 **FFTW**
 
 --enable-fftw               prepares p3dfft++ to be used with fftw library
---with-fftw=baselocation    tells configure where to look for the fftw library (must be directory above lib and inc directories)
---with-fftwlib=liblocation  Specifically sets the lib directory location (Do NOT use if using --with-fftw)
---with-fftwinc=inclocation  Specifically sets the inc directory location (MUST use if using --with-fftwlib)
+--with-fftwlib=liblocation  Specifically sets the lib directory location
+--with-fftwinc=inclocation  Specifically sets the inc directory location
 --enable-measure            For search-once-for-the-fast algorithm (takes more time on p3dfft_setup()). [default if none specified]
 --enable-patient            For search-once-for-the-fastest-algorithm (takes much more time on p3dfft_setup()).
 --enable-estimate           If this argument is passed, the FFTW library will not use run-time tuning to select the fastest algorithm for computing FFTs.

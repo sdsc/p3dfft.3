@@ -7,7 +7,7 @@ For C++ users all P3DFFT++ objects are defined within the p3dfft namespace, in o
 In C and Fortran these functions become p3dfft_setup and p3dfft_cleanup.  While C++ users can directly access P3DFFT objects such as grid class, C and Fortran users will access these through handles provided by corresponding wrappers (see more details below). 
 
 Data types
-==========
+^^^^^^^^^^
 P3DFFT++ currently operates on four main data types:
 
 float (single precision floating point)
@@ -16,13 +16,12 @@ mycomplex (single precision complex number) (equivalent to complex<float>)
 complex_double (double precision complex number) (equivalent to complex<double>)
 
 Data layout
-===========
+^^^^^^^^^^^
 While P3DFFT had the assumption of predetermined 2D pencils in X and in Z dimensions as the primary data storage, P3DFFT++ relaxes this assumption to include more general formats, such as arbitrary shape and memory order 2D pencils as well as 3D blocks. Below is the technical description of how to specify the data layout formats. 
 
 A basic P3DFFT++ descriptor is the "grid" construct. It defines all necessary information about decomposition of a grid among parallel tasks/processors. In C++ it is defined as a class, while in C and in Fortran it is defined through handles to a C++ object through inter-language wrappers. Below is the technical description of the definition for each language.
 
-C++
-===
+**C++**
 The following is the main constructor call for the grid class:
 
 grid(int gdims[3],int dim_conj_sym, int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm);
@@ -77,8 +76,7 @@ and other useful information.  The grid class also provides a copy constructor.
 
 To release a grid object, simply delete it. 
 
-C
-=
+**C**
 For C users grid initialization is accomplished by a call to p3dfft_init_grid, returning a pointer to an object of type Grid. This type is a C structure containing a large part of the C++ class grid. Calling p3dfft_init_grid initializes the C++ grid object and also copies the information into a Grid object accessible from C, returning its pointer. For example:
 
 int xdim;
@@ -93,8 +91,7 @@ To release a grid object simply execute
 
 p3dfft_free_grid(Grid \*gr);
 
-Fortran
-=======
+**Fortran**
 For Fortran users the grid object is represented as a handle of type integer(C_INT). For example:
 
 integer(C_INT) grid1
@@ -114,7 +111,7 @@ p3dfft_free_grid_f(gr)
 where gr is the grid handle. 
 
 P3DFFT++ Transforms
-===================
+^^^^^^^^^^^^^^^^^^^
 P3DFFT++ aims to provide a versatile toolkit of algorithms/transforms in frequent use for solving multiscale problems. To give the user maximum flexibility there is a range of algorithms from top-level algorithms operating on the entire 3D array, to 1D algorithms which can function as building blocks the user can arrange to suit his/her needs. In addition, inter-processor exchanges/transposes are provided, so as to enable the user to rearrange the data from one orientation of  pencils to another, as well as other types of exchanges. In P3DFFT++ the one-dimensional transforms are assumed to be expensive in terms of memory bandwidth, and therefore such transforms are performed on local data (i.e. in the dimension that is not distributed across processor grid). Transforms in three dimensions consist of three transforms in one dimension, interspersed by inter-processor interchange as needed to rearrange the data.  The 3D transforms are  high-level functions saving the user work in arranging the 1D transforms and transposes, as well as often providing superior performance. We recommend to use 3D transforms whenever they fit the user's algorithm. 
 
 Although syntax for C++, C and Fortran is different, using P3DFFT++ follows the same logic. P3DFFT++ functions in a way similar to FFTW: first the user needs to plan a transform, using a planner function once per each transform type. The planner function initializes the transform, creates a plan and stores all information relevant to this transform inside P3DFFT++. The users gets a handle referring to this plan (the handle is a class in C++, and an integer variable in C or Fortran) that can be later used to execute this transform, which can be applied multiple times. The handles can be released after use.
@@ -122,7 +119,7 @@ Although syntax for C++, C and Fortran is different, using P3DFFT++ follows the 
 In order to define and plan a transform (whether 1D or 3D, in C++, C or Fortran) one needs to first define initial and final grid objects. They contain all the necessary grid decomposition parameters. P3DFFT++ figures out the optimal way to transpose the data between these two grid configurations, assuming they are consistent (i.e. same grid size, number of tasks etc).
 
 One-dimensional (1D) Transforms
-===============================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 1D transforms is the smaller building block for higher dimensional transforms in P3DFFT++. They include different flavors of Fast Fourier Transforms (FFTs), empty transform (provided for convenience, as in the case where a user might want to implement their own 1D transform, but is interested in memory reordering to arrange the transform dimension for stride-1 data access), and (in the future) other transforms that share the following property: they are memory bandwidth and latency intensive,  and are optimally done when the dimension the transform operates on is entirely within one MPI task's domain. 
 
 1D transforms can be done with or without data exchange and/or memory reordering. In general, combining a transform with an exchange/reordering can be beneficial for performance due to cache reuse, compared to two separate calls to a transform and an exchange. 
@@ -148,8 +145,7 @@ P3DFFT_DCT<x>_COMPLEX_S, P3DFFT_DCT1_COMPLEX_D - cosine transform for complex-nu
 P3 DFFT_DST<x>_COMPLEX_S, P3DFFT_DST1_COMPLEX_D - sine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4
 
 
-C++
-===
+**C++**
 Below is an example of how a 1D transform can be called from C++. In this example, real-to-complex transform in double precision is planned and then performed. First a constructor for class transplan is called:
 
 transplan<double,complex_double> trans_f(gridIn, gridOut, R2C_FFT_D, dim, false);
@@ -164,8 +160,7 @@ Here In and Out are pointers to input and output arrays. In this case they are o
 
 To release the transform handle simply delete the transplan class object. 
 
-C
-=
+**C**
 Here is an example of initializing and executing a 1D transform (again, a real-to-complex double precision FFT) in a C program.
 
 Grid \*gridIn, \*gridOut;
@@ -185,8 +180,7 @@ p3dfft_exec_1Dtrans_double(trans_f,IN,OUT);
 
 This statement executes the 1D transformed planned and handled by trans_f. IN and OUT are pointers to one-dimensional input and output arrays containing the 3D grid stored contiguously in memory based on the local grid dimensions and storage order of gridIn and gridOut. The execution can be performed many times with the same handle and same or different input and output arrays. In case of out-of-place transform the input and output arrays must be non-overlapping. 
 
-Fortran
-=======
+**Fortran**
 Here is an example of initializing and executing a 1D transform (again, a real-to-complex double precision FFT) in a Fortran program.
 
 integer(C_INT) gridIn,gridOut
@@ -203,7 +197,7 @@ call p3dfft_1Dtrans_double(trans_f,Gin,Gout)
 This statement executes the 1D transform planned before and handled by trans_f. Gin and Gout are 1D contiguous arrays of values (double precision and double complex) of the 3D grid array, according to the local grid dimensions and memory storage order of gridIn and gridOut, respectively. After the previous planning step is complete, the execution can be called many times with the same handle and same or different input and output arrays. If the transform was declared as out-of-place then Gin and Gout must be non-overlapping.
 
 Three-dimensional Transforms
-============================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As mentioned above, three-dimensional (3D) transforms consist of three one-dimensional transforms in sequence (one for each dimension), interspersed by inter-processor transposes. In order to specify a 3D transform, five main things are needed:
 
 Initial grid (as described above, grid object defines all of the specifics of grid dimensions, memory ordering and distribution among processors).
@@ -215,8 +209,7 @@ The final grid may or may not be the same as the initial grid. First, in real-to
 
 In order to define the 3D transform type one needs to know three 1D transform types comprising the 3D transform. Usage of 3D transforms is different depending on the language used and is described below.
 
-C++
-===
+**C++**
 In C++ 3D transform type is interfaced through a class trans_type3D, which is constructed as in the following example:
 
 trans_type3D name_type3D(int types1D[3]);
@@ -251,8 +244,7 @@ Once a 3D transform has been defined and planned, execution of a 3D transform ca
 
  Here in and out are initial and final data arrays of appropriate types. These are assumed to be one-dimensional contiguous arrays containing the three-dimensional grid for input and output, local to the memory of the given MPI task, and stored according to the dimensions and memory ordering specified in the gridIn and gridOut objects, respectively.  For example, if grid1.ldims={2,2,4} and grid1.mem_order={2,1,0}, then the in array will contain the following sequence: G000, G001, G002, G003, G010, G011, G012, G013, G100, G101, G102, G103, G110, G111, G112, G113. Again, we follow the Fortran convention that the fastest running index is the first, (i.e. G012 means the grid element at X=0, Y=1, Z=2).   
 
- C
- =
+**C**
  In C a unique datatype Type3D is used to define the 3D transform needed.  p3dfft_init_3Dtype function is used to initialize a new 3D transform type, based on the three 1D transform types, as in the following example:
 
  int type_rcc,  type_ids[3];
@@ -277,8 +269,7 @@ Once a 3D transform has been defined and planned, execution of a 3D transform ca
 
  Here in and out are pointers to input and output arrays, as before, assumed to be the local portion of the 3D grid array stored according to gridIn and gridOut descriptors. For single precision use p3dfft_exec_3Dtrans_single.
 
- Fortran
- =======
+**Fortran**
  In Fortran, similar to C, to define a 3D transform the following routine is used:
 
  mytrans = p3dfft_plan_3Dtrans_f(gridIn,gridOut,type,inplace, overwrite)
