@@ -1,5 +1,7 @@
 !
-!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D cosine transform, for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an 
+!argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. 
+!However it does not do an inter-processor transpose (see test_transMPI for that). 
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs cosine transform twice, and checks that
@@ -41,7 +43,8 @@
       integer(8) Ntot
       double precision factor,rtime1,rtime2
       double precision gt(12,3),gtcomm(3),tc
-      integer ierr,dim,dims(2),nproc,proc_id,cnt,iex
+      logical iex
+      integer ierr,dim,dims(2),nproc,proc_id,cnt
       integer type_ids1,type_ids2,trans_f,trans_b,pdims(2),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
       integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid(3),gdims1(3),gdims2(3)
@@ -168,10 +171,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1)
 
 ! Now set up the backward transform
-      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -193,7 +196,7 @@
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_1Dtrans_double(trans_f,BEG,AEND)
+      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
       rtime1 = 0.0
@@ -208,7 +211,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_1Dtrans_double(trans_f,BEG,AEND)
+         call p3dfft_1Dtrans_double(trans_f,BEG,AEND,0)
 
          rtime1 = rtime1 + MPI_wtime()
 
@@ -224,7 +227,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_1Dtrans_double(trans_b,AEND,C)
+         call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
          rtime1 = rtime1 + MPI_wtime()
 
       enddo

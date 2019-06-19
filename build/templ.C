@@ -86,7 +86,7 @@ void inv_mo(int mo[3],int imo[3]);
 
   // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
   // 
-  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type,bool inplace_,bool OW_)
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type)
 {
 
 #ifdef DEBUG
@@ -151,12 +151,8 @@ void inv_mo(int mo[3],int imo[3]);
 
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
-  inplace = inplace_;
-  OW = OW_;
   dt = dt_init;
   dt1 = dt;
-
-  if(inplace_) OW=true;
 
   memcpy(pgrid1,grid1_.pgrid,sizeof(int)*3);
   memcpy(pgrid2,grid2_.pgrid,sizeof(int)*3);
@@ -377,7 +373,7 @@ void inv_mo(int mo[3],int imo[3]);
       gdims[L[st]] = (gdims[L[st]]-1)*2;
     }
 
-    inpl = inpl1D = false;
+    inpl = true;
 
     if(d1 >= 0) { // If a transpose is involved
 
@@ -393,24 +389,27 @@ void inv_mo(int mo[3],int imo[3]);
       int dt_1 = tmptype->dt1;
       int dt_2 = tmptype->dt2;
       // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
-      if(dt_1 >= dt_2 && (OW || st>0) ) 
-	inpl = true; // Set the 1D transform to be in-place
+      //      if(dt_1 >= dt_2 && (OW || st>0) ) 
+      //inpl = true; // Set the 1D transform to be in-place
+      //if(OW && st==0)
+      //	inpl = false;
 
       // Next determine if the combined trans_MPI is in-place (depends on buffer size after combined trans_MPI, and the ending buffer and transform3D inplace option) 
-      if(size1*dt_1 < size2*dt_2 || (st== 2 && !reverse_steps && !inplace)) {
+      /*      if(size1*dt_1 < size2*dt_2 || (st== 2 && !reverse_steps && !inplace)) {
       	orig_input = false;
 	inpl1D=false;
       }
       else
 	inpl1D = true;
+      */
 
 #ifdef DEBUG
       printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
       // Plan/set up 1D transform combined with MPI exchange for this stage
-      curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],inpl,prec);
+      curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],prec);
       curr_stage->kind = TRANSMPI;
-      curr_stage->inplace = inpl1D;
+      //      curr_stage->inplace = inpl1D;
     }
     else { // Only transform
 
@@ -426,12 +425,14 @@ void inv_mo(int mo[3],int imo[3]);
       int dt_1 = tmptype->dt1;
       int dt_2 = tmptype->dt2;
       // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
+      /*
       if(size1*dt_1 >= size2*dt_2 && (OW || st>0) && (st < 2 || reverse_steps || (orig_input && inplace))) //&& ((inplace && orig_input) || st<2)
 	inpl = true;
       else
       	orig_input = false;
       // Plan/set up 1D transform, possibly combined with local transpose as needed
-      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],inpl,prec);
+      */
+      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
 
       curr_stage->kind = TRANS_ONLY;
       
@@ -559,12 +560,12 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef DEBUG
       printf("Calling init_transplan, trans_dim=%d\n",grid2_.L[0]);
 #endif
-      inpl = true;
+      //      inpl = true;
       gen_trans_type *t=empty_type<Type2>();
       int trans_dim = grid2_.L[0];
       if(nd == 1 && tmpgrid1->mem_order[trans_dim] != 0 && tmpgrid0->mem_order[trans_dim] != 0)
 	trans_dim = grid2_.L[1];
-      curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim,inpl);
+      curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
 
       // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
       curr_stage->kind = TRANS_ONLY;
@@ -620,9 +621,9 @@ int dist(int a)
 }
 
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2, const gen_trans_type *type,int d, bool inplace_) 
+  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
 {
-  lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
+  plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(!type->is_set) {
     cout << "Error in trans_plan: 1D transform type not set" << endl;
     return;
@@ -634,15 +635,17 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   stage_prec = prec = type->prec;
   trans_dim = d; 
   trans_type = (trans_type1D<Type1,Type2> *) type;
+
+
   dt1 = type->dt1;
   dt2 = type->dt2;
   kind = TRANS_ONLY;
-  inplace = inplace_;
+  //  inplace = inplace_;
   grid1 = new grid(gr1);
   grid2 = new grid(gr2);
 
   istride = 1;ostride = 1; 
-  idist,odist;
+  //  idist,odist;
   isign = type->isign;
 
   for(int i=0;i<3;i++) {
@@ -701,14 +704,14 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
     return;
   }
   if(!trans_type->is_empty)
-    lib_plan = find_plan(trans_type); 
+    find_plan(trans_type); 
 
 }  
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2,int type_ID,int d, bool inplace_) 
+  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid &gr1,const grid &gr2,int type_ID,int d) // bool inplace_) 
 {
 
-  lib_plan = 0;plan = NULL;fft_flag = DEF_FFT_FLAGS;
+  plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(gr1.ldims[d] != gr1.gdims[d] || gr2.ldims[d] != gr2.gdims[d] ) {
     printf("Error in transplan: dimensions dont match %d %d %d\n",gr1.ldims[d],gr2.ldims[d],d);
     return;
@@ -731,7 +734,7 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   stage_prec = prec = trans_type->prec;
   kind = TRANS_ONLY;
   trans_dim = d;
-  inplace = inplace_;
+  //  inplace = inplace_;
   grid1 = new grid(gr1);
   grid2 = new grid(gr2);
 
@@ -780,7 +783,7 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const grid 
   }
 
   if(!trans_type->is_empty)
-    lib_plan = find_plan(trans_type); 
+    find_plan(trans_type); 
 
 }
 
@@ -849,17 +852,17 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 
 }
 
-template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d,bool inplace_)   
+  template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d) //bool inplace_)   
 {
   kind = TRANSMPI;
-  trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,inplace_);
-  if(trplan->lib_plan == NULL) 
+  trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
+  if(trplan->plan == NULL)
     cout << "Error in trans_MPIplan: null plan" << endl;
 
   stage_prec = trplan->prec;
   mpiplan = new MPIplan<Type2>(intergrid,gr2,mpicomm,d1,d2,stage_prec);
   is_set = true;
-  inplace = inplace_;
+  //  inplace = inplace_;
   dt1 = trplan->dt1;
   dt2 = trplan->dt2;
   memcpy(dims1,trplan->dims1,3*sizeof(int));
@@ -977,7 +980,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
 }
 
 
-template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
+  template <class Type1,class Type2> inline void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
 {
   int i;
   int planID;
@@ -994,7 +997,12 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
       cout << "Error in find_plan: inplace transforms should have identical dimensions and types" << endl;
       return(-1);
     }
-  */
+  
+  if(inplace)
+    if(type->dt1 >= type->dt2 && !arcmp(mo1,mo2,3))
+      inplace = true;
+    else
+      inplace=false;
 
   if(inplace)
     for(i=0;i<3;i++)
@@ -1002,6 +1010,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 	inplace = false;
 	break;
       }
+  */
 
   planID = 0;
   for(vector<Plan*>::iterator it=Plans.begin(); it < Plans.end();it++,planID++) {
@@ -1009,20 +1018,28 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     //if(pl)
     pl = (Plantype<Type1,Type2> *) *it;
     if(type->dt1 == pl->dt1 && type->dt2 == pl->dt2 && prec == pl-> prec &&
-       pl->N == N && pl->m == m && pl->inplace == inplace &&	\
+       pl->N == N && pl->m == m && // pl->inplace == inplace &&		
        pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
        pl->fft_flag == fft_flag) {
       if(m > 1) {
-	if(pl->idist = idist && pl->odist == odist &&
+	if(pl->idist == idist && pl->odist == odist &&
 	   *(pl->inembed) == *inembed && *(pl->onembed) == *onembed) {
 	  plan = pl;
-	  return((*it)->libplan);
+#ifdef DEBUG
+	  printf("find_plan: plan found, isign=%d %d\n",isign,plan->isign);
+#endif 
+	  return;
+	  //plan = pl;
+	  // return((Plantype<Type1,Type2> *) it);
 	}
 	//	  return(plan->libplan);
       }
       else {
 	plan = pl;
-	return((*it)->libplan);
+#ifdef DEBUG
+	printf("find_plan: plan found, isign=%d %d\n",isign,plan->isign);
+#endif 
+	return;
       }
     }
     //	return(plan->libplan);
@@ -1035,10 +1052,10 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 #ifdef DEBUG
   cout << "new plantype" << endl;
 #endif
- plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,inplace,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag);
+ plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag);
   Plans.push_back(plan);
   
-  if(inplace) {
+  // Inplace
     Type1 *A;
     int size=max(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
 #ifdef DEBUG
@@ -1048,26 +1065,23 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     A = (Type1 *) fftw_malloc(size *sizeof(Type1));
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0) 
       //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
     }
     else //R2C or C2R
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
 
-    if(plan->libplan == NULL) 
+    if(plan->libplan_in == NULL) 
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
     //    fftw_free(B);
 #endif
-  }    
-    else { //not inplace
 
-    Type1 *A;
-    Type2 *B;
+    // Out of place
     int size1=(istride*N+idist*m);
     int size2=(ostride*N+odist*m);
     //    printf("size1=%d,size2=%d\n",size1,size2);    
@@ -1088,7 +1102,7 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     //    A = (Type1 *) fftw_malloc(sizeof(Type1)*size1);
     //B = (Type2 *) fftw_malloc(sizeof(Type2)*size2);
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       for(int i=0;i < size1;i++) {
 	A[i] = 0.0;
@@ -1099,25 +1113,25 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
 #ifdef DEBUG
       printf("Calling doplan\n");
 #endif
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
 
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan);
+      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out);
 #endif
     }
     else { //R2C or C2R
 #ifdef DEBUG
       cout << "Calling doplan" << endl;
 #endif
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan);
+      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out);
 #endif
     }
     //    delete [] A; // fftw_free
     //delete [] B;
 
-    if(plan->libplan == NULL) 
+    if(plan->libplan_out == NULL) 
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
@@ -1128,20 +1142,19 @@ template <class Type1,class Type2> inline long transplan<Type1,Type2>::find_plan
     A = new Type1[size1];
     B = new Type2[size2];
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0) 
       //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
     }
     else //R2C or C2R
-      plan->libplan = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
     free(A);
     free(B);
 #endif
-  }
   
-    return(plan->libplan);
+  return;
 }
 
 

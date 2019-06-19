@@ -1,5 +1,7 @@
 !
-!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D real-to-complex FFT. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+!This program exemplifies the use of 1D transforms in P3DFFT++, for a 1D real-to-complex FFT. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could 
+!be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do 
+!an inter-processor transpose (see test_transMPI for that). 
 !
 ! This program initializes a 3D array with a 3D sine wave, then
 ! performs forward real-to-complex transform, backward comples-to-real 
@@ -179,10 +181,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1)
 
 ! Now set up the backward transform
-      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,0)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -204,7 +206,7 @@
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_1Dtrans_double(trans_f,BEG,AEND)
+      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
 
@@ -218,7 +220,7 @@
 ! normalize
       call mult_array(AEND, Ntot,factor)
 
-      call p3dfft_1Dtrans_double(trans_b,AEND,C)
+      call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
 
 ! Free work space
       call p3dfft_cleanup

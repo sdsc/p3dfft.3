@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+#This script creates a batch job file to submit to a supercomputer from the given list of platforms
 
 import math
 import getopt
@@ -9,37 +10,48 @@ from time import strftime, localtime
 from fractions import Fraction
 from itertools import product, permutations
 
+#Add more platforms as necessary to this list (Note that when more platforms are added, you must update the functions
+#as well to include that option
 platforms = ["comet", "stampede", "bridges"]
+
+#Generates all permunations for memory orders as string of space-separated numbers
 one_dim_perms = map(lambda a: a.replace('(', '').replace(')', '').replace(',', '')
 										,[str(p) for p in product(permutations([0,1,2]), repeat=2)])
+#current time
 current_time = strftime("%d-%m-%Y-%H%M%S", localtime())
 # job size
 NUMNODES = 1		# --nodes
 TASKSPERNODE = 16   # --ntasks-per-node
 
+#Have not messed around with MT yet so not sure if these work
 MT_NUMTHREADS = 2	  # env var OMP_NUM_THREADS
 MT_RANKSPERNODE = 8	# used for dims
 
 assert(MT_NUMTHREADS * MT_RANKSPERNODE == TASKSPERNODE)
 
+#Exit message when input error occurs
 def usage_exit(msg):
 	print msg
-	print "USAGE: ./configure.py -s comet|gordon|edison|cori|stampede [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]"
+	print "USAGE: ./makejob.py -s comet|gordon|edison|cori|stampede -d [directory] [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]"
 	print "Make sure to run this script from one level above your p3dfft.3 source directory!"
 	print "-h displays usage information"
 	print "-d source directory created from configure.py"
-	print "-s  specifies which platform"
-	print "-m  to build -mt branch"
-	print "-p  to build performance test"
+	print "-s specifies which platform"
+	print "-a specifies an account to run the job with"
+	print "-m to build -mt branch" #currently not working and hasn't been tested
+	print "-p to build performance test" #currently not working and hasn't been tested
 	sys.exit(1)
 
 # Return list of all tests of this specific configuration
+# input is the source directory given by the -d flag
 def gettests(sd):
 	p3dfft_dirs = next(os.walk(sd))[1]
+	#Gets all directories within the source directory
 	pattern = re.compile('p3dfft\+\+_compiled\S+')
 	p3dfft_dirs = sorted(filter(pattern.match, p3dfft_dirs))
 	pattern = re.compile('test.+_([cf]|cpp)$')
 	all_tests = []
+	#For all the directories, looks in their sample folder for tests that end in _f or _cpp or _c
 	for p3dir in p3dfft_dirs:
 		for root, _, files in os.walk(os.path.join(sd, p3dir, 'sample')):
 			if root == os.path.join(p3dir, 'sample'):
@@ -62,8 +74,8 @@ def getdims(mt):
 	else:
 		# perfect square, take the factor in the middle
 		dims.append("'" + str(facs[len(facs)/2]) + " " + str(facs[len(facs)/2]) + "'")
-	#dims.append("'1 " + str(n) + "'")
-	#dims.append("'" + str(n) + " 1'")
+	dims.append("'1 " + str(n) + "'")
+	dims.append("'" + str(n) + " 1'")
 	return dims
 
 # Standard test run line
@@ -84,6 +96,7 @@ def runline(platform, mt, output_dir, test):
 			r = "mpirun -n " + str(MT_RANKSPERNODE) + " " + test
 		else:
 			r = "mpirun -n " + str(TASKSPERNODE * NUMNODES) + " " + test
+	# Output is appended to the test output file in the output directory
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Test for 1x1 dims
@@ -100,11 +113,12 @@ def onebyone(platform, mt, output_dir, test):
 		if mt:
 			rt = "mpirun -n 1 " + test
 		else:
-			r = "mpirun -n 1" + test
+			r = "mpirun -n 1 " + test
+	# Output is appended to the test output file in the output directory
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
 # Write all tests for all dims
-def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
+def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 	for test in all_tests:
 		#if "cheby" in test:
 		#	batchf.write("echo '32 32 33 2 1' > stdin\n")
@@ -122,9 +136,15 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 				batchf.write(runline(platform,mt,output_dir,test))
 			batchf.write("echo '1 1' > dims\n")
 			batchf.write(onebyone(platform, mt, output_dir, test))
+			if uneven:
+				batchf.write("echo '14 26 38 2 1' > stdin\n")
+				batchf.write("echo " + all_dims[0] + " > dims\n")
+				batchf.write(runline(platform, mt, output_dir, test))
 		elif '1D' in basename:
-			batchf.write("rm -f dims\n")
+			#batchf.write("rm -f dims\n")
+			batchf.write("echo " + all_dims[0] + " > dims\n")
 			for perm in one_dim_perms:
+				# depending on where the first and second 0 are in the memory orders, use that as the dim or transform
 				dim_in = perm.find('0')/2
 				dim_out = perm.find('0', 5)/2 - 3
 				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
@@ -140,22 +160,8 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir):
 			batchf.write(onebyone(platform, mt, output_dir, test))
 		# 1x1 dims test
 
-def unevengrid(platform, mt, all_tests, all_dims, batchf, output_dir):
-	for test in all_tests:
-		if "cheby" in test:
-			batchf.write("echo '14 26 38 2 1' > stdin\n")
-		elif "many" in test:
-			batchf.write("echo '14 26 38 2 5 1' > stdin\n")
-		elif "pruned" in test:
-			batchf.write("echo '64 64 64 32 32 32 2 1' > stdin\n")
-		else:
-			batchf.write("echo '14 26 38 2 1' > stdin\n")
-		# write dims
-		batchf.write("echo " + all_dims[0] + " > dims\n")
-		# run test
-		batchf.write(runline(platform, mt, output_dir, test))
-
 # Test for performance
+#TODO NOT WORKING
 def perftest(platform, mt, test, curr_numcores, num_threads):
 	if platform == "comet":
 		if mt:
@@ -211,11 +217,14 @@ def runperf(platform, mt, perf, batchf, MINCORES, MAXCORES, MINGRID, MAXGRID, PE
 			curr_gridsize *= 2
 		curr_numcores *= 2
 
-
-def script_header(platform, batchf, mt, perf, email, output_dir,sd):
+# Generates the header of the script depending on the platform
+# This can most likely be condensed because many of the platforms use the same option formats
+def script_header(platform, batchf, mt, perf, email, output_dir, sd, account):
 	batchf.write('#!/bin/bash\n')
 	if platform == "comet":
 		batchf.write('#SBATCH --job-name="' + "p3dfft++_compiled" + '"\n')
+		if account:
+			batchf.write('#SBATCH --account="' + str(account) + '"\n')
 		batchf.write('#SBATCH --output="' + os.path.join(output_dir,'out.%j') + '"\n')
 		batchf.write('#SBATCH --partition=compute\n')
 		if perf:
@@ -229,24 +238,32 @@ def script_header(platform, batchf, mt, perf, email, output_dir,sd):
 		if email:
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
 			batchf.write('#SBATCH --mail-type=ALL\n')
-		batchf.write('#SBATCH -t 01:00:00\n')
+		batchf.write('#SBATCH -t 02:00:00\n')
 	elif platform == "stampede":
-		batchf.write('#SBATCH -J ' + "p3dfft++_compiled_p_" + '\n')
-		batchf.write('#SBATCH -o out/out.%j\n')
-		batchf.write('#SBATCH -e out/out.%j\n')
+		batchf.write('#SBATCH -J ' + "p3dfft++_compiled" + '\n')
+		if account:
+			batchf.write('#SBATCH --account="' + str(account) + '"\n')
+		batchf.write('#SBATCH -o' + os.path.join(output_dir,'out.%j') + '\n')
+		batchf.write('#SBATCH -e' + os.path.join(output_dir,'out.%j') + '\n')
 		batchf.write('#SBATCH -p normal\n')
 		if perf:
-			batchf.write('#SBATCH -n' + str(MAXCORES/PERF_NUMTHREADS) + ' -N' + str(int(MAXCORES/(16*PERF_NUMTHREADS))) + '\n')
-		elif mt:
-			batchf.write('#SBATCH -n' + str(MT_RANKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
+			batchf.write('#SBATCH -N ' + str(int(MAXCORES/(16*PERF_NUMTHREADS))) + '\n')
 		else:
-			batchf.write('#SBATCH -n ' + str(TASKSPERNODE) + ' -N' + str(NUMNODES) + '\n')
+			batchf.write('#SBATCH -N ' + str(NUMNODES) + '\n')
+		if perf:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(MAXCORES/PERF_NUMTHREADS) + '\n')
+		elif mt:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(MT_RANKSPERNODE) + '\n')
+		else:
+			batchf.write('#SBATCH --ntasks-per-node ' + str(TASKSPERNODE) + '\n')
 		if email:
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
-			batchf.write('#SBATCH --mail-type=ALL\n')
-		batchf.write('#SBATCH -t 01:00:00\n')
+			batchf.write('#SBATCH --mail-type=all\n')
+		batchf.write('#SBATCH -t 02:00:00\n')
 	elif platform == "bridges":
 		batchf.write('#SBATCH --job-name="' + "p3dfft++_compiled" + '"\n')
+		if account:
+			batchf.write('#SBATCH --account="' + str(account) + '"\n')
 		batchf.write('#SBATCH --output="' + os.path.join(output_dir,'out.%j') + '"\n')
 		batchf.write('#SBATCH --partition=RM\n')
 		if perf:
@@ -260,7 +277,7 @@ def script_header(platform, batchf, mt, perf, email, output_dir,sd):
 		if email:
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
 			batchf.write('#SBATCH --mail-type=ALL\n')
-		batchf.write('#SBATCH -t 01:00:00\n')
+		batchf.write('#SBATCH -t 02:00:00\n')
 	batchf.write('cd ' + sd + '\n')
 	batchf.write('\n')
 
@@ -270,12 +287,13 @@ def main():
 	mt = False
 	perf = False
 	uneven = False
-	email = ''
+	email = ""
+	account = ""
 	perfopts = ""
 
 	# parse command line options
 	try:
-		opts = getopt.getopt(sys.argv[1:], 'd:s:e:hmp:u')
+		opts = getopt.getopt(sys.argv[1:], 'd:s:e:hmp:ua:')
 	except getopt.GetoptError as err:
 		usage_exit(str(err))
 	for o, a in opts[0]:
@@ -296,6 +314,8 @@ def main():
 			#perfopts = a
 		elif o == '-u':
 			uneven = True
+		elif o == '-a':
+			account = a
 		else:
 			assert False, "unhandled option"
 	if platform == None:
@@ -310,6 +330,7 @@ def main():
 	if uneven and perf:
 		usage_exit("no uneven grid performance tests")
 
+	# Not working
 	if perf:
 		perfopts = perfopts.split()
 		MINCORES = int(perfopts[0])
@@ -342,7 +363,7 @@ def main():
 			print("MINGRID > MAXGRID")
 			sys.exit(-1)
 
-	# start write job	jobs/comet-p3dfft-mt.sh
+	# Creates a job directory
 	jobs_dir = os.path.join(os.getcwd(), "jobs_" + current_time)
 	fname = os.path.join(jobs_dir, platform + "-" + "p3dfft++_tests" + os.path.basename(source_dir) + ".sh")
 	try:
@@ -352,6 +373,7 @@ def main():
 
 	batchf = open(fname, 'w')
 
+	# Creates output directory
 	output_dir = os.path.join(jobs_dir, 'out')
 	try:
 		os.mkdir(output_dir)
@@ -359,7 +381,7 @@ def main():
 		pass
 
 	# write header
-	script_header(platform, batchf, mt, perf, email, output_dir,jobs_dir)
+	script_header(platform, batchf, mt, perf, email, output_dir,jobs_dir, account)
 	if mt:
 		if perf:
 			batchf.write('export OMP_NUM_THREADS=' + str(PERF_NUMTHREADS) + '\n')
@@ -371,11 +393,8 @@ def main():
 	else:
 		all_tests = gettests(source_dir)
 		all_dims = getdims(mt)
-		if uneven:
-			unevengrid(platform, mt, all_tests, all_dims, batchf, output_dir)
-		else:
-			buildall(platform, mt, all_tests, all_dims, batchf, output_dir)
-	batchf.write("grep -rcwE * -e 'Error|incorrect'\n")
+		buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven)
+	batchf.write("grep -rcwE * -e 'Error|incorrect|BAD'\n")
 	# Close the file. Done.
 	batchf.close()
 

@@ -191,11 +191,11 @@ main(int argc,char **argv)
   grid2 = p3dfft_init_grid(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD); 
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc,0);
+  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc);
 
   //Now set up the backward transform
 
-  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr,0);
+  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
@@ -226,7 +226,7 @@ main(int argc,char **argv)
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
-  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT);
+  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -236,7 +236,7 @@ main(int argc,char **argv)
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
     /* Forward R2C transform, combined with spectral derivative in idir dimension (C convention, starting with 0) */
-    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT); // Forward real-to-complex 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -247,7 +247,7 @@ main(int argc,char **argv)
     print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
     t -= MPI_Wtime();
-    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
+    p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 

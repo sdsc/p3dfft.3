@@ -202,9 +202,9 @@ main(int argc,char **argv)
     AR[i] = IN[i];
   
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(grid1,grid2,&type_forward,true);
+  transform3D<complex_double,complex_double> trans_f(grid1,grid2,&type_forward);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(grid2,grid1,&type_backward,true);
+  transform3D<complex_double,complex_double> trans_b(grid2,grid1,&type_backward);
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
@@ -218,7 +218,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(AR,AR);  // Execute forward in-place real-to-complex FFT
+    trans_f.exec(AR,AR,true);  // Execute forward in-place real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
@@ -227,7 +227,7 @@ main(int argc,char **argv)
     normalize(AR,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(AR,AR);  // Execute backward (inverse) in-place complex-to-real FFT
+    trans_b.exec(AR,AR,true);  // Execute backward (inverse) in-place complex-to-real FFT
     t += MPI_Wtime();
   }
 

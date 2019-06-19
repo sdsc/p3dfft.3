@@ -6,14 +6,8 @@ Welcome to P3DFFT++'s documentation!
    
    Installation
    Tutorial
+   Common Errors
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 Introduction
 ^^^^^^^^^^^^
@@ -37,26 +31,25 @@ P3DFFT++ is the next generation of P3DFFT (versions starting with 3.0). It exten
 
 The following table compares P3DFFT family 2.7.6 and 3.0 (P3DFFT++).
 
-::
+=======================================   ============== ========
+Feature                                   P3DFFT 2.x     P3DFFT++
+=======================================   ============== ========
+real-to-complex and complex-to-real FFT   Yes            Yes   
 
- Feature                                   P3DFFT 2.x     P3DFFT++
+complex FFT                               No             Yes           
 
- real-to-complex and complex-to-real FFT   Yes            Yes   
-        
- complex FFT                               No             Yes           
+sine and cosine transforms                In 1 dimension Yes        
 
- sine and cosine transforms                In 1 dimension Yes        
-        
- Chebyshev transform                       In 1 dimension Yes               
+Chebyshev transform                       In 1 dimension Yes               
 
- pruned transforms                         Yes            No               
+pruned transforms                         Yes            No               
 
- In-place and out-of-place                 Yes            Yes             
+In-place and out-of-place                 Yes            Yes             
 
- Multiple grids                            No             Yes            
+Multiple grids                            No             Yes            
 
- Hybrid MPI/OpenMP                         Yes            No            
-
+Hybrid MPI/OpenMP                         Yes            No            
+=======================================   ============== ========
 
 **License of use**
 

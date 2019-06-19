@@ -155,7 +155,9 @@
       enddo
 
 
-! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access 
+!bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same 
+!as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
 
       mem_order2(1) = 2
       mem_order2(2) = 1
@@ -167,7 +169,9 @@
       pgrid1(2) = iproc
       pgrid1(3) = jproc
 
-! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
+! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access 
+!bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to 
+!define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
       pgrid2(1) = iproc
       pgrid2(2) = jproc
@@ -185,10 +189,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,1)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,1)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -236,7 +240,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Forward transform
-         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT)
+         call p3dfft_3Dtrans_double(trans_f,INOUT,INOUT,1)
 
          rtime1 = rtime1 + MPI_wtime()
 
@@ -252,7 +256,7 @@
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
 ! Backward transform
-         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT)
+         call p3dfft_3Dtrans_double(trans_b,INOUT,INOUT,1)
          rtime1 = rtime1 + MPI_wtime()
 
       end do

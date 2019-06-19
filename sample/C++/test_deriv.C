@@ -189,9 +189,9 @@ main(int argc,char **argv)
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc,false);
+  transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr,false);
+  transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
@@ -222,7 +222,7 @@ main(int argc,char **argv)
   complex_double *OUT=new complex_double[size2];
 
   // Warm-up run, forward transform
-  trans_f.exec(IN,OUT);
+  trans_f.exec(IN,OUT,false);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
@@ -231,7 +231,7 @@ main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec_deriv(IN,OUT,idir-1); // Forward R2C 3D FFT and derivative
+    trans_f.exec_deriv(IN,OUT,idir-1,true); // Forward R2C 3D FFT and derivative
 
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
@@ -243,7 +243,7 @@ main(int argc,char **argv)
     normalize(OUT,size2,gdims);
 
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN); // Backward (inverse) complex-to-real 3D FFT
+    trans_b.exec(OUT,FIN,true); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
   }
 

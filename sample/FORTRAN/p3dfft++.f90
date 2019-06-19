@@ -62,7 +62,8 @@ interface
       end subroutine
 
 !      integer(C_INT) 
-      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) bind(C,name='p3dfft_init_grid_f')
+      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) &
+          &bind(C,name='p3dfft_init_grid_f')
 !        use iso_c_binding
       import 
 !      type(grid) :: gr
@@ -80,65 +81,65 @@ interface
       integer(C_INT) :: in(3),out(3)
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_double(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_double_f')
+      subroutine p3dfft_exec_1Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_1Dtrans_double_f')
       import
-      integer(C_INT) plan
+      integer(C_INT) plan,OW
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_single(plan,in,out) bind(C,name='p3dfft_exec_1Dtrans_single_f')
+      subroutine p3dfft_exec_1Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_1Dtrans_single_f')
       import
-      integer(C_INT) plan
+      integer(C_INT) plan,OW
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_double(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_double_f')
+      subroutine p3dfft_exec_3Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_double_f')
       import
-      integer(C_INT) plan;
+      integer(C_INT) plan,OW
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dderiv_single(plan,in,out,idir) bind(C,name='p3dfft_exec_3Dderiv_single_f')
+      subroutine p3dfft_exec_3Dderiv_single(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_single_f')
       import
-      integer(C_INT) plan,idir;
+      integer(C_INT) plan,idir,OW
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dderiv_double(plan,in,out,idir) bind(C,name='p3dfft_exec_3Dderiv_double_f')
+      subroutine p3dfft_exec_3Dderiv_double(plan,in,out,idir,OW) bind(C,name='p3dfft_exec_3Dderiv_double_f')
       import
-      integer(C_INT) plan,idir;
+      integer(C_INT) plan,idir,OW
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_3Dtrans_single(plan,in,out) bind(C,name='p3dfft_exec_3Dtrans_single_f')
+      subroutine p3dfft_exec_3Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_3Dtrans_single_f')
       import
-      integer(C_INT) plan;
+      integer(C_INT) plan,OW
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim,inplace) bind(C, name='p3dfft_plan_1Dtrans_f')
+      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim) bind(C, name='p3dfft_plan_1Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2,dim
-      integer(C_INT) :: trans_ID,inplace
+      integer(C_INT) :: trans_ID
 
       end subroutine
 
-      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID,inplace) bind(C, name='p3dfft_plan_3Dtrans_f')
+      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID) bind(C, name='p3dfft_plan_3Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2
-      integer(C_INT) :: trans_ID,inplace
+      integer(C_INT) :: trans_ID
 
       end subroutine
 
-      subroutine p3dfft_compute_deriv_single(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_single_f')
+      subroutine p3dfft_compute_deriv_single(in,out,grid,idir,OW) bind(C,name='p3dfft_compute_deriv_single_f')
       import
-      integer(C_INT) grid,idir
+      integer(C_INT) grid,idir,OW
       real(C_FLOAT ), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_compute_deriv_double(in,out,grid,idir) bind(C,name='p3dfft_compute_deriv_double_f')
+      subroutine p3dfft_compute_deriv_double(in,out,grid,idir,OW) bind(C,name='p3dfft_compute_deriv_double_f')
       import
-      integer(C_INT) grid,idir
+      integer(C_INT) grid,idir,OW
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
