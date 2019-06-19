@@ -8,18 +8,21 @@ To install P3DFFT, run the following:
 3. run 'make install'
 
 Common Configurations
-=====================
+^^^^^^^^^^^^^^^^^^^^^
 **Comet**
+
 To build with Intel and FFTW::
 
   ./configure --enable-fftw
 
 **Bridges**
+
 To build with Intel and FFTW::
 
   ./configure --enable-fftw CXX=mpiicpc CC=mpiicc FC=mpiifort
 
 **Stampede2**
+
 To build with Intel and FFTW::
 
   ./configure --enable-fftw --with-fftw-lib=$TACC_FFTW3_LIB --with-fftw-inc=$TACC_FFTW3_INC
