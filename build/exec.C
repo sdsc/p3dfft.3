@@ -549,7 +549,16 @@ void printbuf(char *,int[3],int,int);
 	if(trans_type->is_empty) 
 	  memcpy(out,in,prec*dims1[0]*dims1[1]*dims1[2]);
 	
-	else
+	else 
+#ifdef FFTW
+	  if(dt1 > dt2 && !OW) { // C2R
+	    Type1 *buf = new Type1[dims1[0]*dims1[1]*dims1[2]];
+	    memcpy(buf,in,prec*dims1[0]*dims1[1]*dims1[2]);
+	    (*(trans_type->exec))(plan->libplan_out,buf,out);
+	    delete [] buf;
+	  }
+	  else
+#endif
 	  (*(trans_type->exec))(plan->libplan_out,in,out);
       else if(!trans_type->is_empty) 
 
@@ -625,6 +634,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
   out = (Type2 *) out_;
 
   L = trans_dim;
+
+  if(dt2 != 2)
+    printf("Error in exec_deriv: expected complex output type\n");
 
 #ifdef DEBUG
   int taskid;
@@ -751,7 +763,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       return;
     }
 
-  if(mo1[trans_dim] == 0) 
+    if(mo1[trans_dim] == 0) 
     scheme = TRANS_IN;
   else if(mo2[trans_dim] == 0) 
     scheme = TRANS_OUT;
@@ -772,10 +784,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
   if(scheme == TRANS_IN) { // Scheme is transform before reordering
 
-    Type1 *pin_t1;
+    Type1 *pin_t1,*pIN;
     Type2 *tmp,*pin2,*pout2;
     float *pin,*pin1,*pout,*pout1,*ptran2; 
     int ds=sizeof(Type2)/4;
+#ifdef FFTW
+    if(dt1 > dt2 && !OW) {
+      pIN = new Type1[d1[0]*d1[1]*d1[2]];
+      memcpy(pIN,in,sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    }
+    else
+#endif
+      pIN = in;
 
    switch(mc[0]) {
     case 1:
@@ -790,10 +810,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	for(k=0;k <d1[2];k++) {
 	  if(inplace) {
 	    tmp = (Type2 *) (in+k*d1[0]*d1[1]);
-	    (*(trans_type->exec))(plan->libplan_in,in+k*d1[0]*d1[1],tmp);
+	    (*(trans_type->exec))(plan->libplan_in,pin+k*d1[0]*d1[1],tmp);
 	  }
 	  else
-	    (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
+	    (*(trans_type->exec))(plan->libplan_out,pin+k*d1[0]*d1[1],tmp);
 
 	  pout = (float *) out+ds*k*d2[0]*d2[1];
 #ifdef MKL_BLAS
@@ -859,7 +879,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	    (*(trans_type->exec))(plan->libplan_in,in+k*d1[0]*d1[1],tmp);
 	  }
 	  else
-	    (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
+	    (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp);
 
 	  for(i=0;i < d2[1];i+=nb13) {
 	    i2 = min(i+nb13,d2[1]);
@@ -905,7 +925,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb13 < 1) nb13 = 1;
 
 	tmp = new Type2[d2[2]*d2[1]*d2[0]];
-	(*(trans_type->exec))(plan->libplan_out,in,tmp);
+	(*(trans_type->exec))(plan->libplan_out,pIN,tmp);
 	
 	for(k=0;k <d2[0];k+=nb31) {
 	  k2 = min(k+nb31,d2[0]);
@@ -946,7 +966,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb32 < 1) nb32 = 1;
 	
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
-	(*(trans_type->exec))(plan->libplan_out,in,tmp);
+	(*(trans_type->exec))(plan->libplan_out,pIN,tmp);
 	
 	for(k=0;k <d1[1];k+=nb32) {
 	  k2 = min(k+nb32,d1[1]);
@@ -994,7 +1014,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      j2 = min(j+nb23,d1[1]);
 	      for(kk=k; kk < k2; kk++) {
 		for(jj=j; jj < j2; jj++) {
-		  pin_t1 = in +kk*d1[0]*d1[1] +jj*d1[0];
+		  pin_t1 = pIN +kk*d1[0]*d1[1] +jj*d1[0];
 		  pout2 = out + kk * d2[0] + jj * d2[0]*d2[1];
 		  (*(trans_type->exec))(plan->libplan_out,pin_t1,pout2);
 		}
@@ -1004,7 +1024,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	}
 	else { // In-place
 	  tmp = new Type2[d2[0]*d2[1]*d2[2]];
-	  (*(trans_type->exec))(plan->libplan_out,in,tmp);
+	  (*(trans_type->exec))(plan->libplan_out,pIN,tmp);
 
 	  for(k=0;k <d2[1];k+=nb32) {
 	    k2 = min(k+nb32,d2[1]);
@@ -1027,6 +1047,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       break;
    }
     
+#ifdef FFTW
+   if(dt1 > dt2 && !OW)
+     delete [] pIN;
+#endif
+
   }
   else { // Scheme is transform after reordering
 
@@ -2636,6 +2661,12 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //Type2 *out;
   //in = (Type1 *) in_;
   //out = (Type2 *) out_;
+
+   if(trplan->trans_type->is_empty) {
+     mpiplan->exec(in,out);
+     return;
+   }
+
   int *tmpdims;
 
   tmpdims = trplan->grid2->ldims;
@@ -2801,6 +2832,14 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
 #endif
 
+#ifdef FFTW
+  if(trplan->dt1 > trplan->dt2 && !OW) {
+    char *pin = new char[sizeof(Type1)*dims1[0]*dims1[1]*dims1[2]];
+    trplan->exec(pin,(char *) buf,OW);
+    delete [] pin;
+  }
+  else
+#endif
   trplan->exec(src,(char *) buf,OW);
 
 #ifdef DEBUG
