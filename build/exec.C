@@ -725,7 +725,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   void rel_change(int *,int *,int *);
 
   int imo1[3],imo2[3],d1[3],d2[3];
-  int scheme,nb13,nb31;
+  int scheme,nb13,nb31,nb23,nb32;
   
 #ifdef DEBUG
   int taskid;
@@ -840,9 +840,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
       	
       case 2: //1,2,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb31 = nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb31 = nb13 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb13 < 1) nb13 = 1;
 
 	if(OW && dt2*d2[2]*d2[1] <= dt1*d1[0]*d1[1])
@@ -891,9 +893,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)
+	  nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else
+	  nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 
 	tmp = new Type2[d2[2]*d2[1]*d2[0]];
@@ -926,9 +934,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
       
       case 0: //2,0,1
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] > 0)
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else
+	  nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
-	int nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	if(d2[0]>0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	else
+	  nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
 	
 	tmp = new Type2[d2[0]*d2[1]*d2[2]];
@@ -962,9 +976,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] > 0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d1[0]*d1[1] > 0)
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 
 	if((void *) in != (void *) out) {
@@ -1070,10 +1089,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 
       case 2: //1,2,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb13 < 1) nb13 = 1;
+	if(d1[0]*d1[1] > 0)
+	  nb31 = nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb31 = nb13 = 1;
+	if(nb31 < 1){  nb31 = 1; nb13 = 1; }
 
 	if((void *) in == (void *) out) {
 
@@ -1147,9 +1167,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)
+	  nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
@@ -1181,10 +1205,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	
 	break;
       case 0: //2,0,1
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb23 < 1) nb23 = 1;
+	nb23 = nb32;
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
 	
@@ -1218,9 +1242,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+
+	if(d1[0]*d1[1] >0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 	
 	if((void *) in == (void *) out) {
@@ -1295,7 +1324,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   void rel_change(int *,int *,int *);
 
   int imo1[3],imo2[3],d1[3],d2[3];
-  int scheme,nb13,nb31;
+  int scheme,nb13,nb31,nb23,nb32;
   
 #ifdef DEBUG
   int taskid;
@@ -1405,10 +1434,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 	
       case 2: //1,2,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb13 < 1) nb13 = 1;
+	nb13 = nb31;
 
 	// d1[0] -> d2[1]
 	// d1[1] -> d2[2]
@@ -1453,9 +1484,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d1[0]*d1[1] >0)
+	  nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 
 	// d1[0] -> d2[2]
@@ -1495,9 +1530,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	delete [] tmp;
 	break;
       case 0: //2,0,1
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)	
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
-	int nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	if(d2[0] >0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
 	// d1[0] -> d2[2]
 	// d1[1] -> d2[0]
@@ -1539,9 +1578,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 
 	// d1[0] -> d2[0]
@@ -1614,10 +1657,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 
       case 2: //1,2,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)	
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb13 < 1) nb13 = 1;
+	nb13 = nb31;
 
 	// d1[0] -> d2[1]
 	// d1[1] -> d2[2]
@@ -1663,9 +1707,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)	
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)	
+	  nb13 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 	
 	// d1[0] -> d2[2]
@@ -1705,10 +1753,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	
 	break;
       case 0: //2,0,1
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)	
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	if(nb23 < 1) nb23 = 1;
+	nb23 = nb32;
 
 	// d1[0] -> d2[2]
 	// d1[1] -> d2[0]
@@ -1750,9 +1799,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	int nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	if(d1[0]*d1[1] >0)	
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	int nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	if(d2[0]*d2[1] >0)	
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 
 	// d1[0] -> d2[0]
@@ -1802,7 +1855,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
   float *pin,*pout,*pin1,*pout1;
-  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31;
+  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31,nb23,nb32;
   int ds=sizeof(Type2) /4;
 
   // Inverse storage mapping
@@ -1834,10 +1887,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
       break;
 
     case 2: //1,2,0
-      nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
-      nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      if(nb13 < 1) nb13 = 1;
+      nb13 = nb31;
+
       for(k=0;k <d1[2];k+=nb31) {
 	k2 = min(k+nb31,d1[2]);
 	for(i=0;i < d1[0];i+=nb13) {
@@ -1867,10 +1922,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
-      nb13 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      if(nb13 < 1) nb13 = 1;
+      nb13 = nb31;
+
       for(k=0;k <d1[2];k+=nb31) {
 	k2 = min(k+nb31,d1[2]);
 	for(i=0;i < d1[0];i+=nb13) {
@@ -1895,10 +1952,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
       
       break;
     case 0: //2,0,1
-      int nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
+
       for(k=0;k <d1[2];k+=nb32) {
 	k2 = min(k+nb32,d1[2]);
 	for(j=0;j < d1[1];j+=nb23) {
@@ -1924,10 +1986,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     break;
   case 0: //0,2,1
     if(mc[1] == 2) {
-      int nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
+
       for(k=0;k <d1[2];k+=nb32) {
 	k2 = min(k+nb32,d1[2]);
 	for(j=0;j < d1[1];j+=nb23) {
@@ -1977,7 +2044,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
   // Find relative change in memory mapping from input to output
   rel_change(mo1,mo2,mc);
 
-  int nb13,nb31;
+  int nb13,nb31,nb23,nb32;
   int pad = CACHEPAD/sizeof(Type);
   switch(mc[0]) {
   case 1:
@@ -2009,10 +2076,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
       break;
 
     case 2: //1,2,0
-      nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
-      nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+      if(d1[2]*d1[1] >0)	
+	nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+      else nb13 = 1;
       if(nb13 < 1) nb13 = 1;
+
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
@@ -2052,10 +2124,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
-      nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
-      nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+      if(d1[2]*d1[1] >0)	
+	nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+      else nb13 = 1;
       if(nb13 < 1) nb13 = 1;
+
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
@@ -2091,10 +2168,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
       
       break;
     case 0: //2,0,1
-      int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+      if(d1[0]*d1[2] >0)	
+	nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+      else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
+
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
@@ -2132,10 +2214,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
     break;
   case 0: //0,2,1
     if(mc[1] == 2) {
-      int nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+      else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
-      int nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+      if(d1[0]*d1[2] >0)	
+	nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+      else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
+
       tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
@@ -2353,9 +2440,13 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	break;
 	
       case 2: //1,2,0
-	nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(dims1[imo1[0]]*dims1[imo1[1]] > 0)
+	  nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(d[0]*d[1]>0)
+	  nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	else nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 
 	for(i=0;i < numtasks;i++) {
@@ -2398,9 +2489,13 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-	nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(dims1[imo1[0]]*dims1[imo1[1]] > 0)
+	  nb31 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	else nb31 = 1;
 	if(nb31 < 1) nb31 = 1;
-	nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(d[0]*d[1]>0)
+	  nb13 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	else nb13 = 1;
 	if(nb13 < 1) nb13 = 1;
 	
 	for(i=0;i < numtasks;i++) {
@@ -2435,9 +2530,13 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	
 	break;
       case 0: //2,0,1
-	nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(dims1[imo1[0]]*dims1[imo1[1]] > 0)
+	  nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(d[0]*d[1]>0)
+	  nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
@@ -2482,9 +2581,13 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
-	nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	if(dims1[imo1[0]]*dims1[imo1[1]] > 0)
+	  nb32 = CACHE_BL / (sizeof(Type)*dims1[imo1[0]]*dims1[imo1[1]]);
+	else nb32 = 1;
 	if(nb32 < 1) nb32 = 1;
-	nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	if(d[0]*d[1]>0)
+	  nb23 = CACHE_BL / (sizeof(Type)*d[0]*d[1]);
+	else nb23 = 1;
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
