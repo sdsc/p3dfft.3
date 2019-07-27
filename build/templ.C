@@ -291,9 +291,9 @@ void inv_mo(int mo[3],int imo[3]);
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
 
-  //#ifdef DEBUG
+#ifdef DEBUG
     printf("%d: Planning stages: %d %d %d\n",grid1_.taskid,L[0],L[1],L[2]);
-    //#endif
+#endif
 
     if(init_steps) {
       if(grid1_.pgrid[L[0]] != 1) { // Plan a transpose
