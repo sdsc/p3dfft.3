@@ -99,24 +99,6 @@ def runline(platform, mt, output_dir, test):
 	# Output is appended to the test output file in the output directory
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
-# Test for 1x1 dims
-def onebyone(platform, mt, output_dir, test):
-	r = ''
-	if platform == "comet":
-		r = "ibrun --npernode 1 " + test
-	elif platform == "stampede":
-		if mt:
-			r = "ibrun -n 1 -o 0 tacc_affinity " + test
-		else:
-			r = "ibrun -n 1 -o 0 " + test
-	elif platform == "bridges":
-		if mt:
-			rt = "mpirun -n 1 " + test
-		else:
-			r = "mpirun -n 1 " + test
-	# Output is appended to the test output file in the output directory
-	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
-
 # Write all tests for all dims
 def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 	for test in all_tests:
@@ -134,8 +116,6 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
 				batchf.write(runline(platform,mt,output_dir,test))
-			batchf.write("echo '1 1' > dims\n")
-			batchf.write(onebyone(platform, mt, output_dir, test))
 			if uneven:
 				batchf.write("echo '14 26 38 2 1' > stdin\n")
 				batchf.write("echo " + all_dims[0] + " > dims\n")
@@ -158,9 +138,6 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
 				batchf.write(runline(platform, mt, output_dir, test))
-			batchf.write("echo '1 1' > dims\n")
-			batchf.write(onebyone(platform, mt, output_dir, test))
-		# 1x1 dims test
 
 # Test for performance
 #TODO NOT WORKING
