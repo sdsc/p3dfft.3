@@ -149,8 +149,10 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 				dim_out = perm.find('0', 5)/2 - 3
 				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 				batchf.write(runline(platform, mt, output_dir, test))
-				batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
+				# prevent duplicates
+				if dim_in != dim_out:
+					batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIR' in basename:
 			batchf.write("echo '128 128 128 2 1 3' > stdin\n")
 			for dims in all_dims:
