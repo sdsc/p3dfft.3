@@ -127,12 +127,32 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 				# depending on where the first and second 0 are in the memory orders, use that as the dim or transform
 				dim_in = perm.find('0')/2
 				dim_out = perm.find('0', 5)/2 - 3
-				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
-				# prevent duplicates
-				if dim_in != dim_out:
-					batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+				# special test case: 1-dimention sine and cosine tests
+				if 'sin' in basename or 'cos' in basename:
+					if dim_in == 0:
+						batchf.write("echo -e '129 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					elif dim_in == 1:
+						batchf.write("echo -e '128 129 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					elif dim_in == 2:
+						batchf.write("echo -e '128 128 129 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 					batchf.write(runline(platform, mt, output_dir, test))
+					# prevent duplicates
+					if dim_in != dim_out:
+						if dim_out == 0:
+							batchf.write("echo -e '129 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						elif dim_out == 1:
+							batchf.write("echo -e '128 129 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						elif dim_out == 2:
+							batchf.write("echo -e '128 128 129 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						batchf.write(runline(platform, mt, output_dir, test))
+				# general test case
+				else:
+					batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
+					# prevent duplicates
+					if dim_in != dim_out:
+						batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIR' in basename:
 			batchf.write("echo '128 128 128 2 1 3' > stdin\n")
 			for dims in all_dims:
