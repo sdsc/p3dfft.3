@@ -99,24 +99,6 @@ def runline(platform, mt, output_dir, test):
 	# Output is appended to the test output file in the output directory
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
-# Test for 1x1 dims
-def onebyone(platform, mt, output_dir, test):
-	r = ''
-	if platform == "comet":
-		r = "ibrun --npernode 1 " + test
-	elif platform == "stampede":
-		if mt:
-			r = "ibrun -n 1 -o 0 tacc_affinity " + test
-		else:
-			r = "ibrun -n 1 -o 0 " + test
-	elif platform == "bridges":
-		if mt:
-			rt = "mpirun -n 1 " + test
-		else:
-			r = "mpirun -n 1 " + test
-	# Output is appended to the test output file in the output directory
-	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
-
 # Write all tests for all dims
 def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 	for test in all_tests:
@@ -134,8 +116,6 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
 				batchf.write(runline(platform,mt,output_dir,test))
-			batchf.write("echo '1 1' > dims\n")
-			batchf.write(onebyone(platform, mt, output_dir, test))
 			if uneven:
 				batchf.write("echo '14 26 38 2 1' > stdin\n")
 				batchf.write("echo " + all_dims[0] + " > dims\n")
@@ -147,18 +127,37 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 				# depending on where the first and second 0 are in the memory orders, use that as the dim or transform
 				dim_in = perm.find('0')/2
 				dim_out = perm.find('0', 5)/2 - 3
-				batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
-				batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
-				batchf.write(runline(platform, mt, output_dir, test))
+				# special test case: 1-dimention sine and cosine tests
+				if 'sin' in basename or 'cos' in basename:
+					if dim_in == 0:
+						batchf.write("echo -e '129 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					elif dim_in == 1:
+						batchf.write("echo -e '128 129 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					elif dim_in == 2:
+						batchf.write("echo -e '128 128 129 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
+					# prevent duplicates
+					if dim_in != dim_out:
+						if dim_out == 0:
+							batchf.write("echo -e '129 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						elif dim_out == 1:
+							batchf.write("echo -e '128 129 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						elif dim_out == 2:
+							batchf.write("echo -e '128 128 129 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						batchf.write(runline(platform, mt, output_dir, test))
+				# general test case
+				else:
+					batchf.write("echo -e '128 128 128 " + str(dim_in) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+					batchf.write(runline(platform, mt, output_dir, test))
+					# prevent duplicates
+					if dim_in != dim_out:
+						batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
+						batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIR' in basename:
 			batchf.write("echo '128 128 128 2 1 3' > stdin\n")
 			for dims in all_dims:
 				batchf.write("echo " + dims + " > dims\n")
 				batchf.write(runline(platform, mt, output_dir, test))
-			batchf.write("echo '1 1' > dims\n")
-			batchf.write(onebyone(platform, mt, output_dir, test))
-		# 1x1 dims test
 
 # Test for performance
 #TODO NOT WORKING
