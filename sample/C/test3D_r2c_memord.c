@@ -10,10 +10,17 @@ for a normalization factor. It can be used both as a correctness
 test and for timing the library functions.
 
 The program expects 'stdin' file in the working directory, with
-a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here
-  Nx,Ny,Nz are box (grid) dimensions.
+several lines of numbers : 
+
+Nx,Ny,Nz,Ndim,Nrep
+mem_order1(1:3)
+mem_odrer2(1:3)
+
+Here Nx,Ny,Nz are box (grid) dimensions.
   Ndim is the dimentionality of processor grid (1 or 2).
   Nrep is the number of repititions for the timing loop.
+mem_order1 (3 integers valued 0 to 2) is the initial memory ordering for data storage
+mem_order2 (3 integers) is the final memory ordering
 
 Optionally, a file named 'dims' can also be provided to guide in the choice
 of processor geometry in case of 2D decomposition. It should contain
@@ -158,10 +165,8 @@ main(int argc,char **argv)
   type_ccr = p3dfft_init_3Dtype(type_ids2);
 
   //Set up global dimensions of the grid
-  //TODO: Should this depend on mem order?
+
   // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
-  //TODO: What is the difference between processor and grid dimensions?
-  //TODO: Does this depend on mem order?
   gdims[0] = gdims2[0] = nx;
   gdims[1] = gdims2[1] = ny;
   gdims[2] = gdims2[2] = nz;
@@ -172,8 +177,17 @@ main(int argc,char **argv)
   p1 = pdims[0];
   p2 = pdims[1];
 
+  pgrid1[0] = 1;
+  pgrid1[1] = p1;
+  pgrid1[2] = p2;
+
+  pgrid2[0] =p1;
+  pgrid2[1] = p2;
+  pgrid2[2] = 1;
+
+  /*
   for (i = 0; i < 3; i++) {
-    // TODO: Why is the test called 3D when it's only 2D decomposition?
+
     // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
     switch (mem_order1[i]) {
       case 0:
@@ -189,9 +203,10 @@ main(int argc,char **argv)
         printf("Invalid memory order setup value: %d", mem_order1[i]);
         exit(1);
     }
-    //TODO: Why does the 1D not matter if the memory order corresponds to the initial or final grid?
+  */
     //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
-    switch (mem_order2[i]) {
+
+  /*    switch (mem_order2[i]) {
       case 0:
         pgrid2[i] = 1;
         break;
@@ -207,7 +222,8 @@ main(int argc,char **argv)
     }
 
   }
-  //TODO: Does this depend on mem order?
+  */
+
   gdims2[0] = gdims2[0]/2+1;
 
   //Initialize initial and final grids, based on the above information
@@ -256,7 +272,7 @@ main(int argc,char **argv)
   // Warm-up run, forward transform
   p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
-  //TODO: Why not just multiply all three together?
+
   Nglob = mydims1[0]*mydims1[1];
   Nglob *= mydims1[2];
 
