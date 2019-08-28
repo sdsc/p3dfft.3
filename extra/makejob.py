@@ -154,10 +154,11 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 						batchf.write("echo -e '128 128 128 " + str(dim_out) + ' 1\\n' + perm[:5] + '\\n' + perm[6:] + "' > trans.in\n")
 						batchf.write(runline(platform, mt, output_dir, test))
 		elif 'IDIR' in basename:
-			batchf.write("echo '128 128 128 2 1 3' > stdin\n")
-			for dims in all_dims:
-				batchf.write("echo " + dims + " > dims\n")
-				batchf.write(runline(platform, mt, output_dir, test))
+			for direction in range(1, 4):
+				batchf.write("echo '128 128 128 2 1 " + str(direction) + "' > stdin\n")
+				for dims in all_dims:
+					batchf.write("echo " + dims + " > dims\n")
+					batchf.write(runline(platform, mt, output_dir, test))
 
 # Test for performance
 #TODO NOT WORKING
