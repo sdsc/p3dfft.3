@@ -9,7 +9,7 @@ the results are correct, namely the same as in the start except
 for a normalization factor. It can be used both as a correctness
 test and for timing the library functions.
 
-The program expects 'stdin' file in the working directory, with
+The program expects 'memord3d' file in the working directory, with
 several lines of numbers : 
 
 Nx,Ny,Nz,Ndim,Nrep
