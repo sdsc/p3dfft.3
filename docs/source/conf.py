@@ -166,4 +166,5 @@ texinfo_documents = [
 ]
 
 
-
+# To remove a warning
+html_static_path = []
