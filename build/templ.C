@@ -1062,7 +1062,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
     printf("in-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",istride,ostride,idist,odist);
 #endif
 #ifdef FFTW
-    A = (Type1 *) fftw_malloc(size *sizeof(Type1));
+    A = (Type1 *) fftw_malloc(size);
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
       plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
