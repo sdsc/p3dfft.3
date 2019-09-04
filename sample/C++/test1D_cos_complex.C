@@ -236,7 +236,7 @@ using namespace p3dfft;
       printf("Results are incorrect\n");
     else
       printf("Results are correct\n");
-    printf("Max. diff. =%lf\n",diff);
+    printf("Max. diff. =%lg\n",diff);
   }
 
   free(IN); free(OUT); free(FIN);
