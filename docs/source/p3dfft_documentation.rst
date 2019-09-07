@@ -152,7 +152,7 @@ Before using the library it is necessary to call an initialization routine 'p3df
         "*memsize*", "Output (optional)", "Optional argument (array of 3 integers). Memsize can be used to allocate arrays. It contains the dimensions of real-space array that are large enough to contain both input and output of an in-place 3D FFT real-to-complex transform defined by nx,ny,nz,nx_cut,ny_cut,nz_cut."
 
 5. Array Decomposition
-----------------------
+======================
 The p3dfft_setup routine sets up the two-dimensional (2D) array decomposition. P3DFFT employs 2D block decomposition whereby processors are arranged into a 2D grid P1 x P2, based on their MPI rank. Two of the dimensions of the 3D grid are block-distributed across the processor grid, by assigning the blocks to tasks in the rank order. The third dimension of the grid remains undivided, i.e. contained entirely within local memory (see Fig. 1). This scheme is sometimes called pencils decomposition.
 
 A block decomposition is defined by dimensions of the local portion of the array contained within each task, as well as the beginning and ending indices for each dimension defining the array’s location within the global array. This information is returned by p3dfft_get_dims routine which should be called before setting up the data structures of your program (see sample/ subdirectory for example programs).

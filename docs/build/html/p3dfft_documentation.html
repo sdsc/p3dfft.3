@@ -9,6 +9,7 @@
     <title>P3DFFT User Guide &#8212; P3DFFT++ 3.0.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
     
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -328,8 +329,9 @@
 </tr>
 </tbody>
 </table>
+</div>
 <div class="section" id="array-decomposition">
-<h3>5. Array Decomposition<a class="headerlink" href="#array-decomposition" title="Permalink to this headline">¶</a></h3>
+<h2>5. Array Decomposition<a class="headerlink" href="#array-decomposition" title="Permalink to this headline">¶</a></h2>
 <p>The p3dfft_setup routine sets up the two-dimensional (2D) array decomposition. P3DFFT employs 2D block decomposition whereby processors are arranged into a 2D grid P1 x P2, based on their MPI rank. Two of the dimensions of the 3D grid are block-distributed across the processor grid, by assigning the blocks to tasks in the rank order. The third dimension of the grid remains undivided, i.e. contained entirely within local memory (see Fig. 1). This scheme is sometimes called pencils decomposition.</p>
 <p>A block decomposition is defined by dimensions of the local portion of the array contained within each task, as well as the beginning and ending indices for each dimension defining the array’s location within the global array. This information is returned by p3dfft_get_dims routine which should be called before setting up the data structures of your program (see sample/ subdirectory for example programs).</p>
 <p>In P3DFFT, the decompositions of the output and input arrays, while both being two-dimensional, differ from each other. The reason for this is as follows. In 3D Fourier Transform it is necessary to transpose the data a few times (two times for two-dimensional decomposition) in order to rearrange the data so as to always perform one-dimensional FFT on data local in memory of each processing element. It would be possible to transpose the data back to the original form after the 3D transform is done, however it often makes sense to save significant time by forgoing this final transpose. All the user has to do is to operate on the output array while keeping in mind that the data are in a transposed form. The backward (complex-to-real) transform takes the array in a transposed form and produces a real array in the original form. The rest of this section clarifies exactly the original and transposed form of the arrays.</p>
@@ -394,7 +396,6 @@
 </tr>
 </tbody>
 </table>
-</div>
 </div>
 <div class="section" id="forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms">
 <h2>6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms<a class="headerlink" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms" title="Permalink to this headline">¶</a></h2>
@@ -487,10 +488,8 @@
 <li><a class="reference internal" href="#directory-structure-and-files">1. Directory Structure and Files</a></li>
 <li><a class="reference internal" href="#installing-p3dfft">2. Installing p3dfft</a></li>
 <li><a class="reference internal" href="#p3dfft-module">3. p3dfft module</a></li>
-<li><a class="reference internal" href="#initialization">4. Initialization</a><ul>
+<li><a class="reference internal" href="#initialization">4. Initialization</a></li>
 <li><a class="reference internal" href="#array-decomposition">5. Array Decomposition</a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms">6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms</a></li>
 <li><a class="reference internal" href="#complex-array-storage-definition">7. Complex array storage definition</a></li>
 <li><a class="reference internal" href="#multivariable-transforms">8. Multivariable transforms</a></li>
