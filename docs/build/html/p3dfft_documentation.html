@@ -4,24 +4,30 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>P3DFFT User Guide &#8212; P3DFFT++ 3.0.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '3.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Download P3DFFT++" href="download_p3dfft++.html" />
     <link rel="prev" title="Download P3DFFT" href="download_p3dfft.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -401,7 +407,7 @@
 <h2>6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms<a class="headerlink" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms" title="Permalink to this headline">¶</a></h2>
 <p>P3DFFT versions 2.7.1 and higher implement transforms for one or more than one independent arrays/variables simultaneously. An example of this is 3 components of a velocity field. Multivariable transforms achieve greater speed than single-variable transforms, especially for grids of smaller size, due to buffer aggregation in inter-processor exchanges.</p>
 <p>Forward transform is implemented by the p3dfft_ftran_r2c subroutine using the following format:</p>
-<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_ftran_r2c</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_ftran_r2c(IN,OUT,op)
 </pre></div>
 </div>
 <p>The input IN is an array of real numbers with dimensions defined by array type with ip=1 (see Table 2 above), with X dimension contained entirely within each task, and Y and Z dimensions distributed among P1 and P2 tasks correspondingly. The output OUT is an array of complex numbers with dimensions defined by array type with ip=2, i.e. Z dimension contained entirely, and X and Y dimensions distributed among P1 and P2 tasks respectively. The op argument is a 3- letter character string indicating the type of transform desired. Currently only Fourier transforms are supported in X and Y (denoted by symbol f) and the following transforms in Z:</p>
@@ -424,7 +430,7 @@
 </table>
 <p>Empty transform can be useful for someone implementing custom transform in Z dimension. Example: op=’ffc’ means Fourier transform in X and Y, and a cosine transform in Z. The DCT-I kind of transform is performed (DST-I for sine), the definition of which can be found here: <a class="reference external" href="http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-I">http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-I</a></p>
 <p>Backward transform is implemented by the p3dfft_btran_c2r subroutine using the following format:</p>
-<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_btran_c2r</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_btran_c2r(IN,OUT,op)
 </pre></div>
 </div>
 <p>The input IN is an array of complex numbers with dimensions defined by array type with ip=2 (see Table 2 above), i.e. Z dimension is contained entirely, and X and Y dimensions are distributed among P1 and P2 tasks correspondingly. The output OUT is an array of real numbers with dimensions defined by array type with ip=1, i.e. X dimension is contained entirely within each task, and Y and Z are dimensions distributed among P1 and P2 tasks respectively. The op argument is similar to forward transform, with the first character of the string being one of t,c,s,n or 0, and the second and third being f. Example: op=’nff’ means no operation in Z, backward Fourier transforms in Y and X.</p>
@@ -436,9 +442,9 @@
 <div class="section" id="multivariable-transforms">
 <h2>8. Multivariable transforms<a class="headerlink" href="#multivariable-transforms" title="Permalink to this headline">¶</a></h2>
 <p>Sometime communication performance of transposes such as those included in P3DFFT can be improved by combining several transforms into a single operation. (This allows us to aggregate messages during interprocessor data exchange). This is especially important when transforming small grids and/or when using systems with high interconnect latencies. P3DFFT provides multivariable transforms to make use of this idea. Instead of an 3D array as input parameter these subroutines accept a 4D array, with the extra dimension being the index of independent variables to be transformed (for example this could be 3 velocity components). The following is the syntax for multivariable transforms:</p>
-<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_ftran_many_r2c</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="n">dim_in</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">dim_out</span><span class="p">,</span><span class="n">nv</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_ftran_many_r2c(IN,dim_in,OUT,dim_out,nv,op)
 
-<span class="n">p3dfft_btran_many_c2r</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="n">dim_in</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">dim_out</span><span class="p">,</span><span class="n">nv</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
+p3dfft_btran_many_c2r(IN,dim_in,OUT,dim_out,nv,op)
 </pre></div>
 </div>
 <p>The multivariable transform routines for both forward and backward transforms have an additional argument nv (integer) representing the number of independent variables in the input/output arrays. The spacing between these independent variables is defined by dim_in and dim_out (integer) arguments for input/output arrays respectively. Both dim_in and dim_out should not be less than the size of the grid returned by get_dims routine. See sample program driver_sine_many.F90, driver_sine_inplace_many.F90 or driver_rand_many for an example of such use.</p>
@@ -480,7 +486,7 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
+  <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">P3DFFT User Guide</a><ul>
 <li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
@@ -517,14 +523,12 @@
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -548,7 +552,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
     </div>
   </body>
 </html>
