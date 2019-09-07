@@ -4,4 +4,4 @@ The latest release of P3DFFT can be downloaded `here <https://github.com/sdsc/p3
 
 Be sure to familiarize yourself with the installation instructions in order to build the library.
 
-For more detail and usage instructions, see the User Guide.
+For more detail and usage instructions, see :ref:`p3dfft_documentation`.

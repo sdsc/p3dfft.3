@@ -83,7 +83,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'bizstyle'
+html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -101,12 +101,12 @@ html_static_path = ['nstatic']
 #
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-    ]
-}
+#html_sidebars = {
+#    '**': [
+#        'relations.html',  # needs 'show_related': True theme option to display
+#        'searchbox.html',
+#    ]
+#}
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -165,6 +165,8 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+
+smartquotes = False
 
 # To remove a warning
 html_static_path = []

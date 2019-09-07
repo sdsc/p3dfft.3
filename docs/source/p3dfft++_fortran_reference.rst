@@ -9,188 +9,200 @@ In Fortran the grid structure is hidden and is operated on by integer handles.
 
 p3dfft_setup
 ------------
-subroutine p3dfft_setup
+.. code-block:: fortran
 
-Function: called once in the beginning of use to initialize P3DFFT++.
+        subroutine p3dfft_setup
+
+*Function*: called once in the beginning of use to initialize P3DFFT++.
 
 p3dfft_cleanup
 --------------
-subroutine p3dfft_cleanup
+.. code-block:: fortran
 
-Function: called once before exit and after the use to free up P3DFFT++ structures.
+        subroutine p3dfft_cleanup
+
+*Function*: called once before exit and after the use to free up P3DFFT++ structures.
 
 p3dfft_init_grid
 ----------------
-function p3dfft_init_grid(ldims, glob_start, gdims, dim_conj_sym, pgrid, proc_order, mem_order, mpicomm)
+.. code-block:: fortran
 
-integer(C_INT) p3dfft_init_grid
+        function p3dfft_init_grid(ldims, glob_start, gdims, dim_conj_sym, pgrid, proc_order, mem_order, mpicomm)
 
-Function: initialize a new grid
+        integer(C_INT) p3dfft_init_grid
 
-Arguments:
+*Function*: initialize a new grid
 
-IN:
+*Arguments*:
 
-integer gdims(3): three global grid dimensions (logical order - X, Y, Z)
+.. csv-table:: **IN**
+        :widths: auto
 
-integer dim_conj_sym: dimension of the array in which a little less than half of the elements are omitted due to conjugate symmetry. This argument should be non-negative only for complex-valued arrays resulting from real-to-complex FFT in the given dimension.
+        "integer gdims(3)", "Three global grid dimensions (logical order - X, Y, Z)"
+        "integer dim_conj_sym", "Dimension of the array in which a little less than half of the elements are omitted due to conjugate symmetry. This argument should be non-negative only for complex-valued arrays resulting from real-to-complex FFT in the given dimension."
+        "integer pgrid(3)", "Up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension."
+        "integer proc_order(3)", "A permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc"
+        "integer mem_order(3)", "A permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order(i0) = 0 means that the i0's logical dimension is stored with stride=1 in memory. Similarly, mem_order(i1) =1 means that i1's logical dimension is stored with stride=ldims(i0) etc"
+        "integer mpicomm", "The MPI communicator in which this grid lives"
 
-integer pgrid(3): up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension.
+|
 
-integer proc_order(3): a permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc
+.. csv-table:: **OUT**
+        :widths: auto
 
-integer mem_order(3): a permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order(i0) = 0 means that the i0's logical dimension is stored with stride=1 in memory. Similarly, mem_order(i1) =1 means that i1's logical dimension is stored with stride=ldims(i0) etc
+        "integer ldims(3)", "Local dimensions of the grid for each MPI tasks, in order of logical dimensions numbering (XYZ). Essentially ldims = gdims / pgrid."
+        "integer glob_start(3)", "Starting coordinates of the local portion of the grid within the global grid."
 
-integer mpicomm: the MPI communicator in which this grid lives
-
-OUT:
-
-integer ldims(3):local dimensions of the grid for each MPI tasks, in order of logical dimensions numbering (XYZ). Essentially ldims = gdims / pgrid.
-
-integer glob_start(3): starting coordinates of the local portion of the grid within the global grid.
-
-Return value: an integer handle of the initialized grid, to be used later by various routines accessing the grid.
+*Return value*: an integer handle of the initialized grid, to be used later by various routines accessing the grid.
 
 p3dfft_free_grid_f
 ------------------
-subroutine p3dfft_free_grid_f(grid)
+.. code-block:: fortran
 
-Function: frees the grid handle
+        subroutine p3dfft_free_grid_f(grid)
 
-Arguments:
+*Function*: frees the grid handle
 
-IN: integer(C_INT) grid - the handle of the grid to be freed
+*Arguments*:
+
+.. csv-table:: **IN**
+        :widths: auto
+
+        "integer(C_INT) grid", "The handle of the grid to be freed"
 
 One-dimensional (1D) Transforms
 ===============================
 The following predefined 1D transforms are available:
 
-P3DFFT_EMPTY_TYPE - empty transform
+.. csv-table::
+        :widths: auto
 
-P3DFFT_R2CFFT_S, P3DFFT_R2CFFT_D - real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively
-
-P3DFFT_C2RFFT_S, P3DFFT_C2RFFT_D - complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively
-
-P3DFFT_CFFT_FORWARD_S, P3DFFT_CFFT_FORWARD_D - complex forward FFT (as defined in FFTW manual), in single and double precision respectively
-
-P3DFFT_CFFT_BACKWARD_S, P3DFFT_CFFT_BACKWARD_D - complex backward FFT (as defined in FFTW manual), in single and double precision respectively
-
-P3DFFT_DCT<x>_REAL_S, P3DFFT_DCT1_REAL_D - cosine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4
-
-P3DFFT_DST<x>_REAL_S, P3DFFT_DST1_REAL_D - sine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4
-
-P3DFFT_DCT<x>_COMPLEX_S, P3DFFT_DCT1_COMPLEX_D - cosine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4
-
-P3 DFFT_DST<x>_COMPLEX_S, P3DFFT_DST1_COMPLEX_D - sine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4
+        "P3DFFT_EMPTY_TYPE", "Empty transform"
+        "P3DFFT_R2CFFT_S, P3DFFT_R2CFFT_D", "Real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "P3DFFT_C2RFFT_S, P3DFFT_C2RFFT_D", "Complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "P3DFFT_CFFT_FORWARD_S, P3DFFT_CFFT_FORWARD_D", "Complex forward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "P3DFFT_CFFT_BACKWARD_S, P3DFFT_CFFT_BACKWARD_D", "Complex backward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "P3DFFT_DCT<x>_REAL_S, P3DFFT_DCT1_REAL_D", "Cosine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4"
+        "P3DFFT_DST<x>_REAL_S, P3DFFT_DST1_REAL_D", "Sine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4"
+        "P3DFFT_DCT<x>_COMPLEX_S, P3DFFT_DCT1_COMPLEX_D", "Cosine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4"
+        "P3DFFT_DST<x>_COMPLEX_S, P3DFFT_DST1_COMPLEX_D", "Sine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4"
 
 1D transform planning
 ---------------------
-function p3dfft_plan_1Dtrans_f(gridIn, gridOut, type, dim, inplace)
+.. code-block:: fortran
 
-integer p3dfft_plan_1Dtrans
+        function p3dfft_plan_1Dtrans_f(gridIn, gridOut, type, dim, inplace)
 
-Function: defines and plans a 1D transform of a 3D array in a given dimension
+        integer p3dfft_plan_1Dtrans
 
-Arguments:
+*Function*: defines and plans a 1D transform of a 3D array in a given dimension
 
-IN:
+*Arguments*:
 
-integer gridIn:initial grid handle
+.. csv-table:: **IN**
+        :widths: auto
 
-integer gridOut: destination grid handle
-
-integer type: 1D transform type
-
-integer dim:dimension rank of the 3D array which should be transformed. valid values are 0, 1 or 2. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local.
-
-integer inplace: nonzero value if the transform is in-place.
+        "integer gridIn", "Initial grid handle"
+        "integer gridOut", "Destination grid handle"
+        "integer type", "1D transform type"
+        "integer dim", "Dimension rank of the 3D array which should be transformed. valid values are 0, 1 or 2. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local."
+        "integer inplace", "Nonzero value if the transform is in-place."
 
 1D transform execution
 ----------------------
-subroutine p3dfft_exec_1Dtrans_single(mytrans,in,out)
+.. code-block:: fortran
 
-subroutine p3dfft_exec_1Dtrans_double(mytrans,in,out)
+        subroutine p3dfft_exec_1Dtrans_single(mytrans,in,out)
 
-Function: Executes a 1D transform of a 3D array, in single or double precision
+        subroutine p3dfft_exec_1Dtrans_double(mytrans,in,out)
 
-Arguments:
+*Function*: Executes a 1D transform of a 3D array, in single or double precision
 
-IN:
+*Arguments*:
 
-mytrans: the handle of a 1D transform predefined earlier with p3dfft_plan_1Dtrans.
+.. csv-table:: **IN**
+        :widths: auto
 
-in: 3D array to be transformed
+        "mytrans", "The handle of a 1D transform predefined earlier with p3dfft_plan_1Dtrans."
+        "in", "3D array to be transformed"
+        "out", "Destination array (can be the same if inplace was nonzero when defining mytrans)"
 
-out: destination array (can be the same if inplace was nonzero when defining mytrans)
+.. note::
 
-Notes:
+        1) If inplace was not defined the input and output arrays must be non-overlapping.
 
-1) If inplace was not defined the input and output arrays must be non-overlapping.
+        2) This transform is done in the dimension specified in p3dfft_plan_1Dtrans, and this dimension should be local for both input and output arrays.
 
-2) This transform is done in the dimension specified in p3dfft_plan_1Dtrans, and this dimension should be local for both input and output arrays.
-
-3) This subroutine can be called multiple times with the same mytrans and same or different in/out.
+        3) This subroutine can be called multiple times with the same mytrans and same or different in/out.
 
 Three-dimensional transforms
 ============================
 3D transform planning
 ---------------------
-function p3dfft_plan_3Dtrans_f(gridIn,gridOut,type,inplace, overwrite)
+.. code-block:: fortran
 
-integer p3dfft_plan_3Dtrans_f
+        function p3dfft_plan_3Dtrans_f(gridIn,gridOut,type,inplace, overwrite)
 
-Function: defines and plans a 3D transform
+        integer p3dfft_plan_3Dtrans_f
 
-Arguments:
+*Function*: defines and plans a 3D transform
 
-integer gridIn: initial grid handle
+*Arguments*:
 
-integer gridOut: destination grid handle
+.. csv-table::
+        :widths: auto
 
-integer type(3): three 1D transform types making up the desired 3D transform
+        "integer gridIn", "Initial grid handle"
+        "integer gridOut", "Destination grid handle"
+        "integer type(3)", "Three 1D transform types making up the desired 3D transform"
+        "integer inplace", "If nonzero, the transform takes place in-place"
+        "integer overwrite", "Nonzero if the input can be overwritten"
 
-integer inplace: if nonzero, the transform takes place in-place
+*Return value*: a handle of the 3D transform
 
-integer overwrite: nonzero if the input can be overwritten
-
-Return value: a handle of the 3D transform
-
-Notes: The final grid may or may not be the same as the initial grid. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
+.. note:: The final grid may or may not be the same as the initial grid. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
 3D transform execution
 ----------------------
-subroutine p3dfft_exec_3Dtrans_single(mytrans,in,out)
+.. code-block:: fortran
 
-subroutine p3dfft_exec_3Dtrans_double(mytrans,in,out)
+        subroutine p3dfft_exec_3Dtrans_single(mytrans,in,out)
 
-Function: Executes a predefined 3D transform in single or double precision
+        subroutine p3dfft_exec_3Dtrans_double(mytrans,in,out)
 
-Arguments:
+*Function*: Executes a predefined 3D transform in single or double precision
 
-mytrans: the handle of the predefined 3D transform
+*Arguments*:
 
-in: input array
+.. csv-table::
+        :widths: auto
 
-out: output array
+        "mytrans", "The handle of the predefined 3D transform"
+        "in", "Input array"
+        "out", "Output array"
 
-Notes: this subroutine can be called multiple times for the same mytrans and same or different in/out.Input and output arrays are local portions of the global 3D array, assumed to be stored contiguously in memory following the definition of the grids in planning stage.
+.. note:: this subroutine can be called multiple times for the same mytrans and same or different in/out.Input and output arrays are local portions of the global 3D array, assumed to be stored contiguously in memory following the definition of the grids in planning stage.
 
 3D Spectral Derivative
 ----------------------
-p3dfft_exec_3Dtrans_single(mytrans, In, Out, idir)
+.. code-block:: fortran
 
-p3dfft_exec_3Dtrans_double(mytrans, In, Out, idir)
+        p3dfft_exec_3Dtrans_single(mytrans, In, Out, idir)
 
-Function: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber; in single or double precision, respectively
+        p3dfft_exec_3Dtrans_double(mytrans, In, Out, idir)
 
-Arguments:
+*Function*: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber; in single or double precision, respectively
 
-In and Out are input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of Grid in planning stage.
+*Arguments*:
 
-integer idir is the dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2.
+.. csv-table::
+        :widths: auto
 
-Notes:
+        "In and Out", "Input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of Grid in planning stage."
+        "integer idir", "The dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2."
 
-1) Unless inplace was defined in the planning stage of mytrans, In and Out must be non-overlapping
+.. note::
 
-2) These functions can be used multiple times after the 3D transform has been defined and planned.
+        1) Unless inplace was defined in the planning stage of mytrans, In and Out must be non-overlapping
+
+        2) These functions can be used multiple times after the 3D transform has been defined and planned.

@@ -9,7 +9,9 @@ For C++ users all P3DFFT++ objects are defined within the p3dfft namespace, in o
 
 Setup and Grid layout
 =====================
-The public portion of the grid class is below::
+The public portion of the grid class is below:
+
+.. code-block:: cpp
 
         class grid {
 
@@ -54,23 +56,23 @@ The public portion of the grid class is below::
 
 *grid* constructor
 ------------------
-grid(int gdims[3],int dim_conj_sym,int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm);
+.. code-block:: cpp
+
+        grid(int gdims[3],int dim_conj_sym,int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm);
 
 *Function*:Initializes a new grid with specified parameters.
 
 *Arguments*:
 
-        gdims: three global grid dimensions (logical order - X, Y, Z)
+.. csv-table::
+        :widths: auto
 
-        dim_conj_sym: dimension of conjugate symmetry, non-negative only for complex arrays resulting from real-to-complex FFT in the given dimension. This is logical, not storage, dimension, with valid numbers 0 - 2, and -1 implying no conjugate symmetry.
-
-        pgrid: up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension.
-
-        proc_order: a permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc
-
-        mem_order: a permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order[i0] = 0 means that the i0's logical dimension is stored with stride=1 in memory. Similarly, mem_order[i1] =1 means that i1's logical dimension is stored with stride=ldims[i0] etc
-
-        mpicomm: the MPI communicator in which this grid lives
+        "gdims", "Three global grid dimensions (logical order - X, Y, Z)"
+        "dim_conj_sym", "Dimension of conjugate symmetry, non-negative only for complex arrays resulting from real-to-complex FFT in the given dimension. This is logical, not storage, dimension, with valid numbers 0 - 2, and -1 implying no conjugate symmetry."
+        "pgrid", "Up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension."
+        "proc_order", "A permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc"
+        "mem_order", "A permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order[i0] = 0 means that the i0's logical dimension is stored with stride=1 in memory. Similarly, mem_order[i1] =1 means that i1's logical dimension is stored with stride=ldims[i0] etc"
+        "mpicomm", "The MPI communicator in which this grid lives"
 
 P3DFFT++ Transforms
 ===================
@@ -82,71 +84,74 @@ One-Dimensional (1D) Transforms
 -------------------------------
 The following predefined 1D transforms are available:
 
-EMPTY_TYPE - empty transform
+.. csv-table::
+        :widths: auto
 
-R2CFFT_S, P3DFFT_R2CFFT_D - real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively
-
-C2RFFT_S, P3DFFT_C2RFFT_D - complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively
-
-CFFT_FORWARD_S, CFFT_FORWARD_D - complex forward FFT (as defined in FFTW manual), in single and double precision respectively
-
-CFFT_BACKWARD_S, CFFT_BACKWARD_D - complex backward FFT (as defined in FFTW manual), in single and double precision respectively
-
-DCT<x>_REAL_S, DCT1_REAL_D - cosine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4
-
-DST<x>_REAL_S, DST1_REAL_D - sine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4
-
-DCT<x>_COMPLEX_S, DCT1_COMPLEX_D - cosine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4
-
-DST<x>_COMPLEX_S, DST1_COMPLEX_D - sine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4
+        "EMPTY_TYPE", "Empty transform"
+        "R2CFFT_S, P3DFFT_R2CFFT_D", "Real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "C2RFFT_S, P3DFFT_C2RFFT_D", "Complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "CFFT_FORWARD_S, CFFT_FORWARD_D", "Complex forward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "CFFT_BACKWARD_S, CFFT_BACKWARD_D", "Complex backward FFT (as defined in FFTW manual), in single and double precision respectively"
+        "DCT<x>_REAL_S, DCT1_REAL_D", "Cosine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4"
+        "DST<x>_REAL_S, DST1_REAL_D", "Sine transform for real-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4"
+        "DCT<x>_COMPLEX_S, DCT1_COMPLEX_D", "Cosine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4"
+        "DST<x>_COMPLEX_S, DST1_COMPLEX_D", "Sine transform for complex-numbered data, in single and double precision, where <x> stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4"
 
 Custom transform types
 ^^^^^^^^^^^^^^^^^^^^^^
 Custom 1D transforms can be defined by the user through trans_type1D class template.
 
-template <class Type1,class Type2> class trans_type1D : public gen_trans_type{
+.. code-block:: cpp
 
-int ID;
-public :
+        template <class Type1,class Type2> class trans_type1D : public gen_trans_type{
 
-typedef long (\*doplan_type)(const int \*n,int howmany,Type1 \*in,const int \*inembed,int istride,int idist,Type2 \*out,const int \*onembed,int ostride,int odist,...);
+        int ID;
+        public :
 
-long (\*doplan)(...);
-void (\*exec)(...);
+        typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,...);
 
-trans_type1D(const char \*name, long (\*doplan\_)(...),void (\*exec)(...)=NULL,int isign=0);
-inline int getID() {return(ID);}
-trans_type1D(const trans_type1D &rhs); 
-~trans_type1D();
+        long (*doplan)(...);
+        void (*exec)(...);
 
-};
+        trans_type1D(const char *name, long (*doplan_)(...),void (*exec)(...)=NULL,int isign=0);
+        inline int getID() {return(ID);}
+        trans_type1D(const trans_type1D &rhs); 
+        ~trans_type1D();
+
+        };
 
 This class template is a derivative of gen_trans_type1D class, defined as follows:
 
-class gen_trans_type {
-public :
-char \*name;
-int isign; // forward (-1) or backward (+1), in case this is complex FFT
-bool is_set,is_empty;
-int dt1,dt2; //Datatype before and after
-int prec; // precision for a real value in bytes (4 or 8)
-gen_trans_type(const char \*name\_,int isign_=0);
-~gen_trans_type();
-bool operator==(const gen_trans_type &) const;
-};
+.. code-block:: cpp
+
+        class gen_trans_type {
+        public :
+        char *name;
+        int isign; // forward (-1) or backward (+1), in case this is complex FFT
+        bool is_set,is_empty;
+        int dt1,dt2; //Datatype before and after
+        int prec; // precision for a real value in bytes (4 or 8)
+        gen_trans_type(const char *name_,int isign_=0);
+        ~gen_trans_type();
+        bool operator==(const gen_trans_type &) const;
+        };
 
 In order to define a custom transform type, the user needs to provide planning and execution functions (doplan and exec).  For example, in case of a complex FFT implemented through FFTW, the following is how the transform type is constructed:
 
-char \*name = "Complex-to-complex Fourier Transform, forward transform, double precision";
-int isign = FFTW_FORWARD;
-trans_type1D<complex_double,complex_double> \*mytype = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) fftw_plan_many_dft,(void (*)(...)) exec_c2c_d,isign);
+.. code-block:: cpp
+
+        char *name = "Complex-to-complex Fourier Transform, forward transform, double precision";
+        int isign = FFTW_FORWARD;
+        trans_type1D<complex_double,complex_double> *mytype = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) fftw_plan_many_dft,(void (*)(...)) exec_c2c_d,isign);
 
 where exec_c2c_d is defined as follows:
 
-void exec_c2c_d(long plan,complex_double \*in,complex_double \*out)
-{
-fftw_execute_dft((fftw_plan) plan,(fftw_complex \*) in,(fftw_complex \*) out);
-}
+.. code-block:: cpp
+
+        void exec_c2c_d(long plan,complex_double *in,complex_double *out)
+        {
+        fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
+        }
 
 Planning 1D transform 
 ^^^^^^^^^^^^^^^^^^^^^
@@ -154,23 +159,24 @@ Planning 1D transform
 
 Two constructors are provided.
 
-template <class TypeIn,class TypeOut> class transplan::transplan(const grid &gridIn,const grid &gridOut,const gen_trans_type \*type,const int d, const bool inplace\_);
+.. code-block:: cpp
 
-template <class TypeIn,class TypeOut> class transplan::transplan(const grid &gridIn,const grid &gridOut,const int type,const int d, const bool inplace\_);
+        template <class TypeIn,class TypeOut> class transplan::transplan(const grid &gridIn,const grid &gridOut,const gen_trans_type *type,const int d, const bool inplace_);
 
-Function: define and plan a 1D transform of a 3D array
+        template <class TypeIn,class TypeOut> class transplan::transplan(const grid &gridIn,const grid &gridOut,const int type,const int d, const bool inplace_);
 
-Arguments:
+*Function*: define and plan a 1D transform of a 3D array
 
-   gridIn:initial grid descriptor
+*Arguments*:
 
-   gridOut:final grid descriptor
+.. csv-table::
+        :widths: auto
 
-type:the type of the 1D transform (either as a predefined integer parameter, or as a class gen_trans_type.
-
-d: the dimension to be transformed. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local.
-
-inplace: true for in-place transform, false for out-of-place.
+        "gridIn", "Initial grid descriptor"
+        "gridOut", "Final grid descriptor"
+        "type", "The type of the 1D transform (either as a predefined integer parameter, or as a class gen_trans_type."
+        "d", "The dimension to be transformed. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local."
+        "inplace", "True for in-place transform, false for out-of-place."
 
 Releasing 1D transform handle
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,15 +184,20 @@ To release a 1D transform handle, simply delete the corresponding transplan clas
 
 Executing 1D transform
 ^^^^^^^^^^^^^^^^^^^^^^
-template <class TypeIn,class TypeOut> class transplan::exec(char \*In, char \*Out);
+.. code-block:: cpp
 
-Function: Executes the pre-planned 1D transform of a 3D array
+        template <class TypeIn,class TypeOut> class transplan::exec(char *In, char *Out);
 
-Arguments:
+*Function*: Executes the pre-planned 1D transform of a 3D array
 
-   In and Out are pointers to input and output arrays, cast as pointers to char. They contain the local portion of the 3D input and output arrays, arranged as a contiguous sequence of numbers according to local grid dimensions and the memory order of initial and final grid objects respectively.
+*Arguments*:
 
-*Notes*: If the transform is out-of-place, then these arrays must be non-overlapping. The execution can be performed many times with the same handle and same or different input and output arrays.
+.. csv-table::
+        :widths: auto
+
+        "In and Out", "Pointers to input and output arrays, cast as pointers to char. They contain the local portion of the 3D input and output arrays, arranged as a contiguous sequence of numbers according to local grid dimensions and the memory order of initial and final grid objects respectively."
+
+.. note:: If the transform is out-of-place, then these arrays must be non-overlapping. The execution can be performed many times with the same handle and same or different input and output arrays.
 
 Three-dimensional Transforms
 ----------------------------
@@ -204,64 +215,78 @@ trans_type3D constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Two constructors are provided for trans_type3D (in addition to a copy constructor):
 
-trans_type3D::trans_type3D(const gen_trans_type \*types_[3]); 
-trans_type3D::trans_type3D(const int types[3]);
+.. code-block:: cpp
+
+        trans_type3D::trans_type3D(const gen_trans_type *types_[3]); 
+        trans_type3D::trans_type3D(const int types[3]);
 
 Types is an array of 3 1D transform types, either as integer type IDs, or gen_trans_type classes.
 
 trans_type3D class has the following public members:
 
-char \*name;
-int dtIn,dtOut; // Datatypes for input and output: 1 is real, 2 is complex
-int prec; // Datatype precision for a real value in bytes: 4 for single, 8 for double precision
+.. code-block:: cpp
 
-bool is_set;
-int types[3]; // 3 1D transform types
+        char *name;
+        int dtIn,dtOut; // Datatypes for input and output: 1 is real, 2 is complex
+        int prec; // Datatype precision for a real value in bytes: 4 for single, 8 for double precision
+
+        bool is_set;
+        int types[3]; // 3 1D transform types
 
 Transform3D constructor
 ^^^^^^^^^^^^^^^^^^^^^^^
 In C++ 3D transforms are handled through class template transform3D, with input and output datatypes TypeIn and TypeOut. Often these will be the same, however some transforms have different types on input and output, for example real-to-complex FFT. In all cases the floating point precision (single/double) of the initial and final types should match.
 
-template<class TypeIn,class TypeOut> class transform3D::transform3D( const grid &grid_in, const grid &grid_out, const trans_type3D \*type, const bool inplace, const bool Overwrite);
+.. code-block:: cpp
 
-Function: defines and plans a 3D transform
+        template<class TypeIn,class TypeOut> class transform3D::transform3D( const grid &grid_in, const grid &grid_out, const trans_type3D *type, const bool inplace, const bool Overwrite);
 
-Arguments:
+*Function*: defines and plans a 3D transform
 
-gridIn: Initial grid configuration
+*Arguments*:
 
-gridOut:Final grid configuration
+.. csv-table::
+        :widths: auto
 
-type: pointer to a 3D transform type class
-
-inplace: true is this is an in-place transform; false if an out-of-place transform.
-
-Overwrite (optional): Indicates whether input can be overwritten (true=yes, default is no)
+        "gridIn", "Initial grid configuration"
+        "gridOut", "Final grid configuration"
+        "type", "pointer to a 3D transform type class"
+        "inplace", "true is this is an in-place transform; false if an out-of-place transform."
+        "Overwrite (optional)", "Indicates whether input can be overwritten (true=yes, default is no)"
 
 Transform3D Execution
 ^^^^^^^^^^^^^^^^^^^^^
-template<class TypeIn,class TypeOut> class transform3D::exec(TypeIn \*In,TypeOut \*Out);
+.. code-block:: cpp
 
-Function: executes a 3D transform
+        template<class TypeIn,class TypeOut> class transform3D::exec(TypeIn *In,TypeOut *Out);
 
-Arguments:
+*Function*: executes a 3D transform
 
-   In and Out: pointers to input and output arrays. In case of in-place transform they can point to the same location. For out-of-place transforms the arrays must be non-overlapping.
+*Arguments*:
+
+.. csv-table::
+        :widths: auto
+
+        "In and Out", "Pointers to input and output arrays. In case of in-place transform they can point to the same location. For out-of-place transforms the arrays must be non-overlapping."
 
 Spectral Derivative for 3D array
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-template<class TypeIn,class TypeOut> class transform3D::exec_deriv(TypeIn \*In,TypeOut \*Out, int idir);
+.. code-block:: cpp
 
-Function: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber. This function is defined only for complex-valued output arrays (single or double precision), i.e. TypeOut must be either mycomplex or complex_double.
+        template<class TypeIn,class TypeOut> class transform3D::exec_deriv(TypeIn *In,TypeOut *Out, int idir);
 
-Arguments:
+*Function*: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber. This function is defined only for complex-valued output arrays (single or double precision), i.e. TypeOut must be either mycomplex or complex_double.
 
-In and Out are pointers to input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of grids in planning stage.
+*Arguments*:
 
-idir is the dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2.
+.. csv-table::
+        :widths: auto
 
-Notes:
+        "In and Out", "Pointers to input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of grids in planning stage."
+        "idir", "The dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2."
 
-1) Unless inplace was defined in the planning stage of mytrans, In and Out must be non-overlapping
+.. note::
 
-2) This function can be used multiple times after the 3D transform has been defined and planned.
+        1) Unless inplace was defined in the planning stage of mytrans, In and Out must be non-overlapping
+
+        2) This function can be used multiple times after the 3D transform has been defined and planned.

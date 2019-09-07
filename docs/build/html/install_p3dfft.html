@@ -1,37 +1,26 @@
 
-
-<!doctype html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Installing P3DFFT &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '3.0.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Download P3DFFT" href="download_p3dfft.html" />
-    <link rel="prev" title="Introduction" href="home.html" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <!--[if lt IE 9]>
-    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
-    <![endif]-->
-  </head>
-  <body>
+    <link rel="prev" title="Introduction" href="home.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -46,27 +35,7 @@
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="home.html"
-                        title="previous chapter">Introduction</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="download_p3dfft.html"
-                        title="next chapter">Download P3DFFT</a></p>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -74,158 +43,147 @@
           <div class="body" role="main">
             
   <div class="section" id="installing-p3dfft">
-<h1>Installing P3DFFT<a class="headerlink" href="#installing-p3dfft" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Installing P3DFFT<a class="headerlink" href="#installing-p3dfft" title="Permalink to this headline">¶</a></h1>
 <p>The latest version of P3DFFT can be found <a class="reference external" href="https://github.com/sdsc/p3dfft/releases/latest">here</a>. Once you have extracted the package, you must take the following steps to complete the setup:</p>
 <ol class="arabic simple">
 <li>Run the configure script</li>
-<li>Run ‘make’</li>
-<li>Run ‘make install’</li>
+<li>Run 'make'</li>
+<li>Run 'make install'</li>
 </ol>
 <div class="section" id="how-to-compile-p3dfft">
 <h2>How to compile P3DFFT<a class="headerlink" href="#how-to-compile-p3dfft" title="Permalink to this headline">¶</a></h2>
 <p>P3DFFT uses a configure script to create Makefiles for compiling the library as well as several examples. This page will step you through the process of running the configure script properly.</p>
-<p>Run “configure –help” for complete list of options. Recommended options: –enable-stride1. For Cray XT platforms also recommended –enable-useeven.</p>
+<p>Run &quot;configure --help&quot; for complete list of options. Recommended options: --enable-stride1. For Cray XT platforms also recommended --enable-useeven.</p>
 <p>Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. Some examples of compiling on several systems are given below. Users may need to customize as needed. If you wish to share more examples or to request or contribute in support for other compilers, please write to <a class="reference external" href="mailto:dmitry&#37;&#52;&#48;sdsc%2eedu">dmitry<span>&#64;</span>sdsc<span>&#46;</span>edu</a>. If you give us an account on your system we will work with you to customize the installation.</p>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="22%" />
-<col width="11%" />
-<col width="56%" />
-<col width="11%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Argument</th>
 <th class="head">Notes</th>
 <th class="head">Description</th>
-<th class="head">Example”</th>
+<th class="head">Example&quot;</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>–prefix=PREFIX</td>
+<tr class="row-even"><td>--prefix=PREFIX</td>
 <td>Mandatory for users without access to /usr/local</td>
 <td>This argument will install p3dfft to PREFIX when you run make install. By default, configure will install to /usr/local</td>
-<td>–prefix=$HOME/local/</td>
+<td>--prefix=$HOME/local/</td>
 </tr>
-<tr class="row-odd"><td>–enable-gnu, –enable-ibm, –enable-intel, –enable-pgi, –enable-cray</td>
+<tr class="row-odd"><td>--enable-gnu, --enable-ibm, --enable-intel, --enable-pgi, --enable-cray</td>
 <td>Mandatory</td>
 <td>These arguments will prepare p3dfft to be built by a specific compiler. You must only choose one option.</td>
-<td>–enable-pgi</td>
+<td>--enable-pgi</td>
 </tr>
-<tr class="row-even"><td>–enable-fftw, –enable-essl</td>
+<tr class="row-even"><td>--enable-fftw, --enable-essl</td>
 <td>Mandatory</td>
 <td>These arguments will prepare p3dfft to be used with either the FFTW or ESSL library. You must only choose one option.</td>
-<td>–enable-fftw</td>
+<td>--enable-fftw</td>
 </tr>
-<tr class="row-odd"><td>–with-fftw=FFTWLOCATION</td>
-<td>Mandatory if –enable-fftw is used</td>
+<tr class="row-odd"><td>--with-fftw=FFTWLOCATION</td>
+<td>Mandatory if --enable-fftw is used</td>
 <td>This argument specifies the path location for the FFTW library; it is mandatory if you are planning to use p3dfft with the FFTW library.</td>
-<td>–enable-fftw –with-fftw=$FFTW_HOME</td>
+<td>--enable-fftw --with-fftw=$FFTW_HOME</td>
 </tr>
-<tr class="row-even"><td>–enable-openmp</td>
+<tr class="row-even"><td>--enable-openmp</td>
 <td>Mandatory if using multithreaded version</td>
 <td>This argument adds the appropriate compiler flags to enable OpenMP</td>
-<td>–enable-openmp</td>
+<td>--enable-openmp</td>
 </tr>
-<tr class="row-odd"><td>–enable-openmpi</td>
+<tr class="row-odd"><td>--enable-openmpi</td>
 <td>Optional</td>
 <td>This argument uses the OpenMPI implementation of MPI</td>
-<td>–enable-openmpi</td>
+<td>--enable-openmpi</td>
 </tr>
-<tr class="row-even"><td>–enable-oned</td>
+<tr class="row-even"><td>--enable-oned</td>
 <td>Optional</td>
 <td>This argument is for 1D decomposition. The default is 2D decomposition but can be made to 1D by setting up a grid 1xn when running the code.</td>
-<td>–enable-oned</td>
+<td>--enable-oned</td>
 </tr>
-<tr class="row-odd"><td>–enable-estimate</td>
-<td>Optional, use only with –enable-fftw</td>
+<tr class="row-odd"><td>--enable-estimate</td>
+<td>Optional, use only with --enable-fftw</td>
 <td>If this argument is passed, the FFTW library will not use run-time tuning to select the fastest algorithm for computing FFTs.</td>
-<td>–enable-estimate</td>
+<td>--enable-estimate</td>
 </tr>
-<tr class="row-even"><td>–enable-measure</td>
-<td>Optional, enabled by default, use only with –enable-fftw</td>
+<tr class="row-even"><td>--enable-measure</td>
+<td>Optional, enabled by default, use only with --enable-fftw</td>
 <td>For search-once-for-the-fast algorithm (takes more time on p3dfft_setup()).</td>
-<td>–enable-measure</td>
+<td>--enable-measure</td>
 </tr>
-<tr class="row-odd"><td>–enable-patient</td>
-<td>Optional, use only with –enable-fftw</td>
+<tr class="row-odd"><td>--enable-patient</td>
+<td>Optional, use only with --enable-fftw</td>
 <td>For search-once-for-the-fastest-algorithm (takes much more time on p3dfft_setup()).</td>
-<td>–enable-patient</td>
+<td>--enable-patient</td>
 </tr>
-<tr class="row-even"><td>–enable-dimsc</td>
+<tr class="row-even"><td>--enable-dimsc</td>
 <td>Optional</td>
 <td>To assign processor rows and columns in the Cartesian processor grid according to C convention. The default is Fortran convention which is recommended. This option does not affect the order of storage of arrays in memory.</td>
-<td>–enable-dimsc</td>
+<td>--enable-dimsc</td>
 </tr>
-<tr class="row-odd"><td>–enable-useeven</td>
+<tr class="row-odd"><td>--enable-useeven</td>
 <td>Optional, recommended for Cray XT</td>
-<td>This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.”</td>
-<td>–enable-useeven”</td>
+<td>This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.&quot;</td>
+<td>--enable-useeven&quot;</td>
 </tr>
-<tr class="row-even"><td>–enable-stride1</td>
+<tr class="row-even"><td>--enable-stride1</td>
 <td>Optional, recommended</td>
 <td>To enable stride-1 data structures on output (this may in some cases give some advantage in performance). You can define loop blocking factors NLBX and NBLY to experiment, otherwise they are set to default values.</td>
-<td>–enable-stride1</td>
+<td>--enable-stride1</td>
 </tr>
-<tr class="row-odd"><td>–enable-nblx</td>
+<tr class="row-odd"><td>--enable-nblx</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_X</td>
-<td>–enable-nblx=32</td>
+<td>--enable-nblx=32</td>
 </tr>
-<tr class="row-even"><td>–enable-nbly1</td>
+<tr class="row-even"><td>--enable-nbly1</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Y1</td>
-<td>–enable-nbly1=32</td>
+<td>--enable-nbly1=32</td>
 </tr>
-<tr class="row-odd"><td>–enable-nbly2</td>
+<tr class="row-odd"><td>--enable-nbly2</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Y2</td>
-<td>–enable-nbly2=32</td>
+<td>--enable-nbly2=32</td>
 </tr>
-<tr class="row-even"><td>–enable-nblz</td>
+<tr class="row-even"><td>--enable-nblz</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Z</td>
-<td>–enable-nblz=32</td>
+<td>--enable-nblz=32</td>
 </tr>
-<tr class="row-odd"><td>–enable-single</td>
+<tr class="row-odd"><td>--enable-single</td>
 <td>Optional</td>
 <td>This argument will compile p3dfft in single-precision. By default, configure will setup p3dfft to be compiled in double-precision.</td>
-<td>–enable-single</td>
+<td>--enable-single</td>
 </tr>
 <tr class="row-even"><td>FC=&lt;Fortran compiler&gt;</td>
 <td>Strongly recommended</td>
 <td>Fortran compiler</td>
 <td>FC=mpfort</td>
 </tr>
-<tr class="row-odd"><td>FCFLAGS=”&lt;Fortran compiler flags&gt;”</td>
+<tr class="row-odd"><td>FCFLAGS=&quot;&lt;Fortran compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>Fortran compiler flags</td>
-<td>FCFLAGS=”-Mextend”</td>
+<td>FCFLAGS=&quot;-Mextend&quot;</td>
 </tr>
 <tr class="row-even"><td>CC=&lt;C compiler&gt;</td>
 <td>Strongly Recommended</td>
 <td>C compiler</td>
 <td>CC=mpcc</td>
 </tr>
-<tr class="row-odd"><td>CFLAGS=”&lt;C compiler flags&gt;”</td>
+<tr class="row-odd"><td>CFLAGS=&quot;&lt;C compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C compiler flags</td>
-<td>CFLAGS=”-fastsse”“</td>
+<td>CFLAGS=&quot;-fastsse&quot;&quot;</td>
 </tr>
-<tr class="row-even"><td>LDFLAGS=”&lt;linker flags&gt;”</td>
+<tr class="row-even"><td>LDFLAGS=&quot;&lt;linker flags&gt;&quot;</td>
 <td>Mandatory (depending on platform)</td>
 <td>Linker flags</td>
-<td>LDFLAGS=”-lmpi_f90 -lmpi_f77”</td>
+<td>LDFLAGS=&quot;-lmpi_f90 -lmpi_f77&quot;</td>
 </tr>
 </tbody>
 </table>
 <div class="section" id="compiling-on-comet-xsede-sdsc">
 <h3>Compiling on Comet (XSEDE/SDSC)<a class="headerlink" href="#compiling-on-comet-xsede-sdsc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="10%" />
-<col width="10%" />
-<col width="80%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -235,27 +193,22 @@
 <tbody valign="top">
 <tr class="row-even"><td>PGI</td>
 <td>pgi, fftw</td>
-<td>./configure –enable-pgi –enable-fftw –with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
 </tr>
 <tr class="row-odd"><td>Intel</td>
 <td>intel, fftw</td>
-<td>./configure –enable-intel –enable-fftw –with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
 </tr>
 <tr class="row-even"><td>GNU</td>
 <td>gnu, fftw</td>
-<td>./configure –enable-gnu –enable-fftw –with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="compiling-on-ibm-power7">
 <h3>Compiling on IBM Power7<a class="headerlink" href="#compiling-on-ibm-power7" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="10%" />
-<col width="10%" />
-<col width="80%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -265,19 +218,14 @@
 <tbody valign="top">
 <tr class="row-even"><td>mpfort</td>
 <td>essl</td>
-<td>./configure FC=mpfort FCFLAGS=”-qcclines -qarch=pwr7 -qstrict -qnosave -qtune=pwr7 -qhot -qsimd=auto -qcache=auto -qsmp=omp -qthreaded -O3 -q64 -qfloat=hsflt:fltint” CC=mpcc CFLAGS=”-q64 -DNUS_XCOMP” CPP=/usr/bin/cpp –enable-essl –enable-ibm –host=”bd-login”</td>
+<td>./configure FC=mpfort FCFLAGS=&quot;-qcclines -qarch=pwr7 -qstrict -qnosave -qtune=pwr7 -qhot -qsimd=auto -qcache=auto -qsmp=omp -qthreaded -O3 -q64 -qfloat=hsflt:fltint&quot; CC=mpcc CFLAGS=&quot;-q64 -DNUS_XCOMP&quot; CPP=/usr/bin/cpp --enable-essl --enable-ibm --host=&quot;bd-login&quot;</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="compiling-on-stampede2-xsede-tacc">
 <h3>Compiling on Stampede2 (XSEDE/TACC)<a class="headerlink" href="#compiling-on-stampede2-xsede-tacc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="10%" />
-<col width="10%" />
-<col width="80%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -287,19 +235,14 @@
 <tbody valign="top">
 <tr class="row-even"><td>intel</td>
 <td>fftw3</td>
-<td>./configure –enable-fftw –enable-intel CC=mpicc FC=mpif90  FCFLAGS=”-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512” CCFLAGS=”-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512” –with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-fftw --enable-intel CC=mpicc FC=mpif90  FCFLAGS=&quot;-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512&quot; CCFLAGS=&quot;-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512&quot; --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="compiling-on-bridges-psc">
 <h3>Compiling on Bridges (PSC)<a class="headerlink" href="#compiling-on-bridges-psc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="10%" />
-<col width="10%" />
-<col width="80%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -309,18 +252,14 @@
 <tbody valign="top">
 <tr class="row-even"><td>Intel</td>
 <td>fftw</td>
-<td>./configure –enable-fftw –enable-intel –with-fftw=$FFTW_LIB/.. CC=mpicc FC=mpif90</td>
+<td>./configure --enable-fftw --enable-intel --with-fftw=$FFTW_LIB/.. CC=mpicc FC=mpif90</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="compiling-on-mira-cetus-vesta-alcf">
 <h3>Compiling on Mira/Cetus/Vesta (ALCF)<a class="headerlink" href="#compiling-on-mira-cetus-vesta-alcf" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-given docutils">
-<colgroup>
-<col width="10%" />
-<col width="90%" />
-</colgroup>
+<table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Arguments</th>
@@ -328,10 +267,10 @@
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td>IBM XL</td>
-<td>./configure –enable-ibm –enable-essl –with-essl=/soft/libraries/essl/current FC=mpixlf90_r CC=mpixlc_r</td>
+<td>./configure --enable-ibm --enable-essl --with-essl=/soft/libraries/essl/current FC=mpixlf90_r CC=mpixlc_r</td>
 </tr>
 <tr class="row-odd"><td>GNU</td>
-<td>./configure –enable-gnu –enable-fftw –with-fftw=/soft/libraries/alcf/current/{xl,gcc}/FFTW3 FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=/soft/libraries/alcf/current/{xl,gcc}/FFTW3 FC=mpif90 CC=mpicc</td>
 </tr>
 </tbody>
 </table>
@@ -341,6 +280,50 @@
 
 
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing P3DFFT</a><ul>
+<li><a class="reference internal" href="#how-to-compile-p3dfft">How to compile P3DFFT</a><ul>
+<li><a class="reference internal" href="#compiling-on-comet-xsede-sdsc">Compiling on Comet (XSEDE/SDSC)</a></li>
+<li><a class="reference internal" href="#compiling-on-ibm-power7">Compiling on IBM Power7</a></li>
+<li><a class="reference internal" href="#compiling-on-stampede2-xsede-tacc">Compiling on Stampede2 (XSEDE/TACC)</a></li>
+<li><a class="reference internal" href="#compiling-on-bridges-psc">Compiling on Bridges (PSC)</a></li>
+<li><a class="reference internal" href="#compiling-on-mira-cetus-vesta-alcf">Compiling on Mira/Cetus/Vesta (ALCF)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="home.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="download_p3dfft.html"
+                        title="next chapter">Download P3DFFT</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/install_p3dfft.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -362,7 +345,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>
