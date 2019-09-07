@@ -1,0 +1,165 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Introduction &#8212; P3DFFT++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing P3DFFT" href="install_p3dfft.html" />
+    <link rel="prev" title="P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="install_p3dfft.html" title="Installing P3DFFT"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="install_p3dfft.html"
+                        title="next chapter">Installing P3DFFT</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>This site provides tools for solution of numerical problems in multiscale phenomena in three dimensions (3D). The most common example of such problem is Fast Fourier Transform (FFT), which is an important algorithm for simulations in a wide range of fields, including studies of turbulence, climatology, astrophysics and material science. Other algorithms of importance include Chebyshev transforms and high-order finite difference compact schemes.</p>
+<p>Parallel Three-Dimensional Fast Fourier Transforms, dubbed P3DFFT, as well as its extension P3DFFT++, is a library for large-scale computer simulations on parallel platforms.This project was initiated at San Diego Supercomputer Center (SDSC) at UC San Diego by its main author Dmitry Pekurovsky, Ph.D.</p>
+<p>This library uses 2D, or pencil, decomposition. This overcomes an important limitation to scalability inherent in FFT libraries implementing 1D (or slab) decomposition: the number of processors/tasks used to run this problem in parallel can be as large as N2, where N is the linear problem size. This approach has shown good scalability up to 524,288 cores.</p>
+<p><strong>P3DFFT</strong></p>
+<p>P3DFFT is written in Fortran90 and is optimized for parallel performance. It uses Message Passing Interface (MPI) for interprocessor communication, and starting from v.2.7.5 there is a multithreading option for hybrid MPI/OpenMP implementation. C/C++ interface is available, as are detailed documentation and examples in both Fortran and C. A configure script is supplied for ease of installation. This package depends on a serial FFT library such as Fastest Fourier Transform in the West (<a class="reference external" href="http://www.fftw.org/">FFTW</a>) or IBM’s <a class="reference external" href="http://publibfp.boulder.ibm.com/epubs/pdf/am501405.pdf">ESSL</a>. The library is provided under GPL 3.0 and is available from its <a class="reference external" href="https://github.com/sdsc/p3dfft">github page</a>.</p>
+<p><strong>P3DFFT++</strong></p>
+<p>P3DFFT++ is the next generation of P3DFFT (versions starting with 3.0). It extends the interface of P3DFFT to allow a wider range of use scenarios. It provides the user with a choice in defining their own data layout formats beyond the predefined 2D pencil blocks. It is written in C++ with C and Fortran interfaces, and currently uses MPI. The library can be found at P3DFFT++ <a class="reference external" href="https://github.com/sdsc/p3dfft.3">github space</a>. See P3DFFT++ Tutorial and P3DFFT++ reference pages in C++, C and Fortran.</p>
+<p>The following table compares P3DFFT family 2.7.6 and 3.0 (P3DFFT++).</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="64%" />
+<col width="23%" />
+<col width="13%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Feature</th>
+<th class="head">P3DFFT 2.x</th>
+<th class="head">P3DFFT++</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>real-to-complex and complex-to-real FFT</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>complex FFT</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>sine and cosine transforms</td>
+<td>In 1 dimension</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Chebyshev transform</td>
+<td>In 1 dimension</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>pruned transforms</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>In-place and out-of-place</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>Multiple grids</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Hybrid MPI/OpenMP</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>License of use</strong></p>
+<p>This software is provided for free for educational and not-for-profit use under a UCSD license. License terms can be seen here. Users are requested to complete optional registration when downloading this software, and also acknowledge the use as below.</p>
+<p><strong>Citation information</strong></p>
+<p>Please acknowledge/cite use of P3DFFT as follows: D. Pekurovsky, P3DFFT: a framework for parallel computations of Fourier transforms in three dimensions, SIAM Journal on Scientific Computing 2012, Vol. 34, No. 4, pp. C192-C209. This paper can be obtained  <a class="reference external" href="http://arxiv.org/abs/1905.02803">here</a>.</p>
+<p>To cite the software you can also use DOI for P3DFFT v. 2.7.9: <a class="reference external" href="https://doi.org/10.5281/zenodo.2634590">https://doi.org/10.5281/zenodo.2634590</a></p>
+<div class="figure align-center" id="id1">
+<img alt="https://www.nsf.gov/images/logos/nsf1.jpg" src="https://www.nsf.gov/images/logos/nsf1.jpg" />
+<p class="caption"><span class="caption-text">This project is supported by National Science Foundation grant OAC-1835885.</span></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="install_p3dfft.html" title="Installing P3DFFT"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Dmitry Pekurovsky.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>
