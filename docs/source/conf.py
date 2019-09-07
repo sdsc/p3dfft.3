@@ -100,7 +100,7 @@ html_context = {
     'css_files': [
         '_static/theme_overrides.css',  # override wide tables in RTD theme
         ],
-    }   
+    }
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -173,6 +173,3 @@ texinfo_documents = [
 
 
 smartquotes = False
-
-# To remove a warning
-html_static_path = []
