@@ -1,9 +1,9 @@
 License of use
-==============
+**************
 
-**Title: P3DFFT++**
+:Title: P3DFFT++
 
-**Authors: Dmitry Pekurovsky**
+:Authors: Dmitry Pekurovsky
 
 Copyright (c) 2006-2019
 

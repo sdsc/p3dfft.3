@@ -1,29 +1,26 @@
 
-
-<!doctype html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>P3DFFT++ C++ Reference &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
     
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="P3DFFT++ C Reference" href="p3dfft++_c_reference.html" />
-    <link rel="prev" title="P3DFFT++ Tutorial" href="p3dfft++_tutorial.html" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <!--[if lt IE 9]>
-    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
-    <![endif]-->
+    <link rel="prev" title="P3DFFT++ Tutorial" href="p3dfft++_tutorial.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -40,29 +37,7 @@
         <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" accesskey="U">P3DFFT++ Documentation</a> &#187;</li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="p3dfft++_tutorial.html"
-                        title="previous chapter">P3DFFT++ Tutorial</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="p3dfft++_c_reference.html"
-                        title="next chapter">P3DFFT++ C Reference</a></p>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -108,61 +83,77 @@
 <div class="section" id="setup-and-grid-layout">
 <h2><a class="toc-backref" href="#id3">Setup and Grid layout</a><a class="headerlink" href="#setup-and-grid-layout" title="Permalink to this headline">¶</a></h2>
 <p>The public portion of the grid class is below:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">grid</span> <span class="p">{</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">grid</span> <span class="p">{</span>
 
-<span class="o">...</span>
+<span class="p">...</span>
 
-<span class="n">public</span> <span class="p">:</span>
+<span class="k">public</span> <span class="o">:</span>
 
-<span class="nb">int</span> <span class="n">taskid</span><span class="p">,</span><span class="n">numtasks</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">taskid</span><span class="p">,</span><span class="n">numtasks</span><span class="p">;</span>
 
-<span class="nb">int</span> <span class="n">nd</span><span class="p">;</span> <span class="o">//</span><span class="n">number</span> <span class="n">of</span> <span class="n">dimensions</span> <span class="n">the</span> <span class="n">volume</span> <span class="ow">is</span> <span class="n">split</span> <span class="n">over</span>
+<span class="kt">int</span> <span class="n">nd</span><span class="p">;</span> <span class="c1">//number of dimensions the volume is split over</span>
 
-<span class="nb">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Global</span> <span class="n">dimensions</span>
+<span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Global dimensions</span>
 
-<span class="n">dim_conj_sym</span><span class="p">;</span> <span class="o">//</span> <span class="n">dimension</span> <span class="n">of</span> <span class="n">the</span> <span class="n">array</span> <span class="ow">in</span> <span class="n">which</span> <span class="n">a</span> <span class="n">little</span> <span class="n">less</span> <span class="n">than</span> <span class="n">half</span> <span class="n">of</span> <span class="n">the</span> <span class="n">elements</span> <span class="n">are</span> <span class="n">omitted</span> <span class="n">due</span> <span class="n">to</span> <span class="n">conjugate</span> <span class="n">symmetry</span><span class="o">.</span> <span class="n">This</span> <span class="n">argument</span> <span class="n">should</span> <span class="n">be</span> <span class="n">non</span><span class="o">-</span><span class="n">negative</span> <span class="n">only</span> <span class="k">for</span> <span class="nb">complex</span><span class="o">-</span><span class="n">valued</span> <span class="n">arrays</span> <span class="n">resulting</span> <span class="kn">from</span> <span class="nn">real</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="nb">complex</span> <span class="n">FFT</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">given</span> <span class="n">dimension</span><span class="o">.</span>
+<span class="n">dim_conj_sym</span><span class="p">;</span> <span class="c1">// dimension of the array in which a little less than half of the elements are omitted due to conjugate symmetry. This argument should be non-negative only for complex-valued arrays resulting from real-to-complex FFT in the given dimension.</span>
 
-<span class="nb">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Memory</span> <span class="n">ordering</span> <span class="n">inside</span> <span class="n">the</span> <span class="n">data</span> <span class="n">volume</span>
-<span class="nb">int</span> <span class="n">ldims</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Local</span> <span class="n">dimensions</span> <span class="n">on</span> <span class="n">THIS</span> <span class="n">processor</span>
-<span class="nb">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Processor</span> <span class="n">grid</span>
-<span class="nb">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Ordering</span> <span class="n">of</span> <span class="n">tasks</span> <span class="ow">in</span> <span class="n">processor</span> <span class="n">grid</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span> <span class="n">first</span> <span class="n">dimension</span> <span class="o">-</span> <span class="n">adjacent</span> <span class="n">tasks</span><span class="p">,</span><span class="n">then</span> <span class="n">second</span><span class="p">,</span> <span class="n">then</span> <span class="n">third</span> <span class="n">dimension</span>
-<span class="nb">int</span> <span class="n">P</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Processor</span> <span class="n">grid</span> <span class="n">size</span> <span class="p">(</span><span class="ow">in</span> <span class="n">inverse</span> <span class="n">order</span> <span class="n">of</span> <span class="n">split</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="n">rows</span> <span class="n">first</span><span class="p">,</span> <span class="n">then</span> <span class="n">columns</span> <span class="n">etc</span>
-<span class="nb">int</span> <span class="n">D</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Ranks</span> <span class="n">of</span> <span class="n">Dimensions</span> <span class="n">of</span> <span class="n">physical</span> <span class="n">grid</span> <span class="n">split</span> <span class="n">over</span> <span class="n">rows</span> <span class="ow">and</span> <span class="n">columns</span> <span class="n">correspondingly</span>
-<span class="nb">int</span> <span class="n">L</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Rank</span> <span class="n">of</span> <span class="n">Local</span> <span class="n">dimension</span> <span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="nb">int</span> <span class="n">grid_id</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">Position</span> <span class="n">of</span> <span class="n">this</span> <span class="n">pencil</span><span class="o">/</span><span class="n">cube</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">processor</span> <span class="n">grid</span>
-<span class="nb">int</span> <span class="n">grid_id_cart</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
-<span class="nb">int</span> <span class="n">glob_start</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span> <span class="n">Starting</span> <span class="n">coords</span> <span class="n">of</span> <span class="n">this</span> <span class="n">cube</span> <span class="ow">in</span> <span class="n">the</span> <span class="k">global</span> <span class="n">grid</span>
-<span class="n">MPI_Comm</span> <span class="n">mpi_comm_glob</span><span class="p">;</span> <span class="o">//</span> <span class="n">Global</span> <span class="n">MPi</span> <span class="n">communicator</span> <span class="n">we</span> <span class="n">are</span> <span class="n">starting</span> <span class="kn">from</span>
-<span class="nn">MPI_Comm</span> <span class="n">mpi_comm_cart</span><span class="p">;</span>
-<span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span><span class="n">MPI</span> <span class="n">communicators</span> <span class="k">for</span> <span class="n">each</span> <span class="n">dimension</span>
-<span class="o">//</span> <span class="nb">int</span> <span class="p">(</span><span class="o">*</span><span class="n">st</span><span class="p">)[</span><span class="mi">3</span><span class="p">],(</span><span class="o">*</span><span class="n">sz</span><span class="p">)[</span><span class="mi">3</span><span class="p">],(</span><span class="o">*</span><span class="n">en</span><span class="p">)[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span> <span class="n">Lowest</span><span class="p">,</span> <span class="n">size</span> <span class="ow">and</span> <span class="n">uppermost</span> <span class="n">location</span> <span class="ow">in</span> <span class="mi">3</span><span class="n">D</span><span class="p">,</span> <span class="k">for</span> <span class="n">each</span> <span class="n">processor</span> <span class="ow">in</span> <span class="n">subcommunicator</span>
-<span class="nb">int</span> <span class="o">**</span><span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">**</span><span class="n">sz</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">**</span><span class="n">en</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="o">//</span> <span class="n">Lowest</span><span class="p">,</span> <span class="n">size</span> <span class="ow">and</span> <span class="n">uppermost</span> <span class="n">location</span> <span class="ow">in</span> <span class="mi">3</span><span class="n">D</span><span class="p">,</span> <span class="k">for</span> <span class="n">each</span> <span class="n">processor</span> <span class="ow">in</span> <span class="n">subcommunicator</span>
+<span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Memory ordering inside the data volume</span>
+<span class="kt">int</span> <span class="n">ldims</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Local dimensions on THIS processor</span>
+<span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Processor grid</span>
+<span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension</span>
+<span class="kt">int</span> <span class="n">P</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc</span>
+<span class="kt">int</span> <span class="n">D</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Ranks of Dimensions of physical grid split over rows and columns correspondingly</span>
+<span class="kt">int</span> <span class="n">L</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Rank of Local dimension (p=1)</span>
+<span class="kt">int</span> <span class="n">grid_id</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//Position of this pencil/cube in the processor grid</span>
+<span class="kt">int</span> <span class="n">grid_id_cart</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="kt">int</span> <span class="n">glob_start</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">// Starting coords of this cube in the global grid</span>
+<span class="n">MPI_Comm</span> <span class="n">mpi_comm_glob</span><span class="p">;</span> <span class="c1">// Global MPi communicator we are starting from</span>
+<span class="n">MPI_Comm</span> <span class="n">mpi_comm_cart</span><span class="p">;</span>
+<span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">//MPI communicators for each dimension</span>
+<span class="c1">// int (*st)[3],(*sz)[3],(*en)[3]; // Lowest, size and uppermost location in 3D, for each processor in subcommunicator</span>
+<span class="kt">int</span> <span class="o">**</span><span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">**</span><span class="n">sz</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">**</span><span class="n">en</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">// Lowest, size and uppermost location in 3D, for each processor in subcommunicator</span>
 
-<span class="nb">bool</span> <span class="n">is_set</span><span class="p">;</span>
-<span class="n">grid</span><span class="p">(</span><span class="nb">int</span> <span class="n">gdims_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="nb">int</span> <span class="n">pgrid_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="nb">int</span> <span class="n">proc_order_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="nb">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+<span class="kt">bool</span> <span class="n">is_set</span><span class="p">;</span>
+<span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">pgrid_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order_</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
 <span class="n">MPI_Comm</span> <span class="n">mpicomm_</span><span class="p">);</span>
-<span class="n">grid</span><span class="p">(</span><span class="n">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">rhs</span><span class="p">);</span>
+<span class="n">grid</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">rhs</span><span class="p">);</span>
 <span class="n">grid</span><span class="p">()</span> <span class="p">{};</span>
 <span class="o">~</span><span class="n">grid</span><span class="p">();</span>
-<span class="n">void</span> <span class="n">set_mo</span><span class="p">(</span><span class="nb">int</span> <span class="n">mo</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="p">{</span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="n">mem_order</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">mo</span><span class="p">[</span><span class="n">i</span><span class="p">];};</span>
+<span class="kt">void</span> <span class="nf">set_mo</span><span class="p">(</span><span class="kt">int</span> <span class="n">mo</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="p">{</span><span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="n">mem_order</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">mo</span><span class="p">[</span><span class="n">i</span><span class="p">];};</span>
 
-<span class="o">...</span>
+<span class="p">...</span>
 <span class="p">};</span>
 </pre></div>
 </div>
 <div class="section" id="grid-constructor">
 <h3><a class="toc-backref" href="#id4"><em>grid</em> constructor</a><a class="headerlink" href="#grid-constructor" title="Permalink to this headline">¶</a></h3>
-<p>grid(int gdims[3],int dim_conj_sym,int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm);</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">dim_conj_sym</span><span class="p">,</span><span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">);</span>
+</pre></div>
+</div>
 <p><em>Function</em>:Initializes a new grid with specified parameters.</p>
 <p><em>Arguments</em>:</p>
-<blockquote>
-<div><p>gdims: three global grid dimensions (logical order - X, Y, Z)</p>
-<p>dim_conj_sym: dimension of conjugate symmetry, non-negative only for complex arrays resulting from real-to-complex FFT in the given dimension. This is logical, not storage, dimension, with valid numbers 0 - 2, and -1 implying no conjugate symmetry.</p>
-<p>pgrid: up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension.</p>
-<p>proc_order: a permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc</p>
-<p>mem_order: a permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order[i0] = 0 means that the i0’s logical dimension is stored with stride=1 in memory. Similarly, mem_order[i1] =1 means that i1’s logical dimension is stored with stride=ldims[i0] etc</p>
-<p>mpicomm: the MPI communicator in which this grid lives</p>
-</div></blockquote>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>gdims</td>
+<td>Three global grid dimensions (logical order - X, Y, Z)</td>
+</tr>
+<tr class="row-even"><td>dim_conj_sym</td>
+<td>Dimension of conjugate symmetry, non-negative only for complex arrays resulting from real-to-complex FFT in the given dimension. This is logical, not storage, dimension, with valid numbers 0 - 2, and -1 implying no conjugate symmetry.</td>
+</tr>
+<tr class="row-odd"><td>pgrid</td>
+<td>Up to three dimensions of processor grid, decomposing the global grid array. Value =1 means the grid is not decomposed but is local in that logical dimension.</td>
+</tr>
+<tr class="row-even"><td>proc_order</td>
+<td>A permutation of the 3 integers: 0, 1 and 2. Specifies the topology of processor grid on the interconnect. The dimension with lower value means the MPI tasks in that dimension are closer in ranks, e.g. value=0 means the ranks are adjacent (stride=1), value=1 means they are speard out with the stride equal to the pgrid value of the dimension with stride=1 etc</td>
+</tr>
+<tr class="row-odd"><td>mem_order</td>
+<td>A permutation of the 3 integers: 0, 1 and 2. Specifies mapping of the logical dimension and memory storage dimensions for local memory for each MPI task. mem_order[i0] = 0 means that the i0's logical dimension is stored with stride=1 in memory. Similarly, mem_order[i1] =1 means that i1's logical dimension is stored with stride=ldims[i0] etc</td>
+</tr>
+<tr class="row-even"><td>mpicomm</td>
+<td>The MPI communicator in which this grid lives</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="p3dfft-transforms">
@@ -172,66 +163,116 @@
 <div class="section" id="one-dimensional-1d-transforms">
 <h3><a class="toc-backref" href="#id6">One-Dimensional (1D) Transforms</a><a class="headerlink" href="#one-dimensional-1d-transforms" title="Permalink to this headline">¶</a></h3>
 <p>The following predefined 1D transforms are available:</p>
-<p>EMPTY_TYPE - empty transform</p>
-<p>R2CFFT_S, P3DFFT_R2CFFT_D - real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively</p>
-<p>C2RFFT_S, P3DFFT_C2RFFT_D - complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively</p>
-<p>CFFT_FORWARD_S, CFFT_FORWARD_D - complex forward FFT (as defined in FFTW manual), in single and double precision respectively</p>
-<p>CFFT_BACKWARD_S, CFFT_BACKWARD_D - complex backward FFT (as defined in FFTW manual), in single and double precision respectively</p>
-<p>DCT&lt;x&gt;_REAL_S, DCT1_REAL_D - cosine transform for real-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4</p>
-<p>DST&lt;x&gt;_REAL_S, DST1_REAL_D - sine transform for real-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4</p>
-<p>DCT&lt;x&gt;_COMPLEX_S, DCT1_COMPLEX_D - cosine transform for complex-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4</p>
-<p>DST&lt;x&gt;_COMPLEX_S, DST1_COMPLEX_D - sine transform for complex-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>EMPTY_TYPE</td>
+<td>Empty transform</td>
+</tr>
+<tr class="row-even"><td>R2CFFT_S, P3DFFT_R2CFFT_D</td>
+<td>Real-to-complex forward FFT (as defined in FFTW manual), in single and double precision respectively</td>
+</tr>
+<tr class="row-odd"><td>C2RFFT_S, P3DFFT_C2RFFT_D</td>
+<td>Complex-to-real backward FFT (as defined in FFTW manual), in single and double precision respectively</td>
+</tr>
+<tr class="row-even"><td>CFFT_FORWARD_S, CFFT_FORWARD_D</td>
+<td>Complex forward FFT (as defined in FFTW manual), in single and double precision respectively</td>
+</tr>
+<tr class="row-odd"><td>CFFT_BACKWARD_S, CFFT_BACKWARD_D</td>
+<td>Complex backward FFT (as defined in FFTW manual), in single and double precision respectively</td>
+</tr>
+<tr class="row-even"><td>DCT&lt;x&gt;_REAL_S, DCT1_REAL_D</td>
+<td>Cosine transform for real-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4</td>
+</tr>
+<tr class="row-odd"><td>DST&lt;x&gt;_REAL_S, DST1_REAL_D</td>
+<td>Sine transform for real-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4</td>
+</tr>
+<tr class="row-even"><td>DCT&lt;x&gt;_COMPLEX_S, DCT1_COMPLEX_D</td>
+<td>Cosine transform for complex-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DCT1, DCT2, DCT3 or DCT4</td>
+</tr>
+<tr class="row-odd"><td>DST&lt;x&gt;_COMPLEX_S, DST1_COMPLEX_D</td>
+<td>Sine transform for complex-numbered data, in single and double precision, where &lt;x&gt; stands for the variant of the cosine transform, such as DST1, DST2, DST3 or DST4</td>
+</tr>
+</tbody>
+</table>
 <div class="section" id="custom-transform-types">
 <h4><a class="toc-backref" href="#id7">Custom transform types</a><a class="headerlink" href="#custom-transform-types" title="Permalink to this headline">¶</a></h4>
 <p>Custom 1D transforms can be defined by the user through trans_type1D class template.</p>
-<p>template &lt;class Type1,class Type2&gt; class trans_type1D : public gen_trans_type{</p>
-<p>int ID;
-public :</p>
-<p>typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,…);</p>
-<p>long (*doplan)(…);
-void (*exec)(…);</p>
-<p>trans_type1D(const char *name, long (*doplan_)(…),void (*exec)(…)=NULL,int isign=0);
-inline int getID() {return(ID);}
-trans_type1D(const trans_type1D &amp;rhs);
-~trans_type1D();</p>
-<p>};</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">Type1</span><span class="p">,</span><span class="k">class</span> <span class="nc">Type2</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">trans_type1D</span> <span class="o">:</span> <span class="k">public</span> <span class="n">gen_trans_type</span><span class="p">{</span>
+
+<span class="kt">int</span> <span class="n">ID</span><span class="p">;</span>
+<span class="k">public</span> <span class="o">:</span>
+
+<span class="k">typedef</span> <span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="n">doplan_type</span><span class="p">)(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span><span class="kt">int</span> <span class="n">howmany</span><span class="p">,</span><span class="n">Type1</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">inembed</span><span class="p">,</span><span class="kt">int</span> <span class="n">istride</span><span class="p">,</span><span class="kt">int</span> <span class="n">idist</span><span class="p">,</span><span class="n">Type2</span> <span class="o">*</span><span class="n">out</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">onembed</span><span class="p">,</span><span class="kt">int</span> <span class="n">ostride</span><span class="p">,</span><span class="kt">int</span> <span class="n">odist</span><span class="p">,...);</span>
+
+<span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="n">doplan</span><span class="p">)(...);</span>
+<span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">exec</span><span class="p">)(...);</span>
+
+<span class="n">trans_type1D</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="n">doplan_</span><span class="p">)(...),</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">exec</span><span class="p">)(...)</span><span class="o">=</span><span class="nb">NULL</span><span class="p">,</span><span class="kt">int</span> <span class="n">isign</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+<span class="kr">inline</span> <span class="kt">int</span> <span class="nf">getID</span><span class="p">()</span> <span class="p">{</span><span class="k">return</span><span class="p">(</span><span class="n">ID</span><span class="p">);}</span>
+<span class="n">trans_type1D</span><span class="p">(</span><span class="k">const</span> <span class="n">trans_type1D</span> <span class="o">&amp;</span><span class="n">rhs</span><span class="p">);</span>
+<span class="o">~</span><span class="n">trans_type1D</span><span class="p">();</span>
+
+<span class="p">};</span>
+</pre></div>
+</div>
 <p>This class template is a derivative of gen_trans_type1D class, defined as follows:</p>
-<p>class gen_trans_type {
-public :
-char *name;
-int isign; // forward (-1) or backward (+1), in case this is complex FFT
-bool is_set,is_empty;
-int dt1,dt2; //Datatype before and after
-int prec; // precision for a real value in bytes (4 or 8)
-gen_trans_type(const char *name_,int isign_=0);
-~gen_trans_type();
-bool operator==(const gen_trans_type &amp;) const;
-};</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">gen_trans_type</span> <span class="p">{</span>
+<span class="k">public</span> <span class="o">:</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">isign</span><span class="p">;</span> <span class="c1">// forward (-1) or backward (+1), in case this is complex FFT</span>
+<span class="kt">bool</span> <span class="n">is_set</span><span class="p">,</span><span class="n">is_empty</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">dt1</span><span class="p">,</span><span class="n">dt2</span><span class="p">;</span> <span class="c1">//Datatype before and after</span>
+<span class="kt">int</span> <span class="n">prec</span><span class="p">;</span> <span class="c1">// precision for a real value in bytes (4 or 8)</span>
+<span class="n">gen_trans_type</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name_</span><span class="p">,</span><span class="kt">int</span> <span class="n">isign_</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+<span class="o">~</span><span class="n">gen_trans_type</span><span class="p">();</span>
+<span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">&amp;</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
 <p>In order to define a custom transform type, the user needs to provide planning and execution functions (doplan and exec).  For example, in case of a complex FFT implemented through FFTW, the following is how the transform type is constructed:</p>
-<p>char *name = “Complex-to-complex Fourier Transform, forward transform, double precision”;
-int isign = FFTW_FORWARD;
-trans_type1D&lt;complex_double,complex_double&gt; *mytype = new trans_type1D&lt;complex_double,complex_double&gt;(name,(long (*)(…) ) fftw_plan_many_dft,(void (*)(…)) exec_c2c_d,isign);</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Complex-to-complex Fourier Transform, forward transform, double precision&quot;</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">isign</span> <span class="o">=</span> <span class="n">FFTW_FORWARD</span><span class="p">;</span>
+<span class="n">trans_type1D</span><span class="o">&lt;</span><span class="n">complex_double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">mytype</span> <span class="o">=</span> <span class="k">new</span> <span class="n">trans_type1D</span><span class="o">&lt;</span><span class="n">complex_double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">name</span><span class="p">,(</span><span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="p">)(...)</span> <span class="p">)</span> <span class="n">fftw_plan_many_dft</span><span class="p">,(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="p">)(...))</span> <span class="n">exec_c2c_d</span><span class="p">,</span><span class="n">isign</span><span class="p">);</span>
+</pre></div>
+</div>
 <p>where exec_c2c_d is defined as follows:</p>
-<p>void exec_c2c_d(long plan,complex_double *in,complex_double *out)
-{
-fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
-}</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">exec_c2c_d</span><span class="p">(</span><span class="kt">long</span> <span class="n">plan</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">out</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="n">fftw_execute_dft</span><span class="p">((</span><span class="n">fftw_plan</span><span class="p">)</span> <span class="n">plan</span><span class="p">,(</span><span class="n">fftw_complex</span> <span class="o">*</span><span class="p">)</span> <span class="n">in</span><span class="p">,(</span><span class="n">fftw_complex</span> <span class="o">*</span><span class="p">)</span> <span class="n">out</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="planning-1d-transform">
 <h4><a class="toc-backref" href="#id8">Planning 1D transform</a><a class="headerlink" href="#planning-1d-transform" title="Permalink to this headline">¶</a></h4>
 <p>1D transform in C++ is realized through transplan template class. TypeIn and TypeOut are the datatypes for input and output.</p>
 <p>Two constructors are provided.</p>
-<p>template &lt;class TypeIn,class TypeOut&gt; class transplan::transplan(const grid &amp;gridIn,const grid &amp;gridOut,const gen_trans_type *type,const int d, const bool inplace_);</p>
-<p>template &lt;class TypeIn,class TypeOut&gt; class transplan::transplan(const grid &amp;gridIn,const grid &amp;gridOut,const int type,const int d, const bool inplace_);</p>
-<p>Function: define and plan a 1D transform of a 3D array</p>
-<p>Arguments:</p>
-<blockquote>
-<div><p>gridIn:initial grid descriptor</p>
-<p>gridOut:final grid descriptor</p>
-</div></blockquote>
-<p>type:the type of the 1D transform (either as a predefined integer parameter, or as a class gen_trans_type.</p>
-<p>d: the dimension to be transformed. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local.</p>
-<p>inplace: true for in-place transform, false for out-of-place.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">transplan</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridIn</span><span class="p">,</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridOut</span><span class="p">,</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">d</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace_</span><span class="p">);</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">transplan</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridIn</span><span class="p">,</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridOut</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">d</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace_</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><em>Function</em>: define and plan a 1D transform of a 3D array</p>
+<p><em>Arguments</em>:</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>gridIn</td>
+<td>Initial grid descriptor</td>
+</tr>
+<tr class="row-even"><td>gridOut</td>
+<td>Final grid descriptor</td>
+</tr>
+<tr class="row-odd"><td>type</td>
+<td>The type of the 1D transform (either as a predefined integer parameter, or as a class gen_trans_type.</td>
+</tr>
+<tr class="row-even"><td>d</td>
+<td>The dimension to be transformed. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on mem_order member of gridIn and gridOut. The transform dimension of the grid is assumed to be MPI task-local.</td>
+</tr>
+<tr class="row-odd"><td>inplace</td>
+<td>True for in-place transform, false for out-of-place.</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="releasing-1d-transform-handle">
 <h4><a class="toc-backref" href="#id9">Releasing 1D transform handle</a><a class="headerlink" href="#releasing-1d-transform-handle" title="Permalink to this headline">¶</a></h4>
@@ -239,12 +280,22 @@ fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
 </div>
 <div class="section" id="executing-1d-transform">
 <h4><a class="toc-backref" href="#id10">Executing 1D transform</a><a class="headerlink" href="#executing-1d-transform" title="Permalink to this headline">¶</a></h4>
-<p>template &lt;class TypeIn,class TypeOut&gt; class transplan::exec(char *In, char *Out);</p>
-<p>Function: Executes the pre-planned 1D transform of a 3D array</p>
-<p>Arguments:</p>
-<blockquote>
-<div>In and Out are pointers to input and output arrays, cast as pointers to char. They contain the local portion of the 3D input and output arrays, arranged as a contiguous sequence of numbers according to local grid dimensions and the memory order of initial and final grid objects respectively.</div></blockquote>
-<p><em>Notes</em>: If the transform is out-of-place, then these arrays must be non-overlapping. The execution can be performed many times with the same handle and same or different input and output arrays.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><em>Function</em>: Executes the pre-planned 1D transform of a 3D array</p>
+<p><em>Arguments</em>:</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>In and Out</td>
+<td>Pointers to input and output arrays, cast as pointers to char. They contain the local portion of the 3D input and output arrays, arranged as a contiguous sequence of numbers according to local grid dimensions and the memory order of initial and final grid objects respectively.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If the transform is out-of-place, then these arrays must be non-overlapping. The execution can be performed many times with the same handle and same or different input and output arrays.</p>
+</div>
 </div>
 </div>
 <div class="section" id="three-dimensional-transforms">
@@ -255,50 +306,89 @@ fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
 <li>Final grid.</li>
 <li>The type of 3D transform.</li>
 </ol>
-<p>The final grid may or may not be the same as the initial grid. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT’s last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.</p>
+<p>The final grid may or may not be the same as the initial grid. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.</p>
 <p>In order to define the 3D transform type one needs to know three 1D transform types comprising the 3D transform. In C++ 3D transform type is interfaced through a class trans_type3D.</p>
 <div class="section" id="trans-type3d-constructor">
 <h4><a class="toc-backref" href="#id12">trans_type3D constructor</a><a class="headerlink" href="#trans-type3d-constructor" title="Permalink to this headline">¶</a></h4>
 <p>Two constructors are provided for trans_type3D (in addition to a copy constructor):</p>
-<p>trans_type3D::trans_type3D(const gen_trans_type *types_[3]);
-trans_type3D::trans_type3D(const int types[3]);</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">trans_type3D</span><span class="o">::</span><span class="n">trans_type3D</span><span class="p">(</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">types_</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+<span class="n">trans_type3D</span><span class="o">::</span><span class="n">trans_type3D</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">types</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+</pre></div>
+</div>
 <p>Types is an array of 3 1D transform types, either as integer type IDs, or gen_trans_type classes.</p>
 <p>trans_type3D class has the following public members:</p>
-<p>char *name;
-int dtIn,dtOut; // Datatypes for input and output: 1 is real, 2 is complex
-int prec; // Datatype precision for a real value in bytes: 4 for single, 8 for double precision</p>
-<p>bool is_set;
-int types[3]; // 3 1D transform types</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">dtIn</span><span class="p">,</span><span class="n">dtOut</span><span class="p">;</span> <span class="c1">// Datatypes for input and output: 1 is real, 2 is complex</span>
+<span class="kt">int</span> <span class="n">prec</span><span class="p">;</span> <span class="c1">// Datatype precision for a real value in bytes: 4 for single, 8 for double precision</span>
+
+<span class="kt">bool</span> <span class="n">is_set</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">types</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span> <span class="c1">// 3 1D transform types</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="transform3d-constructor">
 <h4><a class="toc-backref" href="#id13">Transform3D constructor</a><a class="headerlink" href="#transform3d-constructor" title="Permalink to this headline">¶</a></h4>
 <p>In C++ 3D transforms are handled through class template transform3D, with input and output datatypes TypeIn and TypeOut. Often these will be the same, however some transforms have different types on input and output, for example real-to-complex FFT. In all cases the floating point precision (single/double) of the initial and final types should match.</p>
-<p>template&lt;class TypeIn,class TypeOut&gt; class transform3D::transform3D( const grid &amp;grid_in, const grid &amp;grid_out, const trans_type3D *type, const bool inplace, const bool Overwrite);</p>
-<p>Function: defines and plans a 3D transform</p>
-<p>Arguments:</p>
-<p>gridIn: Initial grid configuration</p>
-<p>gridOut:Final grid configuration</p>
-<p>type: pointer to a 3D transform type class</p>
-<p>inplace: true is this is an in-place transform; false if an out-of-place transform.</p>
-<p>Overwrite (optional): Indicates whether input can be overwritten (true=yes, default is no)</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">transform3D</span><span class="p">(</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_in</span><span class="p">,</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_out</span><span class="p">,</span> <span class="k">const</span> <span class="n">trans_type3D</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">Overwrite</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><em>Function</em>: defines and plans a 3D transform</p>
+<p><em>Arguments</em>:</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>gridIn</td>
+<td>Initial grid configuration</td>
+</tr>
+<tr class="row-even"><td>gridOut</td>
+<td>Final grid configuration</td>
+</tr>
+<tr class="row-odd"><td>type</td>
+<td>pointer to a 3D transform type class</td>
+</tr>
+<tr class="row-even"><td>inplace</td>
+<td>true is this is an in-place transform; false if an out-of-place transform.</td>
+</tr>
+<tr class="row-odd"><td>Overwrite (optional)</td>
+<td>Indicates whether input can be overwritten (true=yes, default is no)</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="transform3d-execution">
 <h4><a class="toc-backref" href="#id14">Transform3D Execution</a><a class="headerlink" href="#transform3d-execution" title="Permalink to this headline">¶</a></h4>
-<p>template&lt;class TypeIn,class TypeOut&gt; class transform3D::exec(TypeIn *In,TypeOut *Out);</p>
-<p>Function: executes a 3D transform</p>
-<p>Arguments:</p>
-<blockquote>
-<div>In and Out: pointers to input and output arrays. In case of in-place transform they can point to the same location. For out-of-place transforms the arrays must be non-overlapping.</div></blockquote>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><em>Function</em>: executes a 3D transform</p>
+<p><em>Arguments</em>:</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>In and Out</td>
+<td>Pointers to input and output arrays. In case of in-place transform they can point to the same location. For out-of-place transforms the arrays must be non-overlapping.</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="spectral-derivative-for-3d-array">
 <h4><a class="toc-backref" href="#id15">Spectral Derivative for 3D array</a><a class="headerlink" href="#spectral-derivative-for-3d-array" title="Permalink to this headline">¶</a></h4>
-<p>template&lt;class TypeIn,class TypeOut&gt; class transform3D::exec_deriv(TypeIn *In,TypeOut *Out, int idir);</p>
-<p>Function: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber. This function is defined only for complex-valued output arrays (single or double precision), i.e. TypeOut must be either mycomplex or complex_double.</p>
-<p>Arguments:</p>
-<p>In and Out are pointers to input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of grids in planning stage.</p>
-<p>idir is the dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2.</p>
-<p>Notes:</p>
-<ol class="arabic simple">
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec_deriv</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">,</span> <span class="kt">int</span> <span class="n">idir</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><em>Function</em>: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber. This function is defined only for complex-valued output arrays (single or double precision), i.e. TypeOut must be either mycomplex or complex_double.</p>
+<p><em>Arguments</em>:</p>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>In and Out</td>
+<td>Pointers to input and output arrays, assumed to be the local portion of the 3D grid array stored contiguously in memory, consistent with definition of grids in planning stage.</td>
+</tr>
+<tr class="row-even"><td>idir</td>
+<td>The dimension where derivative is to be taken in (this is logical dimension, NOT storage mapped). Valid values are 0 - 2.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ol class="last arabic simple">
 <li>Unless inplace was defined in the planning stage of mytrans, In and Out must be non-overlapping</li>
 <li>This function can be used multiple times after the 3D transform has been defined and planned.</li>
 </ol>
@@ -306,9 +396,68 @@ int types[3]; // 3 1D transform types</p>
 </div>
 </div>
 </div>
+</div>
 
 
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">P3DFFT++ C++ Reference</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#setup-and-grid-layout">Setup and Grid layout</a><ul>
+<li><a class="reference internal" href="#grid-constructor"><em>grid</em> constructor</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#p3dfft-transforms">P3DFFT++ Transforms</a><ul>
+<li><a class="reference internal" href="#one-dimensional-1d-transforms">One-Dimensional (1D) Transforms</a><ul>
+<li><a class="reference internal" href="#custom-transform-types">Custom transform types</a></li>
+<li><a class="reference internal" href="#planning-1d-transform">Planning 1D transform</a></li>
+<li><a class="reference internal" href="#releasing-1d-transform-handle">Releasing 1D transform handle</a></li>
+<li><a class="reference internal" href="#executing-1d-transform">Executing 1D transform</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional Transforms</a><ul>
+<li><a class="reference internal" href="#trans-type3d-constructor">trans_type3D constructor</a></li>
+<li><a class="reference internal" href="#transform3d-constructor">Transform3D constructor</a></li>
+<li><a class="reference internal" href="#transform3d-execution">Transform3D Execution</a></li>
+<li><a class="reference internal" href="#spectral-derivative-for-3d-array">Spectral Derivative for 3D array</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="p3dfft++_tutorial.html"
+                        title="previous chapter">P3DFFT++ Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="p3dfft++_c_reference.html"
+                        title="next chapter">P3DFFT++ C Reference</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/p3dfft++_c++_reference.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>

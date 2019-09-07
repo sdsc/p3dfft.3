@@ -1,3 +1,5 @@
+.. _installing_p3dfft:
+
 Installing P3DFFT
 =================
 The latest version of P3DFFT can be found `here <https://github.com/sdsc/p3dfft/releases/latest>`_. Once you have extracted the package, you must take the following steps to complete the setup:
@@ -16,7 +18,7 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
 
 .. csv-table::
         :header: "Argument", "Notes", "Description", Example"
-        :widths: 20, 10, 50, 10
+        :widths: auto
         :escape: '
 
         "--prefix=PREFIX", "Mandatory for users without access to /usr/local", "This argument will install p3dfft to PREFIX when you run make install. By default, configure will install to /usr/local", "--prefix=$HOME/local/"
@@ -47,7 +49,7 @@ Compiling on Comet (XSEDE/SDSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
-        :widths: 10, 10, 80
+        :widths: auto
 
         "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
@@ -57,7 +59,7 @@ Compiling on IBM Power7
 ^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
-        :widths: 10, 10, 80
+        :widths: auto
         :escape: '
 
         "mpfort", "essl", "./configure FC=mpfort FCFLAGS='"-qcclines -qarch=pwr7 -qstrict -qnosave -qtune=pwr7 -qhot -qsimd=auto -qcache=auto -qsmp=omp -qthreaded -O3 -q64 -qfloat=hsflt:fltint'" CC=mpcc CFLAGS='"-q64 -DNUS_XCOMP'" CPP=/usr/bin/cpp --enable-essl --enable-ibm --host='"bd-login'""
@@ -66,7 +68,7 @@ Compiling on Stampede2 (XSEDE/TACC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
-        :widths: 10, 10, 80
+        :widths: auto
         :escape: '
 
         "intel", "fftw3", "./configure --enable-fftw --enable-intel CC=mpicc FC=mpif90  FCFLAGS='"-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512'" CCFLAGS='"-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512'" --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc"
@@ -75,7 +77,7 @@ Compiling on Bridges (PSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
-        :widths: 10, 10, 80
+        :widths: auto
 
         "Intel", "fftw", "./configure --enable-fftw --enable-intel --with-fftw=$FFTW_LIB/.. CC=mpicc FC=mpif90"
 
@@ -83,7 +85,7 @@ Compiling on Mira/Cetus/Vesta (ALCF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Arguments"
-        :widths: 10, 90
+        :widths: auto
 
         "IBM XL", "./configure --enable-ibm --enable-essl --with-essl=/soft/libraries/essl/current FC=mpixlf90_r CC=mpixlc_r"
         "GNU", "./configure --enable-gnu --enable-fftw --with-fftw=/soft/libraries/alcf/current/{xl,gcc}/FFTW3 FC=mpif90 CC=mpicc"

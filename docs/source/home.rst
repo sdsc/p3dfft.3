@@ -44,7 +44,10 @@ This software is provided for free for educational and not-for-profit use under 
 
 Please acknowledge/cite use of P3DFFT as follows: D. Pekurovsky, P3DFFT: a framework for parallel computations of Fourier transforms in three dimensions, SIAM Journal on Scientific Computing 2012, Vol. 34, No. 4, pp. C192-C209. This paper can be obtained  `here <http://arxiv.org/abs/1905.02803>`_.
 
-To cite the software you can also use DOI for P3DFFT v. 2.7.9: https://doi.org/10.5281/zenodo.2634590
+To cite the software you can also use DOI for P3DFFT v. 2.7.9:
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2634590.svg
+        :target: https://doi.org/10.5281/zenodo.2634590
 
 .. figure:: https://www.nsf.gov/images/logos/nsf1.jpg
         :align: center
