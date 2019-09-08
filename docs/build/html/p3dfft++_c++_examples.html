@@ -4,24 +4,30 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>P3DFFT++ C++ examples &#8212; P3DFFT++ 3.0.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '3.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="P3DFFT++ C examples" href="p3dfft++_c_examples.html" />
     <link rel="prev" title="P3DFFT++ Fortran Reference" href="p3dfft++_fortran_reference.html" /> 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -48,16 +54,16 @@
 <h1>P3DFFT++ C++ examples<a class="headerlink" href="#p3dfft-c-examples" title="Permalink to this headline">¶</a></h1>
 <table border="1" class="colwidths-auto docutils">
 <tbody valign="top">
-<tr class="row-odd"><td>test3D_r2c.cpp</td>
+<tr class="row-odd"><td><a class="reference download internal" href="_downloads/test3D_r2c.C" download=""><code class="xref download docutils literal"><span class="pre">test3D_r2c.C</span></code></a></td>
 <td>Test program for real-to-complex and complex-to-real 3D FFT. Can be used as a correctness test and a timing test.</td>
 </tr>
-<tr class="row-even"><td>test3D_c2c.cpp</td>
+<tr class="row-even"><td><a class="reference download internal" href="_downloads/test3D_c2c.C" download=""><code class="xref download docutils literal"><span class="pre">test3D_c2c.C</span></code></a></td>
 <td>Test program for complex-to-complex forward and backward 3D FFT. Can be used as a correctness test and a timing test.</td>
 </tr>
-<tr class="row-odd"><td>test_transplan.C</td>
+<tr class="row-odd"><td><a class="reference download internal" href="_downloads/test_transplan.C" download=""><code class="xref download docutils literal"><span class="pre">test_transplan.C</span></code></a></td>
 <td>Test program for real-to-complex and complex-to-real 1D FFT. User can choose an arbitrary dimension of transform. This function performs a local transpose in addition to 1D FFT, as needed. The transpose is specified by input and output memory order, which maps logical onto storage array dimensions. No inter-processor transpose takes place here. 1D transforms can be used by themselves or as a stage in a multidimensional transform.</td>
 </tr>
-<tr class="row-even"><td>test_cos.C, test_sin.C, test_cos_complex.C</td>
+<tr class="row-even"><td><a class="reference download internal" href="_downloads/test1D_cos.C" download=""><code class="xref download docutils literal"><span class="pre">test1D_cos.C</span></code></a>, <a class="reference download internal" href="_downloads/test1D_sin.C" download=""><code class="xref download docutils literal"><span class="pre">test1D_sin.C</span></code></a>, <a class="reference download internal" href="_downloads/test1D_cos_complex.C" download=""><code class="xref download docutils literal"><span class="pre">test1D_cos_complex.C</span></code></a></td>
 <td>Same as above, but use cosine and sine transforms, respectively; use cosine transform for complex-numbered inputs.</td>
 </tr>
 </tbody>
@@ -85,14 +91,12 @@
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
-    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -117,7 +121,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
     </div>
   </body>
 </html>
