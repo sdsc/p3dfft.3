@@ -550,6 +550,7 @@ void printbuf(char *,int[3],int,int);
 	  memcpy(out,in,prec*dims1[0]*dims1[1]*dims1[2]);
 	
 	else 
+	  /*
 #ifdef FFTW
 	  if(dt1 > dt2 && !OW) { // C2R
 	    Type1 *buf = new Type1[dims1[0]*dims1[1]*dims1[2]];
@@ -559,6 +560,7 @@ void printbuf(char *,int[3],int,int);
 	  }
 	  else
 #endif
+	  */
 	  (*(trans_type->exec))(plan->libplan_out,in,out);
       else if(!trans_type->is_empty) 
 
@@ -804,7 +806,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       switch(mc[1]) {
       case 0: //1,0,2
 	
-	if(OW && dt2*d2[0]*d2[1] <= dt1*d1[0]*d1[1])
+	if(OW && dt2 <= dt1)
 	  inplace=true;
 	else
 	  tmp = new Type2[d2[0]*d2[1]];
@@ -812,10 +814,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	for(k=0;k <d1[2];k++) {
 	  if(inplace) {
 	    tmp = (Type2 *) (in+k*d1[0]*d1[1]);
-	    (*(trans_type->exec))(plan->libplan_in,pin+k*d1[0]*d1[1],tmp);
+	    (*(trans_type->exec))(plan->libplan_in,pIN+k*d1[0]*d1[1],tmp);
 	  }
 	  else
-	    (*(trans_type->exec))(plan->libplan_out,pin+k*d1[0]*d1[1],tmp);
+	    (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp);
 
 	  pout = (float *) out+ds*k*d2[0]*d2[1];
 #ifdef MKL_BLAS
@@ -869,7 +871,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	if(nb31 < 1) nb31 = 1;
 	if(nb13 < 1) nb13 = 1;
 
-	if(OW && dt2*d2[2]*d2[1] <= dt1*d1[0]*d1[1])
+	if(OW && dt2 <= dt1)
 	  inplace = true;
 	else
 	  tmp = new Type2[d2[2]*d2[1]*nb31];
@@ -1067,7 +1069,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       switch(mc[1]) {
       case 0: //1,0,2
 
-	if((void *) in == (void *) out && d2[0]*d2[1]*sizeof(Type2) > d1[0]*d1[1]*sizeof(Type1)) {
+	if((void *) in == (void *) out && dt2 > dt1) {
 
 	tmp = new Type1[d1[0]*d1[1]*d1[2]];
 	for(k=0;k <d1[2];k++) {
@@ -1367,6 +1369,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     d2[i] = dims2[imo2[i]];
   }
   
+  /*
     if(dims1[trans_dim] != *inembed) {
       printf("Error in reorder_deriv: leading dimension on input %d doesn't match transform type %d\n",dims1[trans_dim],*inembed);
       return;
@@ -1375,6 +1378,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       printf("Error in reorder_deriv: leading dimension on output %d doesnt match transform type %d\n", dims2[trans_dim],*onembed);
       return;
     }
+  */
 
   if(mo1[trans_dim] == 0) 
     scheme = TRANS_IN;
@@ -2682,7 +2686,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       timers.packsend_trans += MPI_Wtime() -t1;
 #endif
   tmpdims = mpiplan->grid2->ldims;
-  double *tmp = (double *) sendbuf;
+
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -2692,7 +2696,6 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       timers.alltoall += MPI_Wtime() -t1;
 #endif
 
-  tmp = (double *) recvbuf;
   delete [] sendbuf;
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -2731,7 +2734,6 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       timers.packsend_deriv += MPI_Wtime() -t1;
 #endif
   tmpdims = mpiplan->grid2->ldims;
-  double *tmp = (double *) sendbuf;
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -2741,7 +2743,6 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       timers.alltoall += MPI_Wtime() -t1;
 #endif
 
-  tmp = (double *) recvbuf;
   delete [] sendbuf;
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -2820,8 +2821,8 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   }    
 
   tmpdims = trplan->grid2->ldims;
-
-  if(OW && tmpdims[0]*tmpdims[1]*tmpdims[2]*trplan->dt2 <= dims1[0]*dims1[1]*dims1[2]*trplan->dt1) 
+  //tmpdims[0]*tmpdims[1]*tmpdims[2]*
+  if(OW && trplan->dt2 <= trplan->dt1)  // CC or C2R 
     buf = (float *) src;
   else
     buf = new float[ds*tmpdims[0]*tmpdims[1]*tmpdims[2]];
@@ -2834,6 +2835,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
 #endif
 
+  /*
 #ifdef FFTW
   if(trplan->dt1 > trplan->dt2 && !OW) {
     char *pin = new char[sizeof(Type1)*dims1[0]*dims1[1]*dims1[2]];
@@ -2842,6 +2844,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   }
   else
 #endif
+  */
   trplan->exec(src,(char *) buf,OW);
 
 #ifdef DEBUG
@@ -2907,7 +2910,7 @@ for(i=0;i < nt;i++) {
 
   tmpdims = trplan->grid2->ldims;
 
-  if(OW && tmpdims[0]*tmpdims[1]*tmpdims[2]*trplan->dt2 <= dims1[0]*dims1[1]*dims1[2]*trplan->dt1) 
+  if(OW && trplan->dt2 <= trplan->dt1) 
     buf = (float *) src;
   else
     buf = new float[ds*tmpdims[0]*tmpdims[1]*tmpdims[2]];
