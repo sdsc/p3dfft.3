@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms &#8212; P3DFFT++ 3.0.0 documentation</title>
+    <title>P3DFFT++ C examples &#8212; P3DFFT++ 3.0.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -24,7 +24,8 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction" href="home.html" /> 
+    <link rel="next" title="P3DFFT++ Fortran examples" href="p3dfft++_fortran_examples.html" />
+    <link rel="prev" title="P3DFFT++ C++ examples" href="p3dfft++_c++_examples.html" /> 
   </head>
   <body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -34,9 +35,13 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="home.html" title="Introduction"
+          <a href="p3dfft++_fortran_examples.html" title="P3DFFT++ Fortran examples"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="p3dfft++_c++_examples.html" title="P3DFFT++ C++ examples"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" accesskey="U">P3DFFT++ Documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -45,20 +50,21 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="p3dfft-scalable-framework-for-three-dimensional-fourier-transforms">
-<h1>P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms<a class="headerlink" href="#p3dfft-scalable-framework-for-three-dimensional-fourier-transforms" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="home.html">Home</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install_p3dfft.html">Install P3DFFT</a></li>
-<li class="toctree-l1"><a class="reference internal" href="download_p3dfft.html">Download P3DFFT</a></li>
-<li class="toctree-l1"><a class="reference internal" href="p3dfft_documentation.html">P3DFFT Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="download_p3dfft++.html">Download P3DFFT++</a></li>
-<li class="toctree-l1"><a class="reference internal" href="p3dfft++_documentation.html">P3DFFT++ Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
-<li class="toctree-l1"><a class="reference internal" href="license_of_use.html">License of use</a></li>
-</ul>
-</div>
+  <div class="section" id="p3dfft-c-examples">
+<h1>P3DFFT++ C examples<a class="headerlink" href="#p3dfft-c-examples" title="Permalink to this headline">¶</a></h1>
+<table border="1" class="colwidths-auto docutils">
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference download internal" href="_downloads/test3D_r2c.c" download=""><code class="xref download docutils literal"><span class="pre">test3D_r2c.c</span></code></a></td>
+<td>Test program for real-to-complex and complex-to-real 3D FFT. Can be used as a correctness test and a timing test.</td>
+</tr>
+<tr class="row-even"><td><a class="reference download internal" href="_downloads/test3D_c2c.c" download=""><code class="xref download docutils literal"><span class="pre">test3D_c2c.c</span></code></a></td>
+<td>Test program for complex-to-complex forward and backward 3D FFT. Can be used as a correctness test and a timing test.</td>
+</tr>
+<tr class="row-odd"><td>test_trans1D.c</td>
+<td>Test program for real-to-complex and complex-to-real 1D FFT. User can choose an arbitrary dimension of transform. This function performs a local transpose in addition to 1D FFT, as needed. The transpose is specified by input and output memory order, which maps logical onto storage array dimensions. No inter-processor transpose takes place here. 1D transforms can be used by themselves or as a stage in a multidimensional transform.</td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
@@ -67,13 +73,16 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="p3dfft++_c++_examples.html"
+                        title="previous chapter">P3DFFT++ C++ examples</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="home.html"
-                        title="next chapter">Introduction</a></p>
+  <p class="topless"><a href="p3dfft++_fortran_examples.html"
+                        title="next chapter">P3DFFT++ Fortran examples</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/index.rst.txt"
+      <li><a href="_sources/p3dfft++_c_examples.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -98,9 +107,13 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="home.html" title="Introduction"
+          <a href="p3dfft++_fortran_examples.html" title="P3DFFT++ Fortran examples"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="p3dfft++_c++_examples.html" title="P3DFFT++ C++ examples"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" >P3DFFT++ Documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
