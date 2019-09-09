@@ -753,7 +753,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
-  
+ 
+  /* 
     if(dims1[trans_dim] != *inembed) {
       printf("Error in reorder_trans: leading dimension on input %d doesn't match transform type %d\n",dims1[trans_dim],*inembed);
       return;
@@ -762,6 +763,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       printf("Error in reorder_trans: leading dimension on output %d doesnt match transform type %d\n", dims2[trans_dim],*onembed);
       return;
     }
+  */
 
     if(mo1[trans_dim] == 0) 
     scheme = TRANS_IN;

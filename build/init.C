@@ -1548,6 +1548,7 @@ grid::grid(const grid &rhs)
       P[i] = rhs.P[i];
     }
     taskid = rhs.taskid;
+    numtasks = rhs.numtasks;
     /*    
     st = new int**[nd];
     sz = new int**[nd];
