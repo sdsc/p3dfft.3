@@ -264,7 +264,6 @@ main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/(nprocs*Nrep),gtmin/Nrep,gtmax/Nrep);
 
-  MPI_Barrier(MPI_COMM_WORLD);
   delete [] IN,OUT,FIN; 
 
   // Clean up all P3DFFT++ data

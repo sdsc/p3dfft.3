@@ -564,8 +564,8 @@ template <class Type> class MPIplan : public stage {
  public :
 
   MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2, int prec_);
-  MPIplan() {};
-  ~MPIplan();
+  //MPIplan() {};
+   ~MPIplan();
   void exec(char *in,char *out);
   template <class Type1,class Type2> friend class trans_MPIplan;
   };
@@ -596,7 +596,9 @@ template <class Type1,class Type2>   class transplan : public stage {
   transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
   transplan(const grid &gr1,const grid &gr2,int type_ID,int d); //, bool inplace_); 
   transplan() {};
-  ~transplan() {delete grid1,grid2;};
+  ~transplan() {
+    delete grid1,grid2; 
+  };
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);

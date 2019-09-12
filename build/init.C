@@ -832,32 +832,47 @@ void cleanup()
   types3D.clear();
 
   // Since these are vectors of pointers, simply erasing is not enough; must delete each referenced class. 
+  //  printf("Clearing types1D\n");
   vector<gen_trans_type *>::iterator it1=types1D.begin();
   while(it1 != types1D.end()) {
     delete *it1;
     it1 = types1D.erase(it1);
   }
 
+  //  printf("Clearing Plans\n");
   //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
   vector<Plan *>::iterator it=Plans.begin();
   while(it != Plans.end()) {
+#ifdef FFTW
+    if((*it)->libplan_in != NULL) 
+      fftw_destroy_plan((fftw_plan) (*it)->libplan_in);
+    if((*it)->libplan_out != NULL) 
+      fftw_destroy_plan((fftw_plan) (*it)->libplan_out);
+#endif
     delete *it;
     it = Plans.erase(it);
   }
 
+  //  printf("Clearing stored_trans1D\n");
   vector<stage *>::iterator it2=stored_trans1D.begin();
   while(it2 != stored_trans1D.end()) {
     delete *it2;
     it2 = stored_trans1D.erase(it2);
   }
 
+  //  printf("Clearing stored_trans3D\n");
   vector<gen_transform3D *>::iterator it3=stored_trans3D.begin();
   while(it3 != stored_trans3D.end()) {
     delete *it3;
     it3 = stored_trans3D.erase(it3);
   }
 
-    
+#ifdef FFTW
+  //  printf("Cleaning FFTW\n");
+  fftw_cleanup();
+#endif    
+
+  //  printf("Done Cleaning\n");
 
 }
 

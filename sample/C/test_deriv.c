@@ -269,15 +269,20 @@ main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/(nprocs*Nrep),gtmin/Nrep,gtmax/Nrep);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  printf("Freeing In, OUT, FIN\n");
   free(IN); free(OUT); free(FIN);
 
   // Clean up grid structures
 
+  printf("Freeing gird1, grid2\n");
   p3dfft_free_grid(grid1);
   p3dfft_free_grid(grid2);
 
   // Clean up all P3DFFT++ data
 
+  printf("Cleaning up p3dfft\n");
   p3dfft_cleanup();
 
   MPI_Finalize();
