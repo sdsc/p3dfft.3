@@ -86,7 +86,7 @@ The above will prepare p3dfft to be compiled by the PGI compiler with FFTW suppo
 **Table 3**: Arguments of configure script
 
 .. csv-table::
-        :header: "Argument", "Notes", "Description", Example"
+        :header: "Argument", "Notes", "Description", "Example"
         :widths: auto
         :escape: '
 
@@ -101,7 +101,7 @@ The above will prepare p3dfft to be compiled by the PGI compiler with FFTW suppo
         "--enable-measure", "Optional, enabled by default, use only with --enable-fftw", "For search-once-for-the-fast algorithm (takes more time on p3dfft_setup()).", "--enable-measure"
         "--enable-patient", "Optional, use only with --enable-fftw", "For search-once-for-the-fastest-algorithm (takes much more time on p3dfft_setup()).", "--enable-patient"
         "--enable-dimsc", "Optional", "To assign processor rows and columns in the Cartesian processor grid according to C convention. The default is Fortran convention which is recommended. This option does not affect the order of storage of arrays in memory.", "--enable-dimsc"
-        "--enable-useeven", "Optional, recommended for Cray XT", This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.", --enable-useeven"
+        "--enable-useeven", "Optional, recommended for Cray XT", "This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.", "--enable-useeven"
         "--enable-stride1", "Optional, recommended", "To enable stride-1 data structures on output (this may in some cases give some advantage in performance). You can define loop blocking factors NLBX and NBLY to experiment, otherwise they are set to default values.", "--enable-stride1"
         "--enable-nblx", "Optional", "To define loop blocking factor NBL_X", "--enable-nblx=32"
         "--enable-nbly1", "Optional", "To define loop blocking factor NBL_Y1", "--enable-nbly1=32"
@@ -111,7 +111,7 @@ The above will prepare p3dfft to be compiled by the PGI compiler with FFTW suppo
         "FC=<Fortran compiler>", "Strongly recommended", "Fortran compiler", "FC=mpfort"
         "FCFLAGS='"<Fortran compiler flags>'"", "Optional, recommended", "Fortran compiler flags", "FCFLAGS='"-Mextend'""
         "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpcc"
-        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", CFLAGS='"-fastsse'""
+        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-fastsse'""
         "LDFLAGS='"<linker flags>"", "Mandatory (depending on platform)", "Linker flags", "LDFLAGS='"-lmpi_f90 -lmpi_f77'""
 
 More information on how to customize the configure script can be found by calling:

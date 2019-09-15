@@ -15,7 +15,7 @@ Run "configure --help" for complete list of options. Recommended options: --enab
 Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. Some examples of compiling on several systems are given below. Users may need to customize as needed. If you wish to share more examples or to request or contribute in support for other compilers, please write to `dmitry@sdsc.edu <mailto:dmitry%40sdsc%2eedu>`_. If you give us an account on your system we will work with you to customize the installation.
 
 .. csv-table::
-        :header: "Argument", "Notes", "Description", Example"
+        :header: "Argument", "Notes", "Description", "Example"
         :widths: auto
         :escape: '
 
@@ -31,7 +31,7 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "--enable-measure", "Optional, enabled by default, use only with --enable-fftw", "For search-once-for-the-fast algorithm (takes more time on p3dfft_setup()).", "--enable-measure"
         "--enable-patient", "Optional, use only with --enable-fftw", "For search-once-for-the-fastest-algorithm (takes much more time on p3dfft_setup()).", "--enable-patient"
         "--enable-dimsc", "Optional", "To assign processor rows and columns in the Cartesian processor grid according to C convention. The default is Fortran convention which is recommended. This option does not affect the order of storage of arrays in memory.", "--enable-dimsc"
-        "--enable-useeven", "Optional, recommended for Cray XT", This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.", --enable-useeven"
+        "--enable-useeven", "Optional, recommended for Cray XT", "This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.", "--enable-useeven"
         "--enable-stride1", "Optional, recommended", "To enable stride-1 data structures on output (this may in some cases give some advantage in performance). You can define loop blocking factors NLBX and NBLY to experiment, otherwise they are set to default values.", "--enable-stride1"
         "--enable-nblx", "Optional", "To define loop blocking factor NBL_X", "--enable-nblx=32"
         "--enable-nbly1", "Optional", "To define loop blocking factor NBL_Y1", "--enable-nbly1=32"
@@ -43,7 +43,7 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpcc"
         "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-fastsse'""
         "CXX=<C++ compiler>", "Strongly Recommended", "C++ compiler", "CXX=mpicxx"
-        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS=''"
+        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS=' '"
         "LDFLAGS='"<linker flags>"", "Mandatory (depending on platform)", "Linker flags", "LDFLAGS='"-lmpi_f90 -lmpi_f77'""
 
 Compiling on Comet (XSEDE/SDSC)
