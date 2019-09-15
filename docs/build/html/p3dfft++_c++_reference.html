@@ -1,54 +1,188 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>P3DFFT++ C++ Reference &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>P3DFFT++ C++ Reference &mdash; P3DFFT++ 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '3.0.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="P3DFFT++ C Reference" href="p3dfft++_c_reference.html" />
-    <link rel="prev" title="P3DFFT++ Tutorial" href="p3dfft++_tutorial.html" /> 
-  </head>
-  <body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c_reference.html" title="P3DFFT++ C Reference"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_tutorial.html" title="P3DFFT++ Tutorial"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" accesskey="U">P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="P3DFFT++ 3.0.0 documentation" href="index.html"/>
+        <link rel="up" title="P3DFFT++ Documentation" href="p3dfft++_documentation.html"/>
+        <link rel="next" title="P3DFFT++ C Reference" href="p3dfft++_c_reference.html"/>
+        <link rel="prev" title="P3DFFT++ Tutorial" href="p3dfft++_tutorial.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> P3DFFT++
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="home.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft.html">Install P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft.html">Download P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="p3dfft_documentation.html">P3DFFT Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft++.html">Install P3DFFT++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft++.html">Download P3DFFT++</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="p3dfft++_documentation.html">P3DFFT++ Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_tutorial.html">P3DFFT++ Tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">P3DFFT++ C++ reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-and-grid-layout">Setup and Grid layout</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#grid-constructor"><em>grid</em> constructor</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#p3dfft-transforms">P3DFFT++ Transforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#one-dimensional-1d-transforms">One-Dimensional (1D) Transforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional Transforms</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_reference.html">P3DFFT++ C Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_fortran_reference.html">P3DFFT++ Fortran Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c++_examples.html">P3DFFT++ C++ examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_examples.html">P3DFFT++ C examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_fortran_examples.html">P3DFFT++ Fortran examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license_of_use.html">License of use</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">P3DFFT++</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="p3dfft++_documentation.html">P3DFFT++ Documentation</a> &raquo;</li>
+        
+      <li>P3DFFT++ C++ Reference</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/p3dfft++_c++_reference.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="p3dfft-c-reference">
 <h1><a class="toc-backref" href="#id1">P3DFFT++ C++ Reference</a><a class="headerlink" href="#p3dfft-c-reference" title="Permalink to this headline">¶</a></h1>
@@ -89,7 +223,7 @@
 <div class="section" id="setup-and-grid-layout">
 <h2><a class="toc-backref" href="#id3">Setup and Grid layout</a><a class="headerlink" href="#setup-and-grid-layout" title="Permalink to this headline">¶</a></h2>
 <p>The public portion of the grid class is below:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">grid</span> <span class="p">{</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">grid</span> <span class="p">{</span>
 
 <span class="p">...</span>
 
@@ -133,7 +267,7 @@
 </div>
 <div class="section" id="grid-constructor">
 <h3><a class="toc-backref" href="#id4"><em>grid</em> constructor</a><a class="headerlink" href="#grid-constructor" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">dim_conj_sym</span><span class="p">,</span><span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">dim_conj_sym</span><span class="p">,</span><span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Function</em>:Initializes a new grid with specified parameters.</p>
@@ -203,7 +337,7 @@
 <div class="section" id="custom-transform-types">
 <h4><a class="toc-backref" href="#id7">Custom transform types</a><a class="headerlink" href="#custom-transform-types" title="Permalink to this headline">¶</a></h4>
 <p>Custom 1D transforms can be defined by the user through trans_type1D class template.</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">Type1</span><span class="p">,</span><span class="k">class</span> <span class="nc">Type2</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">trans_type1D</span> <span class="o">:</span> <span class="k">public</span> <span class="n">gen_trans_type</span><span class="p">{</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">Type1</span><span class="p">,</span><span class="k">class</span> <span class="nc">Type2</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">trans_type1D</span> <span class="o">:</span> <span class="k">public</span> <span class="n">gen_trans_type</span><span class="p">{</span>
 
 <span class="kt">int</span> <span class="n">ID</span><span class="p">;</span>
 <span class="k">public</span> <span class="o">:</span>
@@ -222,7 +356,7 @@
 </pre></div>
 </div>
 <p>This class template is a derivative of gen_trans_type1D class, defined as follows:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">gen_trans_type</span> <span class="p">{</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">gen_trans_type</span> <span class="p">{</span>
 <span class="k">public</span> <span class="o">:</span>
 <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
 <span class="kt">int</span> <span class="n">isign</span><span class="p">;</span> <span class="c1">// forward (-1) or backward (+1), in case this is complex FFT</span>
@@ -236,13 +370,13 @@
 </pre></div>
 </div>
 <p>In order to define a custom transform type, the user needs to provide planning and execution functions (doplan and exec).  For example, in case of a complex FFT implemented through FFTW, the following is how the transform type is constructed:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Complex-to-complex Fourier Transform, forward transform, double precision&quot;</span><span class="p">;</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Complex-to-complex Fourier Transform, forward transform, double precision&quot;</span><span class="p">;</span>
 <span class="kt">int</span> <span class="n">isign</span> <span class="o">=</span> <span class="n">FFTW_FORWARD</span><span class="p">;</span>
 <span class="n">trans_type1D</span><span class="o">&lt;</span><span class="n">complex_double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">mytype</span> <span class="o">=</span> <span class="k">new</span> <span class="n">trans_type1D</span><span class="o">&lt;</span><span class="n">complex_double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">name</span><span class="p">,(</span><span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="p">)(...)</span> <span class="p">)</span> <span class="n">fftw_plan_many_dft</span><span class="p">,(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="p">)(...))</span> <span class="n">exec_c2c_d</span><span class="p">,</span><span class="n">isign</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>where exec_c2c_d is defined as follows:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">exec_c2c_d</span><span class="p">(</span><span class="kt">long</span> <span class="n">plan</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">out</span><span class="p">)</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">exec_c2c_d</span><span class="p">(</span><span class="kt">long</span> <span class="n">plan</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="n">complex_double</span> <span class="o">*</span><span class="n">out</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="n">fftw_execute_dft</span><span class="p">((</span><span class="n">fftw_plan</span><span class="p">)</span> <span class="n">plan</span><span class="p">,(</span><span class="n">fftw_complex</span> <span class="o">*</span><span class="p">)</span> <span class="n">in</span><span class="p">,(</span><span class="n">fftw_complex</span> <span class="o">*</span><span class="p">)</span> <span class="n">out</span><span class="p">);</span>
 <span class="p">}</span>
@@ -253,7 +387,7 @@
 <h4><a class="toc-backref" href="#id8">Planning 1D transform</a><a class="headerlink" href="#planning-1d-transform" title="Permalink to this headline">¶</a></h4>
 <p>1D transform in C++ is realized through transplan template class. TypeIn and TypeOut are the datatypes for input and output.</p>
 <p>Two constructors are provided.</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">transplan</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridIn</span><span class="p">,</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridOut</span><span class="p">,</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">d</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace_</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">transplan</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridIn</span><span class="p">,</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridOut</span><span class="p">,</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">d</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace_</span><span class="p">);</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">transplan</span><span class="p">(</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridIn</span><span class="p">,</span><span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">gridOut</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span><span class="k">const</span> <span class="kt">int</span> <span class="n">d</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace_</span><span class="p">);</span>
 </pre></div>
@@ -286,7 +420,7 @@
 </div>
 <div class="section" id="executing-1d-transform">
 <h4><a class="toc-backref" href="#id10">Executing 1D transform</a><a class="headerlink" href="#executing-1d-transform" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transplan</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Function</em>: Executes the pre-planned 1D transform of a 3D array</p>
@@ -317,13 +451,13 @@
 <div class="section" id="trans-type3d-constructor">
 <h4><a class="toc-backref" href="#id12">trans_type3D constructor</a><a class="headerlink" href="#trans-type3d-constructor" title="Permalink to this headline">¶</a></h4>
 <p>Two constructors are provided for trans_type3D (in addition to a copy constructor):</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">trans_type3D</span><span class="o">::</span><span class="n">trans_type3D</span><span class="p">(</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">types_</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">trans_type3D</span><span class="o">::</span><span class="n">trans_type3D</span><span class="p">(</span><span class="k">const</span> <span class="n">gen_trans_type</span> <span class="o">*</span><span class="n">types_</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
 <span class="n">trans_type3D</span><span class="o">::</span><span class="n">trans_type3D</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">types</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
 </pre></div>
 </div>
 <p>Types is an array of 3 1D transform types, either as integer type IDs, or gen_trans_type classes.</p>
 <p>trans_type3D class has the following public members:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
 <span class="kt">int</span> <span class="n">dtIn</span><span class="p">,</span><span class="n">dtOut</span><span class="p">;</span> <span class="c1">// Datatypes for input and output: 1 is real, 2 is complex</span>
 <span class="kt">int</span> <span class="n">prec</span><span class="p">;</span> <span class="c1">// Datatype precision for a real value in bytes: 4 for single, 8 for double precision</span>
 
@@ -335,7 +469,7 @@
 <div class="section" id="transform3d-constructor">
 <h4><a class="toc-backref" href="#id13">Transform3D constructor</a><a class="headerlink" href="#transform3d-constructor" title="Permalink to this headline">¶</a></h4>
 <p>In C++ 3D transforms are handled through class template transform3D, with input and output datatypes TypeIn and TypeOut. Often these will be the same, however some transforms have different types on input and output, for example real-to-complex FFT. In all cases the floating point precision (single/double) of the initial and final types should match.</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">transform3D</span><span class="p">(</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_in</span><span class="p">,</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_out</span><span class="p">,</span> <span class="k">const</span> <span class="n">trans_type3D</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">Overwrite</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">transform3D</span><span class="p">(</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_in</span><span class="p">,</span> <span class="k">const</span> <span class="n">grid</span> <span class="o">&amp;</span><span class="n">grid_out</span><span class="p">,</span> <span class="k">const</span> <span class="n">trans_type3D</span> <span class="o">*</span><span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">inplace</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">Overwrite</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Function</em>: defines and plans a 3D transform</p>
@@ -362,7 +496,7 @@
 </div>
 <div class="section" id="transform3d-execution">
 <h4><a class="toc-backref" href="#id14">Transform3D Execution</a><a class="headerlink" href="#transform3d-execution" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Function</em>: executes a 3D transform</p>
@@ -377,7 +511,7 @@
 </div>
 <div class="section" id="spectral-derivative-for-3d-array">
 <h4><a class="toc-backref" href="#id15">Spectral Derivative for 3D array</a><a class="headerlink" href="#spectral-derivative-for-3d-array" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec_deriv</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">,</span> <span class="kt">int</span> <span class="n">idir</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="o">::</span><span class="n">exec_deriv</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">In</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">Out</span><span class="p">,</span> <span class="kt">int</span> <span class="n">idir</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Function</em>: execute 3D real-to-complex FFT, followed by spectral derivative calculation, i.e. multiplication by (ik), where i is the complex imaginary unit, and k is the wavenumber. This function is defined only for complex-valued output arrays (single or double precision), i.e. TypeOut must be either mycomplex or complex_double.</p>
@@ -405,86 +539,73 @@
 </div>
 
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">P3DFFT++ C++ Reference</a><ul>
-<li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#setup-and-grid-layout">Setup and Grid layout</a><ul>
-<li><a class="reference internal" href="#grid-constructor"><em>grid</em> constructor</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#p3dfft-transforms">P3DFFT++ Transforms</a><ul>
-<li><a class="reference internal" href="#one-dimensional-1d-transforms">One-Dimensional (1D) Transforms</a><ul>
-<li><a class="reference internal" href="#custom-transform-types">Custom transform types</a></li>
-<li><a class="reference internal" href="#planning-1d-transform">Planning 1D transform</a></li>
-<li><a class="reference internal" href="#releasing-1d-transform-handle">Releasing 1D transform handle</a></li>
-<li><a class="reference internal" href="#executing-1d-transform">Executing 1D transform</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional Transforms</a><ul>
-<li><a class="reference internal" href="#trans-type3d-constructor">trans_type3D constructor</a></li>
-<li><a class="reference internal" href="#transform3d-constructor">Transform3D constructor</a></li>
-<li><a class="reference internal" href="#transform3d-execution">Transform3D Execution</a></li>
-<li><a class="reference internal" href="#spectral-derivative-for-3d-array">Spectral Derivative for 3D array</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="p3dfft++_c_reference.html" class="btn btn-neutral float-right" title="P3DFFT++ C Reference" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="p3dfft++_tutorial.html" class="btn btn-neutral" title="P3DFFT++ Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="p3dfft++_tutorial.html"
-                        title="previous chapter">P3DFFT++ Tutorial</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="p3dfft++_c_reference.html"
-                        title="next chapter">P3DFFT++ C Reference</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/p3dfft++_c++_reference.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Dmitry Pekurovsky.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c_reference.html" title="P3DFFT++ C Reference"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_tutorial.html" title="P3DFFT++ Tutorial"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" >P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

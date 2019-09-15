@@ -8,6 +8,7 @@ P3DFFT: Scalable Framework for Three-Dimensional Fourier Transforms
         Install P3DFFT <install_p3dfft.rst>
         Download P3DFFT <download_p3dfft.rst>
         P3DFFT Documentation <p3dfft_documentation.rst>
+        Install P3DFFT++ <install_p3dfft++.rst>
         Download P3DFFT++ <download_p3dfft++.rst>
         P3DFFT++ Documentation <p3dfft++_documentation.rst>
         Contact <contact.rst>

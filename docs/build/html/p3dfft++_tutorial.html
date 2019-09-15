@@ -1,54 +1,197 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>P3DFFT++ Tutorial &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>P3DFFT++ Tutorial &mdash; P3DFFT++ 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '3.0.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="P3DFFT++ C++ Reference" href="p3dfft++_c++_reference.html" />
-    <link rel="prev" title="P3DFFT++ Documentation" href="p3dfft++_documentation.html" /> 
-  </head>
-  <body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c++_reference.html" title="P3DFFT++ C++ Reference"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_documentation.html" title="P3DFFT++ Documentation"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" accesskey="U">P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="P3DFFT++ 3.0.0 documentation" href="index.html"/>
+        <link rel="up" title="P3DFFT++ Documentation" href="p3dfft++_documentation.html"/>
+        <link rel="next" title="P3DFFT++ C++ Reference" href="p3dfft++_c++_reference.html"/>
+        <link rel="prev" title="P3DFFT++ Documentation" href="p3dfft++_documentation.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> P3DFFT++
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="home.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft.html">Install P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft.html">Download P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="p3dfft_documentation.html">P3DFFT Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft++.html">Install P3DFFT++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft++.html">Download P3DFFT++</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="p3dfft++_documentation.html">P3DFFT++ Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">P3DFFT++ Tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-considerations">General considerations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data-types">Data types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data-layout">Data layout</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#c">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#p3dfft-transforms">P3DFFT++ Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#one-dimensional-1d-transforms">One-dimensional (1D) Transforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id2">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">C</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional Transforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id5">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">Fortran</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c++_reference.html">P3DFFT++ C++ reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_reference.html">P3DFFT++ C Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_fortran_reference.html">P3DFFT++ Fortran Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c++_examples.html">P3DFFT++ C++ examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_examples.html">P3DFFT++ C examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_fortran_examples.html">P3DFFT++ Fortran examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license_of_use.html">License of use</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">P3DFFT++</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="p3dfft++_documentation.html">P3DFFT++ Documentation</a> &raquo;</li>
+        
+      <li>P3DFFT++ Tutorial</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/p3dfft++_tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="p3dfft-tutorial">
 <h1>P3DFFT++ Tutorial<a class="headerlink" href="#p3dfft-tutorial" title="Permalink to this headline">¶</a></h1>
@@ -75,7 +218,7 @@
 <div class="section" id="c">
 <h3>C++<a class="headerlink" href="#c" title="Permalink to this headline">¶</a></h3>
 <p>The following is the main constructor call for the <em>grid</em> class:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">dim_conj_sym</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">grid</span><span class="p">(</span><span class="kt">int</span> <span class="n">gdims</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">dim_conj_sym</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pgrid</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">proc_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="kt">int</span> <span class="n">mem_order</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">MPI_Comm</span> <span class="n">mpicomm</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><em>Arguments</em>:</p>
@@ -102,7 +245,7 @@
 </tbody>
 </table>
 <p>For example:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">main</span><span class="p">()</span> <span class="p">{</span>
 
 <span class="p">...</span>
 
@@ -152,7 +295,7 @@
 <div class="section" id="id1">
 <h4>C<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
 <p>For C users grid initialization is accomplished by a call to p3dfft_init_grid, returning a pointer to an object of type <em>Grid</em>. This type is a C structure containing a large part of the C++ class <em>grid</em>. Calling p3dfft_init_grid initializes the C++ <em>grid</em> object and also copies the information into a <em>Grid</em> object accessible from C, returning its pointer. For example:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">xdim</span><span class="p">;</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">xdim</span><span class="p">;</span>
 
 <span class="n">Grid</span> <span class="o">*</span><span class="n">grid1</span><span class="p">;</span>
 
@@ -170,7 +313,7 @@
 <div class="section" id="fortran">
 <h3>Fortran<a class="headerlink" href="#fortran" title="Permalink to this headline">¶</a></h3>
 <p>For Fortran users the grid object is represented as a handle of type <em>integer(C_INT)</em>. For example:</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="kt">integer</span><span class="p">(</span><span class="kt">C_INT</span><span class="p">)</span> <span class="n">grid1</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="kt">integer</span><span class="p">(</span><span class="kt">C_INT</span><span class="p">)</span> <span class="n">grid1</span>
 
 <span class="kt">integer </span><span class="n">ldims</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">glob_start</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">gdims</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">dim_conj_sym</span><span class="p">,</span><span class="n">pgrid</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">proc_order</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">mem_order</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="n">mpicomm</span>
 
@@ -180,7 +323,7 @@
 <p>This call initializes a C++ grid object as a global variable and assigns an integer ID, returned in this example as <em>grid1</em>. In addition this call also returns the dimensions of the local portion of the grid (<em>ldims</em>) and the position of this portion within the global array (<em>glob_start</em>).</p>
 <p>Other elements of the C++ grid object can be accessed through respective functions, such as p3dfft_grid_get_...</p>
 <p>To release a grid object, simply call:</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="o">*</span><span class="n">p3dfft_free_grid_f</span><span class="p">(</span><span class="n">gr</span><span class="p">)</span><span class="o">*</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="n">p3dfft_free_grid_f</span><span class="p">(</span><span class="n">gr</span><span class="p">)</span><span class="o">*</span>
 </pre></div>
 </div>
 <p>where <em>gr</em> is the grid handle.</p>
@@ -231,12 +374,12 @@
 <div class="section" id="id2">
 <h3>C++<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>Below is an example of how a 1D transform can be called from C++. In this example, real-to-complex transform in double precision is planned and then performed. First a constructor for class transplan is called:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">transplan</span><span class="o">&lt;</span><span class="kt">double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span> <span class="n">trans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span> <span class="n">gridOut</span><span class="p">,</span> <span class="n">R2C_FFT_D</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">transplan</span><span class="o">&lt;</span><span class="kt">double</span><span class="p">,</span><span class="n">complex_double</span><span class="o">&gt;</span> <span class="n">trans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span> <span class="n">gridOut</span><span class="p">,</span> <span class="n">R2C_FFT_D</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here <em>gridIn</em> and <em>gridOut</em> are initial and final <em>grid</em> objects, describing, among other things, initial and final memory ordering of the grid storage array (ordering can be the same or different for input and output). <em>dim</em> is the dimension/rank to be transformed. Note that this is the logical dimension rank (0 for X, 1 for Y, 2 for Z), and may not be the same as the storage dimension, which depends on <em>mem_order</em> member of <em>gridIn</em> and <em>gridOut</em>. The transform dimension of the grid is assumed to be MPI task-local. The second last parameter is a bool variable telling P3DFFT++ whether this is an in-place or out-of-place transform. Note that in C++ the P3DFFT_ prefix for transform types is optional.</p>
 <p>When a <em>transplan</em> constructor is called as above, P3DFFT++ stores the parameters of the 1D transform and if needed, plans its execution (i.e. as in FFTW planning) and stores the plan handle. This needs to be done once per transform type. In order to execute the transform, simply call exec member of the class, e.g.:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">trans_f</span><span class="p">.</span><span class="n">exec</span><span class="p">((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">In</span><span class="p">,(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">Out</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">trans_f</span><span class="p">.</span><span class="n">exec</span><span class="p">((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">In</span><span class="p">,(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">Out</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here <em>In</em> and <em>Out</em> are pointers to input and output arrays. In this case they are of type <em>double</em> and <em>complex_double</em>, however in this call they are cast as <em>char*</em>, as required by P3DFFT++. They contain the local portion of the 3D input and output arrays, arranged as a contiguous sequence of numbers according to local grid dimensions and the memory order of <em>gridIn</em> and <em>gridOut</em> classes, respectively. If the transform is out-of-place, then these arrays must be non-overlapping. The execution can be performed many times with the same handle and same or different input and output arrays.This call will perform the 1D transform specified when the <em>transplan</em> object was constructed, along the dimension <em>dim</em>. Again, the logical dimension specified as <em>dim</em> in the planning stage must be MPI-local for both input and output arrays. Other utilities allow the user to transpose the grid arrays in MPI/processor space (<em>see MPIplan and transMPIplan</em>).</p>
@@ -245,7 +388,7 @@
 <div class="section" id="id3">
 <h3>C<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Here is an example of initializing and executing a 1D transform (again, a real-to-complex double precision FFT) in a C program.</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">Grid</span> <span class="o">*</span><span class="n">gridIn</span><span class="p">,</span> <span class="o">*</span><span class="n">gridOut</span><span class="p">;</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">Grid</span> <span class="o">*</span><span class="n">gridIn</span><span class="p">,</span> <span class="o">*</span><span class="n">gridOut</span><span class="p">;</span>
 
 <span class="n">Plan3D</span> <span class="n">trans_f</span><span class="p">;</span>
 
@@ -258,7 +401,7 @@
 </pre></div>
 </div>
 <p>Here <em>gridIn</em> and <em>gridOut</em> are pointers to the C equivalent of P3DFFT++ <em>grid</em> object (initial and final), <em>trans_f</em> is the handle for the 1D transform after it has been initialized and planned, <em>dim</em> is the logical dimension of the transform (0, 1 or 2), and the last argument indicates that this is not an in-place transform (a non-zero argument would indicate in-place). This initialization/planning needs to be done once per transform type.</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_1Dtrans_double</span><span class="p">(</span><span class="n">trans_f</span><span class="p">,</span><span class="n">IN</span><span class="p">,</span><span class="n">OUT</span><span class="p">);</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_1Dtrans_double</span><span class="p">(</span><span class="n">trans_f</span><span class="p">,</span><span class="n">IN</span><span class="p">,</span><span class="n">OUT</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>This statement executes the 1D transformed planned and handled by <em>trans_f</em>. <em>IN</em> and <em>OUT</em> are pointers to one-dimensional input and output arrays containing the 3D grid stored contiguously in memory based on the local grid dimensions and storage order of <em>gridIn</em> and <em>gridOut</em>. The execution can be performed many times with the same handle and same or different input and output arrays. In case of out-of-place transform the input and output arrays must be non-overlapping.</p>
@@ -266,7 +409,7 @@
 <div class="section" id="id4">
 <h3>Fortran<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <p>Here is an example of initializing and executing a 1D transform (again, a real-to-complex double precision FFT) in a Fortran program:</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="kt">integer</span><span class="p">(</span><span class="kt">C_INT</span><span class="p">)</span> <span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="kt">integer</span><span class="p">(</span><span class="kt">C_INT</span><span class="p">)</span> <span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span>
 <span class="kt">integer </span><span class="n">trans_f</span>
 
 <span class="n">gridIn</span> <span class="o">=</span> <span class="n">p3dfft_init_grid</span><span class="p">(</span><span class="n">ldimsIn</span><span class="p">,</span> <span class="n">glob_startIn</span><span class="p">,</span> <span class="n">gdimsIn</span><span class="p">,</span> <span class="n">pgridIn</span><span class="p">,</span> <span class="n">proc_order</span><span class="p">,</span> <span class="n">mem_orderIn</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">)</span>
@@ -275,7 +418,7 @@
 </pre></div>
 </div>
 <p>These statement set up initial and final grids (gridIn and gridOut), initialize and plan the 1D real-to-complex double FFT and use trans_f as its handle. This needs to be done once per transform type. Note that we need to translate the transform dimension dim into C convention (so that X corresponds to 0, Y to 1 and Z to 2). The last argument is 0 for out-of-place and non-zero for in-place transform.</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">call </span><span class="n">p3dfft_1Dtrans_double</span><span class="p">(</span><span class="n">trans_f</span><span class="p">,</span><span class="n">Gin</span><span class="p">,</span><span class="n">Gout</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">call </span><span class="n">p3dfft_1Dtrans_double</span><span class="p">(</span><span class="n">trans_f</span><span class="p">,</span><span class="n">Gin</span><span class="p">,</span><span class="n">Gout</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This statement executes the 1D transform planned before and handled by trans_f. Gin and Gout are 1D contiguous arrays of values (double precision and double complex) of the 3D grid array, according to the local grid dimensions and memory storage order of gridIn and gridOut, respectively. After the previous planning step is complete, the execution can be called many times with the same handle and same or different input and output arrays. If the transform was declared as out-of-place then Gin and Gout must be non-overlapping.</p>
@@ -296,12 +439,12 @@
 <div class="section" id="id5">
 <h3>C++<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <p>In C++ 3D transform type is interfaced through a class trans_type3D, which is constructed as in the following example:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">trans_type3D</span> <span class="nf">name_type3D</span><span class="p">(</span><span class="kt">int</span> <span class="n">types1D</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">trans_type3D</span> <span class="nf">name_type3D</span><span class="p">(</span><span class="kt">int</span> <span class="n">types1D</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
 </pre></div>
 </div>
 <p>Here <em>types1D</em> is the array of three 1D transform types which define the 3D transform (empty transforms are permitted). Copy constructor is also provided for this class.</p>
 <p>For example:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">type_rcc</span><span class="p">,</span> <span class="n">type_ids</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">type_rcc</span><span class="p">,</span> <span class="n">type_ids</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
 
 <span class="n">type_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">P3DFFT_R2CFFT_D</span><span class="p">;</span>
 <span class="n">type_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">P3DFFT_CFFT_FORWARD_D</span><span class="p">;</span>
@@ -311,24 +454,24 @@
 </pre></div>
 </div>
 <p>3D transforms are provided as the class template:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="p">;</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">TypeIn</span><span class="p">,</span><span class="k">class</span> <span class="nc">TypeOut</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">transform3D</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>Here <em>TypeIn</em> and <em>TypeOut</em> are initial and final data types. Most of the times these will be the same, however some transforms have different types on input and output, for example real-to-complex FFT. In all cases the floating point precision (single/double) of the initial and final types should match.</p>
 <p>The constructor of transform3D takes the following arguments:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">transform3D</span><span class="o">&lt;</span><span class="n">TypeIn</span><span class="p">,</span><span class="n">TypeOut</span><span class="o">&gt;</span>  <span class="n">my_transform_name</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="n">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span><span class="n">overwrite</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">transform3D</span><span class="o">&lt;</span><span class="n">TypeIn</span><span class="p">,</span><span class="n">TypeOut</span><span class="o">&gt;</span>  <span class="n">my_transform_name</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="n">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span><span class="n">overwrite</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here type is a 3D transform type (constructed as shown above), inplace is a bool variable indicating whether this is an in-place transform, and overwrites (also boolean) defines if the input can be rewritten (default is false). <em>gridIn</em> and <em>gridOut</em> are initial and final grid objects. Calling a <em>transform3D</em> constructor creates a detailed step-by-step plan for execution of the 3D transform and stores it in the <em>my_transform_name</em> object.</p>
 <p>Once a 3D transform has been defined and planned, execution of a 3D transform can be done by calling:</p>
-<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="n">my_transform_name</span><span class="p">.</span><span class="n">exec</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">out</span><span class="p">);</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">my_transform_name</span><span class="p">.</span><span class="n">exec</span><span class="p">(</span><span class="n">TypeIn</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="n">TypeOut</span> <span class="o">*</span><span class="n">out</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here <em>in</em> and <em>out</em> are initial and final data arrays of appropriate types. These are assumed to be one-dimensional contiguous arrays containing the three-dimensional grid for input and output, local to the memory of the given MPI task, and stored according to the dimensions and memory ordering specified in the <em>gridIn</em> and <em>gridOut</em> objects, respectively.  For example, if grid1.ldims={2,2,4} and grid1.mem_order={2,1,0}, then the in array will contain the following sequence: G000, G001, G002, G003, G010, G011, G012, G013, G100, G101, G102, G103, G110, G111, G112, G113. Again, we follow the Fortran convention that the fastest running index is the first, (i.e. G012 means the grid element at X=0, Y=1, Z=2).</p>
 <div class="section" id="id6">
 <h4>C<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
 <p>In C a unique datatype Type3D is used to define the 3D transform needed. <em>p3dfft_init_3Dtype</em> function is used to initialize a new 3D transform type, based on the three 1D transform types, as in the following example:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">type_rcc</span><span class="p">,</span>  <span class="n">type_ids</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">type_rcc</span><span class="p">,</span>  <span class="n">type_ids</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
 
 <span class="n">type_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">P3DFFT_R2CFFT_D</span><span class="p">;</span>
 <span class="n">type_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">P3DFFT_CFFT_FORWARD_D</span><span class="p">;</span>
@@ -339,13 +482,13 @@
 </div>
 <p>In this example type_rcc will describe the real-to-complex (R2C) 3D transform (R2C in 1D followed by two complex 1D transforms).</p>
 <p>To define and plan the 3D transform, use p3dfft_plan_3Dtrans function as follows:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">mytrans</span><span class="p">;</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">mytrans</span><span class="p">;</span>
 
 <span class="n">mytrans</span> <span class="o">=</span> <span class="n">p3dfft_plan_3Dtrans</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="n">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span><span class="n">overwrite</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here <em>gridIn</em> and <em>gridOut</em> are pointers to initial and final grid objects (of type <em>Grid</em>); <em>type</em> is the 3D transform type defined as above; <em>inplace</em> is an integer indicating an in-place transform if it's non-zero, out-of-place otherwise. Overwrite is an integer defining if the input can be overwritten (non-zero; default is zero). In this example <em>mytrans</em> contains the handle to the 3D transform that can be executed (many times) as follows:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">);</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Here <em>in</em> and <em>out</em> are pointers to input and output arrays, as before, assumed to be the local portion of the 3D grid array stored according to <em>gridIn</em> and <em>gridOut</em> descriptors. For single precision use <em>p3dfft_exec_3Dtrans_single</em>.</p>
@@ -354,11 +497,11 @@
 <div class="section" id="id7">
 <h3>Fortran<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <p>In Fortran, similar to C, to define a 3D transform the following routine is used:</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="n">mytrans</span> <span class="o">=</span> <span class="n">p3dfft_plan_3Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="k">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">mytrans</span> <span class="o">=</span> <span class="n">p3dfft_plan_3Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="k">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Here <em>gridIn</em> and <em>gridOut</em> are handles defining the initial and final grid configurations; <em>type</em> is the 3D transform type, defined as above; and <em>inplace</em> is the integer whose non-zero value indicates this is an in-place transform (or 0 for out-of-place). Non-zero overwrite indicates it is OK to overwrite input (default is no). Again, this planner routine is called once per transform. Execution can be called multiple times as follows:</p>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">call </span><span class="n">p3dfft_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">IN</span><span class="p">,</span><span class="n">OUT</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">call </span><span class="n">p3dfft_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">IN</span><span class="p">,</span><span class="n">OUT</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Here <em>IN</em> and <em>OUT</em> are the input and output arrays. For single precision use <em>p3dfft_3Dtrans_single_f</em>.</p>
@@ -367,89 +510,73 @@
 </div>
 
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">P3DFFT++ Tutorial</a><ul>
-<li><a class="reference internal" href="#general-considerations">General considerations</a></li>
-<li><a class="reference internal" href="#data-types">Data types</a></li>
-<li><a class="reference internal" href="#data-layout">Data layout</a><ul>
-<li><a class="reference internal" href="#c">C++</a><ul>
-<li><a class="reference internal" href="#id1">C</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#fortran">Fortran</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#p3dfft-transforms">P3DFFT++ Transforms</a></li>
-<li><a class="reference internal" href="#one-dimensional-1d-transforms">One-dimensional (1D) Transforms</a><ul>
-<li><a class="reference internal" href="#id2">C++</a></li>
-<li><a class="reference internal" href="#id3">C</a></li>
-<li><a class="reference internal" href="#id4">Fortran</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional Transforms</a><ul>
-<li><a class="reference internal" href="#id5">C++</a><ul>
-<li><a class="reference internal" href="#id6">C</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id7">Fortran</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="p3dfft++_c++_reference.html" class="btn btn-neutral float-right" title="P3DFFT++ C++ Reference" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="p3dfft++_documentation.html" class="btn btn-neutral" title="P3DFFT++ Documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="p3dfft++_documentation.html"
-                        title="previous chapter">P3DFFT++ Documentation</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="p3dfft++_c++_reference.html"
-                        title="next chapter">P3DFFT++ C++ Reference</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/p3dfft++_tutorial.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Dmitry Pekurovsky.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c++_reference.html" title="P3DFFT++ C++ Reference"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_documentation.html" title="P3DFFT++ Documentation"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" >P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

@@ -1,53 +1,181 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>P3DFFT User Guide &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>P3DFFT User Guide &mdash; P3DFFT++ 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '3.0.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Download P3DFFT++" href="download_p3dfft++.html" />
-    <link rel="prev" title="Download P3DFFT" href="download_p3dfft.html" /> 
-  </head>
-  <body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="download_p3dfft++.html" title="Download P3DFFT++"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="download_p3dfft.html" title="Download P3DFFT"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="P3DFFT++ 3.0.0 documentation" href="index.html"/>
+        <link rel="next" title="Installing P3DFFT++" href="install_p3dfft++.html"/>
+        <link rel="prev" title="Download P3DFFT" href="download_p3dfft.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> P3DFFT++
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="home.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft.html">Install P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft.html">Download P3DFFT</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">P3DFFT Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#directory-structure-and-files">1. Directory Structure and Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-p3dfft">2. Installing p3dfft</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#p3dfft-module">3. p3dfft module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialization">4. Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#array-decomposition">5. Array Decomposition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms">6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#complex-array-storage-definition">7. Complex array storage definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multivariable-transforms">8. Multivariable transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pruned-transforms">9. Pruned transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#in-place-transforms">10. In-place transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-requirements">11. Memory requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-considerations">12. Performance considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">13. References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft++.html">Install P3DFFT++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft++.html">Download P3DFFT++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="p3dfft++_documentation.html">P3DFFT++ Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license_of_use.html">License of use</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">P3DFFT++</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>P3DFFT User Guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/p3dfft_documentation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="p3dfft-user-guide">
 <span id="p3dfft-documentation"></span><h1>P3DFFT User Guide<a class="headerlink" href="#p3dfft-user-guide" title="Permalink to this headline">¶</a></h1>
@@ -407,7 +535,7 @@
 <h2>6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms<a class="headerlink" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms" title="Permalink to this headline">¶</a></h2>
 <p>P3DFFT versions 2.7.1 and higher implement transforms for one or more than one independent arrays/variables simultaneously. An example of this is 3 components of a velocity field. Multivariable transforms achieve greater speed than single-variable transforms, especially for grids of smaller size, due to buffer aggregation in inter-processor exchanges.</p>
 <p>Forward transform is implemented by the p3dfft_ftran_r2c subroutine using the following format:</p>
-<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_ftran_r2c(IN,OUT,op)
+<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_ftran_r2c</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The input IN is an array of real numbers with dimensions defined by array type with ip=1 (see Table 2 above), with X dimension contained entirely within each task, and Y and Z dimensions distributed among P1 and P2 tasks correspondingly. The output OUT is an array of complex numbers with dimensions defined by array type with ip=2, i.e. Z dimension contained entirely, and X and Y dimensions distributed among P1 and P2 tasks respectively. The op argument is a 3- letter character string indicating the type of transform desired. Currently only Fourier transforms are supported in X and Y (denoted by symbol f) and the following transforms in Z:</p>
@@ -430,7 +558,7 @@
 </table>
 <p>Empty transform can be useful for someone implementing custom transform in Z dimension. Example: op=’ffc’ means Fourier transform in X and Y, and a cosine transform in Z. The DCT-I kind of transform is performed (DST-I for sine), the definition of which can be found here: <a class="reference external" href="http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-I">http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-I</a></p>
 <p>Backward transform is implemented by the p3dfft_btran_c2r subroutine using the following format:</p>
-<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_btran_c2r(IN,OUT,op)
+<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_btran_c2r</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The input IN is an array of complex numbers with dimensions defined by array type with ip=2 (see Table 2 above), i.e. Z dimension is contained entirely, and X and Y dimensions are distributed among P1 and P2 tasks correspondingly. The output OUT is an array of real numbers with dimensions defined by array type with ip=1, i.e. X dimension is contained entirely within each task, and Y and Z are dimensions distributed among P1 and P2 tasks respectively. The op argument is similar to forward transform, with the first character of the string being one of t,c,s,n or 0, and the second and third being f. Example: op=’nff’ means no operation in Z, backward Fourier transforms in Y and X.</p>
@@ -442,9 +570,9 @@
 <div class="section" id="multivariable-transforms">
 <h2>8. Multivariable transforms<a class="headerlink" href="#multivariable-transforms" title="Permalink to this headline">¶</a></h2>
 <p>Sometime communication performance of transposes such as those included in P3DFFT can be improved by combining several transforms into a single operation. (This allows us to aggregate messages during interprocessor data exchange). This is especially important when transforming small grids and/or when using systems with high interconnect latencies. P3DFFT provides multivariable transforms to make use of this idea. Instead of an 3D array as input parameter these subroutines accept a 4D array, with the extra dimension being the index of independent variables to be transformed (for example this could be 3 velocity components). The following is the syntax for multivariable transforms:</p>
-<div class="highlight-guess"><div class="highlight"><pre><span></span>p3dfft_ftran_many_r2c(IN,dim_in,OUT,dim_out,nv,op)
+<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_ftran_many_r2c</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="n">dim_in</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">dim_out</span><span class="p">,</span><span class="n">nv</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
 
-p3dfft_btran_many_c2r(IN,dim_in,OUT,dim_out,nv,op)
+<span class="n">p3dfft_btran_many_c2r</span><span class="p">(</span><span class="k">IN</span><span class="p">,</span><span class="n">dim_in</span><span class="p">,</span><span class="k">OUT</span><span class="p">,</span><span class="n">dim_out</span><span class="p">,</span><span class="n">nv</span><span class="p">,</span><span class="n">op</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The multivariable transform routines for both forward and backward transforms have an additional argument nv (integer) representing the number of independent variables in the input/output arrays. The spacing between these independent variables is defined by dim_in and dim_out (integer) arguments for input/output arrays respectively. Both dim_in and dim_out should not be less than the size of the grid returned by get_dims routine. See sample program driver_sine_many.F90, driver_sine_inplace_many.F90 or driver_rand_many for an example of such use.</p>
@@ -481,78 +609,73 @@ p3dfft_btran_many_c2r(IN,dim_in,OUT,dim_out,nv,op)
 </div>
 
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">P3DFFT User Guide</a><ul>
-<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
-<li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#directory-structure-and-files">1. Directory Structure and Files</a></li>
-<li><a class="reference internal" href="#installing-p3dfft">2. Installing p3dfft</a></li>
-<li><a class="reference internal" href="#p3dfft-module">3. p3dfft module</a></li>
-<li><a class="reference internal" href="#initialization">4. Initialization</a></li>
-<li><a class="reference internal" href="#array-decomposition">5. Array Decomposition</a></li>
-<li><a class="reference internal" href="#forward-real-to-complex-and-backward-complex-to-real-3d-fourier-transforms">6. Forward (real-to-complex) and backward (complex-to-real) 3D Fourier transforms</a></li>
-<li><a class="reference internal" href="#complex-array-storage-definition">7. Complex array storage definition</a></li>
-<li><a class="reference internal" href="#multivariable-transforms">8. Multivariable transforms</a></li>
-<li><a class="reference internal" href="#pruned-transforms">9. Pruned transforms</a></li>
-<li><a class="reference internal" href="#in-place-transforms">10. In-place transforms</a></li>
-<li><a class="reference internal" href="#memory-requirements">11. Memory requirements</a></li>
-<li><a class="reference internal" href="#performance-considerations">12. Performance considerations</a></li>
-<li><a class="reference internal" href="#references">13. References</a></li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="install_p3dfft++.html" class="btn btn-neutral float-right" title="Installing P3DFFT++" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="download_p3dfft.html" class="btn btn-neutral" title="Download P3DFFT" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="download_p3dfft.html"
-                        title="previous chapter">Download P3DFFT</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="download_p3dfft++.html"
-                        title="next chapter">Download P3DFFT++</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/p3dfft_documentation.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Dmitry Pekurovsky.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="download_p3dfft++.html" title="Download P3DFFT++"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="download_p3dfft.html" title="Download P3DFFT"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

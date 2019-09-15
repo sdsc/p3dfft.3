@@ -1,54 +1,196 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>P3DFFT++ Fortran Reference &#8212; P3DFFT++ 3.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>P3DFFT++ Fortran Reference &mdash; P3DFFT++ 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
     <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '3.0.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="P3DFFT++ C++ examples" href="p3dfft++_c++_examples.html" />
-    <link rel="prev" title="P3DFFT++ C Reference" href="p3dfft++_c_reference.html" /> 
-  </head>
-  <body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c++_examples.html" title="P3DFFT++ C++ examples"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_c_reference.html" title="P3DFFT++ C Reference"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" accesskey="U">P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="P3DFFT++ 3.0.0 documentation" href="index.html"/>
+        <link rel="up" title="P3DFFT++ Documentation" href="p3dfft++_documentation.html"/>
+        <link rel="next" title="P3DFFT++ C++ examples" href="p3dfft++_c++_examples.html"/>
+        <link rel="prev" title="P3DFFT++ C Reference" href="p3dfft++_c_reference.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> P3DFFT++
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="home.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft.html">Install P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft.html">Download P3DFFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="p3dfft_documentation.html">P3DFFT Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install_p3dfft++.html">Install P3DFFT++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download_p3dfft++.html">Download P3DFFT++</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="p3dfft++_documentation.html">P3DFFT++ Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_tutorial.html">P3DFFT++ Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c++_reference.html">P3DFFT++ C++ reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_reference.html">P3DFFT++ C Reference</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">P3DFFT++ Fortran Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-and-grid-layout">Setup and Grid Layout</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#p3dfft-setup">p3dfft_setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p3dfft-cleanup">p3dfft_cleanup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p3dfft-init-grid">p3dfft_init_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p3dfft-free-grid-f">p3dfft_free_grid_f</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#one-dimensional-1d-transforms">One-dimensional (1D) Transforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#d-transform-planning">1D transform planning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#d-transform-execution">1D transform execution</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional transforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">3D transform planning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">3D transform execution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#d-spectral-derivative">3D Spectral Derivative</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c++_examples.html">P3DFFT++ C++ examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_c_examples.html">P3DFFT++ C examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="p3dfft++_fortran_examples.html">P3DFFT++ Fortran examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license_of_use.html">License of use</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">P3DFFT++</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="p3dfft++_documentation.html">P3DFFT++ Documentation</a> &raquo;</li>
+        
+      <li>P3DFFT++ Fortran Reference</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/p3dfft++_fortran_reference.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="p3dfft-fortran-reference">
 <h1><a class="toc-backref" href="#id8">P3DFFT++ Fortran Reference</a><a class="headerlink" href="#p3dfft-fortran-reference" title="Permalink to this headline">¶</a></h1>
@@ -83,21 +225,21 @@
 <p>In Fortran the grid structure is hidden and is operated on by integer handles.</p>
 <div class="section" id="p3dfft-setup">
 <h3><a class="toc-backref" href="#id10">p3dfft_setup</a><a class="headerlink" href="#p3dfft-setup" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_setup</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_setup</span>
 </pre></div>
 </div>
 <p><em>Function</em>: called once in the beginning of use to initialize P3DFFT++.</p>
 </div>
 <div class="section" id="p3dfft-cleanup">
 <h3><a class="toc-backref" href="#id11">p3dfft_cleanup</a><a class="headerlink" href="#p3dfft-cleanup" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_cleanup</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_cleanup</span>
 </pre></div>
 </div>
 <p><em>Function</em>: called once before exit and after the use to free up P3DFFT++ structures.</p>
 </div>
 <div class="section" id="p3dfft-init-grid">
 <h3><a class="toc-backref" href="#id12">p3dfft_init_grid</a><a class="headerlink" href="#p3dfft-init-grid" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_init_grid</span><span class="p">(</span><span class="n">ldims</span><span class="p">,</span> <span class="n">glob_start</span><span class="p">,</span> <span class="n">gdims</span><span class="p">,</span> <span class="n">dim_conj_sym</span><span class="p">,</span> <span class="n">pgrid</span><span class="p">,</span> <span class="n">proc_order</span><span class="p">,</span> <span class="n">mem_order</span><span class="p">,</span> <span class="n">mpicomm</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_init_grid</span><span class="p">(</span><span class="n">ldims</span><span class="p">,</span> <span class="n">glob_start</span><span class="p">,</span> <span class="n">gdims</span><span class="p">,</span> <span class="n">dim_conj_sym</span><span class="p">,</span> <span class="n">pgrid</span><span class="p">,</span> <span class="n">proc_order</span><span class="p">,</span> <span class="n">mem_order</span><span class="p">,</span> <span class="n">mpicomm</span><span class="p">)</span>
 
 <span class="kt">integer</span><span class="p">(</span><span class="kt">C_INT</span><span class="p">)</span> <span class="n">p3dfft_init_grid</span>
 </pre></div>
@@ -145,7 +287,7 @@
 </div>
 <div class="section" id="p3dfft-free-grid-f">
 <h3><a class="toc-backref" href="#id13">p3dfft_free_grid_f</a><a class="headerlink" href="#p3dfft-free-grid-f" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_free_grid_f</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_free_grid_f</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><em>Function</em>: frees the grid handle</p>
@@ -196,7 +338,7 @@
 </table>
 <div class="section" id="d-transform-planning">
 <h3><a class="toc-backref" href="#id15">1D transform planning</a><a class="headerlink" href="#d-transform-planning" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_plan_1Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span> <span class="n">gridOut</span><span class="p">,</span> <span class="k">type</span><span class="p">,</span> <span class="nb">dim</span><span class="p">,</span> <span class="n">inplace</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_plan_1Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span> <span class="n">gridOut</span><span class="p">,</span> <span class="k">type</span><span class="p">,</span> <span class="nb">dim</span><span class="p">,</span> <span class="n">inplace</span><span class="p">)</span>
 
 <span class="kt">integer </span><span class="n">p3dfft_plan_1Dtrans</span>
 </pre></div>
@@ -226,7 +368,7 @@
 </div>
 <div class="section" id="d-transform-execution">
 <h3><a class="toc-backref" href="#id16">1D transform execution</a><a class="headerlink" href="#d-transform-execution" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_exec_1Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_exec_1Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
 
 <span class="k">subroutine </span><span class="n">p3dfft_exec_1Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
 </pre></div>
@@ -261,7 +403,7 @@
 <h2><a class="toc-backref" href="#id17">Three-dimensional transforms</a><a class="headerlink" href="#three-dimensional-transforms" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id1">
 <h3><a class="toc-backref" href="#id18">3D transform planning</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_plan_3Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="k">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">p3dfft_plan_3Dtrans_f</span><span class="p">(</span><span class="n">gridIn</span><span class="p">,</span><span class="n">gridOut</span><span class="p">,</span><span class="k">type</span><span class="p">,</span><span class="n">inplace</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
 
 <span class="kt">integer </span><span class="n">p3dfft_plan_3Dtrans_f</span>
 </pre></div>
@@ -295,7 +437,7 @@
 </div>
 <div class="section" id="id2">
 <h3><a class="toc-backref" href="#id19">3D transform execution</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_exec_3Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">p3dfft_exec_3Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
 
 <span class="k">subroutine </span><span class="n">p3dfft_exec_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span><span class="n">in</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
 </pre></div>
@@ -322,7 +464,7 @@
 </div>
 <div class="section" id="d-spectral-derivative">
 <h3><a class="toc-backref" href="#id20">3D Spectral Derivative</a><a class="headerlink" href="#d-spectral-derivative" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_3Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span> <span class="n">In</span><span class="p">,</span> <span class="n">Out</span><span class="p">,</span> <span class="n">idir</span><span class="p">)</span>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">p3dfft_exec_3Dtrans_single</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span> <span class="n">In</span><span class="p">,</span> <span class="n">Out</span><span class="p">,</span> <span class="n">idir</span><span class="p">)</span>
 
 <span class="n">p3dfft_exec_3Dtrans_double</span><span class="p">(</span><span class="n">mytrans</span><span class="p">,</span> <span class="n">In</span><span class="p">,</span> <span class="n">Out</span><span class="p">,</span> <span class="n">idir</span><span class="p">)</span>
 </pre></div>
@@ -351,82 +493,73 @@
 </div>
 
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">P3DFFT++ Fortran Reference</a><ul>
-<li><a class="reference internal" href="#setup-and-grid-layout">Setup and Grid Layout</a><ul>
-<li><a class="reference internal" href="#p3dfft-setup">p3dfft_setup</a></li>
-<li><a class="reference internal" href="#p3dfft-cleanup">p3dfft_cleanup</a></li>
-<li><a class="reference internal" href="#p3dfft-init-grid">p3dfft_init_grid</a></li>
-<li><a class="reference internal" href="#p3dfft-free-grid-f">p3dfft_free_grid_f</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#one-dimensional-1d-transforms">One-dimensional (1D) Transforms</a><ul>
-<li><a class="reference internal" href="#d-transform-planning">1D transform planning</a></li>
-<li><a class="reference internal" href="#d-transform-execution">1D transform execution</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#three-dimensional-transforms">Three-dimensional transforms</a><ul>
-<li><a class="reference internal" href="#id1">3D transform planning</a></li>
-<li><a class="reference internal" href="#id2">3D transform execution</a></li>
-<li><a class="reference internal" href="#d-spectral-derivative">3D Spectral Derivative</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="p3dfft++_c++_examples.html" class="btn btn-neutral float-right" title="P3DFFT++ C++ examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="p3dfft++_c_reference.html" class="btn btn-neutral" title="P3DFFT++ C Reference" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="p3dfft++_c_reference.html"
-                        title="previous chapter">P3DFFT++ C Reference</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="p3dfft++_c++_examples.html"
-                        title="next chapter">P3DFFT++ C++ examples</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/p3dfft++_fortran_reference.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Dmitry Pekurovsky.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="p3dfft++_c++_examples.html" title="P3DFFT++ C++ examples"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="p3dfft++_c_reference.html" title="P3DFFT++ C Reference"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">P3DFFT++ 3.0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="p3dfft++_documentation.html" >P3DFFT++ Documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2019, Dmitry Pekurovsky.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>
