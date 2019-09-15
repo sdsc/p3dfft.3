@@ -43,7 +43,7 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpcc"
         "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-fastsse'""
         "CXX=<C++ compiler>", "Strongly Recommended", "C++ compiler", "CXX=mpicxx"
-        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS=' '"
+        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS=' ' "
         "LDFLAGS='"<linker flags>"", "Mandatory (depending on platform)", "Linker flags", "LDFLAGS='"-lmpi_f90 -lmpi_f77'""
 
 Compiling on Comet (XSEDE/SDSC)
