@@ -1,1 +1,1 @@
-sphinx_theme
+stanford_theme
