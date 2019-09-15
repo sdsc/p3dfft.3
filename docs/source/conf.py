@@ -79,19 +79,20 @@ todo_include_todos = False
 
 
 # -- Options for HTML output ----------------------------------------------
+import sphinx_rtd_theme
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import stanford_theme
-html_theme = "stanford_theme"
-html_theme_path = [stanford_theme.get_html_theme_path()]
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'style_nav_header_background': '#db4c3f'
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
