@@ -186,9 +186,6 @@
 <th class="head">Notes</th>
 <th class="head">Description</th>
 <th class="head">Example</th>
-<th class="head">&#160;</th>
-<th class="head">&#160;</th>
-<th class="head">&#160;</th>
 </tr>
 </thead>
 <tbody valign="top">
@@ -196,199 +193,128 @@
 <td>Mandatory for users without access to /usr/local</td>
 <td>This argument will install p3dfft to PREFIX when you run make install. By default, configure will install to /usr/local</td>
 <td>--prefix=$HOME/local/</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-gnu, --enable-ibm, --enable-intel, --enable-pgi, --enable-cray</td>
 <td>Mandatory</td>
 <td>These arguments will prepare p3dfft to be built by a specific compiler. You must only choose one option.</td>
 <td>--enable-pgi</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-fftw, --enable-essl</td>
 <td>Mandatory</td>
 <td>These arguments will prepare p3dfft to be used with either the FFTW or ESSL library. You must only choose one option.</td>
 <td>--enable-fftw</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--with-fftw-lib=FFTWLIBLOCATION</td>
 <td>Mandatory if --enable-fftw is used</td>
 <td>This argument specifies the path location for the FFTW librarys lib directory; it is mandatory if you are planning to use p3dfft with the FFTW library.</td>
 <td>--enable-fftw --with-fftw-lib=$FFTW_HOME/lib</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--with-fftw-inc=FFTWINCLUDELOCATION</td>
 <td>Mandatory if --enable-fftw is used</td>
 <td>This argument specifies the path location for the FFTW librarys include directory; it is mandatory if you are planning to use p3dfft with the FFTW library.</td>
 <td>--enable-fftw --with-fftw-inc=$FFTW_HOME/include</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-openmp</td>
 <td>Mandatory if using multithreaded version</td>
 <td>This argument adds the appropriate compiler flags to enable OpenMP</td>
 <td>--enable-openmp</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-openmpi</td>
 <td>Optional</td>
 <td>This argument uses the OpenMPI implementation of MPI</td>
 <td>--enable-openmpi</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-oned</td>
 <td>Optional</td>
 <td>This argument is for 1D decomposition. The default is 2D decomposition but can be made to 1D by setting up a grid 1xn when running the code.</td>
 <td>--enable-oned</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-estimate</td>
 <td>Optional, use only with --enable-fftw</td>
 <td>If this argument is passed, the FFTW library will not use run-time tuning to select the fastest algorithm for computing FFTs.</td>
 <td>--enable-estimate</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-measure</td>
 <td>Optional, enabled by default, use only with --enable-fftw</td>
 <td>For search-once-for-the-fast algorithm (takes more time on p3dfft_setup()).</td>
 <td>--enable-measure</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-patient</td>
 <td>Optional, use only with --enable-fftw</td>
 <td>For search-once-for-the-fastest-algorithm (takes much more time on p3dfft_setup()).</td>
 <td>--enable-patient</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-dimsc</td>
 <td>Optional</td>
 <td>To assign processor rows and columns in the Cartesian processor grid according to C convention. The default is Fortran convention which is recommended. This option does not affect the order of storage of arrays in memory.</td>
 <td>--enable-dimsc</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-useeven</td>
 <td>Optional, recommended for Cray XT</td>
 <td>This argument is for using MPI_Alltoall instead of MPI_Alltotallv. This will pad the send buffers with zeros to make them of equal size; not needed on most architecture but may lead to better results on Cray XT.</td>
 <td>--enable-useeven</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-stride1</td>
 <td>Optional, recommended</td>
 <td>To enable stride-1 data structures on output (this may in some cases give some advantage in performance). You can define loop blocking factors NLBX and NBLY to experiment, otherwise they are set to default values.</td>
 <td>--enable-stride1</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-nblx</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_X</td>
 <td>--enable-nblx=32</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-nbly1</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Y1</td>
 <td>--enable-nbly1=32</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-nbly2</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Y2</td>
 <td>--enable-nbly2=32</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>--enable-nblz</td>
 <td>Optional</td>
 <td>To define loop blocking factor NBL_Z</td>
 <td>--enable-nblz=32</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>--enable-single</td>
 <td>Optional</td>
 <td>This argument will compile p3dfft in single-precision. By default, configure will setup p3dfft to be compiled in double-precision.</td>
 <td>--enable-single</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>FC=&lt;Fortran compiler&gt;</td>
 <td>Strongly recommended</td>
 <td>Fortran compiler</td>
 <td>FC=mpfort</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>FCFLAGS=&quot;&lt;Fortran compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>Fortran compiler flags</td>
 <td>FCFLAGS=&quot;-Mextend&quot;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>CC=&lt;C compiler&gt;</td>
 <td>Strongly Recommended</td>
 <td>C compiler</td>
 <td>CC=mpcc</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>CFLAGS=&quot;&lt;C compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C compiler flags</td>
 <td>CFLAGS=&quot;-fastsse&quot;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-odd"><td>CXX=&lt;C++ compiler&gt;</td>
 <td>Strongly Recommended</td>
 <td>C++ compiler</td>
 <td>CXX=mpicxx</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
 </tr>
 <tr class="row-even"><td>CXXFLAGS=&quot;&lt;C++ compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C++ compiler flags</td>
-<td>CXXFLAGS= &quot;
-LDFLAGS=&quot;&lt;linker flags&gt;&quot;&quot;</td>
+<td>CXXFLAGS=</td>
+</tr>
+<tr class="row-odd"><td>LDFLAGS=&quot;&lt;linker flags&gt;&quot;</td>
 <td>Mandatory (depending on platform)</td>
 <td>Linker flags</td>
 <td>LDFLAGS=&quot;-lmpi_f90 -lmpi_f77&quot;</td>
