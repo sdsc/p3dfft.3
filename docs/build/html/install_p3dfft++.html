@@ -287,22 +287,22 @@
 <tr class="row-odd"><td>FC=&lt;Fortran compiler&gt;</td>
 <td>Strongly recommended</td>
 <td>Fortran compiler</td>
-<td>FC=mpfort</td>
+<td>FC=mpif90</td>
 </tr>
 <tr class="row-even"><td>FCFLAGS=&quot;&lt;Fortran compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>Fortran compiler flags</td>
-<td>FCFLAGS=&quot;-Mextend&quot;</td>
+<td>FCFLAGS=&quot;-O3&quot;</td>
 </tr>
 <tr class="row-odd"><td>CC=&lt;C compiler&gt;</td>
 <td>Strongly Recommended</td>
 <td>C compiler</td>
-<td>CC=mpcc</td>
+<td>CC=mpicc</td>
 </tr>
 <tr class="row-even"><td>CFLAGS=&quot;&lt;C compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C compiler flags</td>
-<td>CFLAGS=&quot;-fastsse&quot;</td>
+<td>CFLAGS=&quot;-O3&quot;</td>
 </tr>
 <tr class="row-odd"><td>CXX=&lt;C++ compiler&gt;</td>
 <td>Strongly Recommended</td>
@@ -312,12 +312,12 @@
 <tr class="row-even"><td>CXXFLAGS=&quot;&lt;C++ compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C++ compiler flags</td>
-<td>CXXFLAGS=</td>
+<td>CXXFLAGS=&quot;-O3&quot;</td>
 </tr>
 <tr class="row-odd"><td>LDFLAGS=&quot;&lt;linker flags&gt;&quot;</td>
-<td>Mandatory (depending on platform)</td>
+<td>Optional</td>
 <td>Linker flags</td>
-<td>LDFLAGS=&quot;-lmpi_f90 -lmpi_f77&quot;</td>
+<td>&#160;</td>
 </tr>
 </tbody>
 </table>

@@ -38,13 +38,13 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "--enable-nbly2", "Optional", "To define loop blocking factor NBL_Y2", "--enable-nbly2=32"
         "--enable-nblz", "Optional", "To define loop blocking factor NBL_Z", "--enable-nblz=32"
         "--enable-single", "Optional", "This argument will compile p3dfft in single-precision. By default, configure will setup p3dfft to be compiled in double-precision.", "--enable-single"
-        "FC=<Fortran compiler>", "Strongly recommended", "Fortran compiler", "FC=mpfort"
-        "FCFLAGS='"<Fortran compiler flags>'"", "Optional, recommended", "Fortran compiler flags", "FCFLAGS='"-Mextend'""
-        "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpcc"
-        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-fastsse'""
+        "FC=<Fortran compiler>", "Strongly recommended", "Fortran compiler", "FC=mpif90"
+        "FCFLAGS='"<Fortran compiler flags>'"", "Optional, recommended", "Fortran compiler flags", "FCFLAGS='"-O3'""
+        "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpicc"
+        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-O3'""
         "CXX=<C++ compiler>", "Strongly Recommended", "C++ compiler", "CXX=mpicxx"
-        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS=' ' "
-        "LDFLAGS='"<linker flags>"", "Mandatory (depending on platform)", "Linker flags", "LDFLAGS='"-lmpi_f90 -lmpi_f77'""
+        "CXXFLAGS='"<C++ compiler flags>'"", "Optional, recommended", "C++ compiler flags", "CXXFLAGS='"-O3'""
+        "LDFLAGS='"<linker flags>"", "Optional", "Linker flags", ""
 
 Compiling on Comet (XSEDE/SDSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

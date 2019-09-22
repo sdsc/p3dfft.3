@@ -39,11 +39,11 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "--enable-nbly2", "Optional", "To define loop blocking factor NBL_Y2", "--enable-nbly2=32"
         "--enable-nblz", "Optional", "To define loop blocking factor NBL_Z", "--enable-nblz=32"
         "--enable-single", "Optional", "This argument will compile p3dfft in single-precision. By default, configure will setup p3dfft to be compiled in double-precision.", "--enable-single"
-        "FC=<Fortran compiler>", "Strongly recommended", "Fortran compiler", "FC=mpfort"
-        "FCFLAGS='"<Fortran compiler flags>'"", "Optional, recommended", "Fortran compiler flags", "FCFLAGS='"-Mextend'""
-        "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpcc"
-        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-fastsse'""
-        "LDFLAGS='"<linker flags>"", "Mandatory (depending on platform)", "Linker flags", "LDFLAGS='"-lmpi_f90 -lmpi_f77'""
+        "FC=<Fortran compiler>", "Strongly recommended", "Fortran compiler", "FC=mpif90"
+        "FCFLAGS='"<Fortran compiler flags>'"", "Optional, recommended", "Fortran compiler flags", "FCFLAGS='"-O3'""
+        "CC=<C compiler>", "Strongly Recommended", "C compiler", "CC=mpicc"
+        "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-O3'""
+        "LDFLAGS='"<linker flags>"", "Optional", "Linker flags", ""
 
 Compiling on Comet (XSEDE/SDSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -54,15 +54,6 @@ Compiling on Comet (XSEDE/SDSC)
         "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
         "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
-
-Compiling on IBM Power7
-^^^^^^^^^^^^^^^^^^^^^^^
-.. csv-table::
-        :header: "Compiler", "Modules", "Arguments"
-        :widths: auto
-        :escape: '
-
-        "mpfort", "essl", "./configure FC=mpfort FCFLAGS='"-qcclines -qarch=pwr7 -qstrict -qnosave -qtune=pwr7 -qhot -qsimd=auto -qcache=auto -qsmp=omp -qthreaded -O3 -q64 -qfloat=hsflt:fltint'" CC=mpcc CFLAGS='"-q64 -DNUS_XCOMP'" CPP=/usr/bin/cpp --enable-essl --enable-ibm --host='"bd-login'""
 
 Compiling on Stampede2 (XSEDE/TACC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

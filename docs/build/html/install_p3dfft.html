@@ -90,7 +90,6 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Install P3DFFT</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-compile-p3dfft">How to compile P3DFFT</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#compiling-on-comet-xsede-sdsc">Compiling on Comet (XSEDE/SDSC)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#compiling-on-ibm-power7">Compiling on IBM Power7</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#compiling-on-stampede2-xsede-tacc">Compiling on Stampede2 (XSEDE/TACC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#compiling-on-bridges-psc">Compiling on Bridges (PSC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#compiling-on-mira-cetus-vesta-alcf">Compiling on Mira/Cetus/Vesta (ALCF)</a></li>
@@ -284,27 +283,27 @@
 <tr class="row-even"><td>FC=&lt;Fortran compiler&gt;</td>
 <td>Strongly recommended</td>
 <td>Fortran compiler</td>
-<td>FC=mpfort</td>
+<td>FC=mpif90</td>
 </tr>
 <tr class="row-odd"><td>FCFLAGS=&quot;&lt;Fortran compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>Fortran compiler flags</td>
-<td>FCFLAGS=&quot;-Mextend&quot;</td>
+<td>FCFLAGS=&quot;-O3&quot;</td>
 </tr>
 <tr class="row-even"><td>CC=&lt;C compiler&gt;</td>
 <td>Strongly Recommended</td>
 <td>C compiler</td>
-<td>CC=mpcc</td>
+<td>CC=mpicc</td>
 </tr>
 <tr class="row-odd"><td>CFLAGS=&quot;&lt;C compiler flags&gt;&quot;</td>
 <td>Optional, recommended</td>
 <td>C compiler flags</td>
-<td>CFLAGS=&quot;-fastsse&quot;</td>
+<td>CFLAGS=&quot;-O3&quot;</td>
 </tr>
 <tr class="row-even"><td>LDFLAGS=&quot;&lt;linker flags&gt;&quot;</td>
-<td>Mandatory (depending on platform)</td>
+<td>Optional</td>
 <td>Linker flags</td>
-<td>LDFLAGS=&quot;-lmpi_f90 -lmpi_f77&quot;</td>
+<td>&#160;</td>
 </tr>
 </tbody>
 </table>
@@ -329,23 +328,6 @@
 <tr class="row-even"><td>GNU</td>
 <td>gnu, fftw</td>
 <td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="compiling-on-ibm-power7">
-<h3>Compiling on IBM Power7<a class="headerlink" href="#compiling-on-ibm-power7" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-auto docutils">
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Compiler</th>
-<th class="head">Modules</th>
-<th class="head">Arguments</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td>mpfort</td>
-<td>essl</td>
-<td>./configure FC=mpfort FCFLAGS=&quot;-qcclines -qarch=pwr7 -qstrict -qnosave -qtune=pwr7 -qhot -qsimd=auto -qcache=auto -qsmp=omp -qthreaded -O3 -q64 -qfloat=hsflt:fltint&quot; CC=mpcc CFLAGS=&quot;-q64 -DNUS_XCOMP&quot; CPP=/usr/bin/cpp --enable-essl --enable-ibm --host=&quot;bd-login&quot;</td>
 </tr>
 </tbody>
 </table>
