@@ -317,17 +317,17 @@
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>PGI</td>
-<td>pgi, fftw</td>
-<td>./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
-</tr>
-<tr class="row-odd"><td>Intel</td>
+<tr class="row-even"><td>Intel</td>
 <td>intel, fftw</td>
 <td>./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
 </tr>
-<tr class="row-even"><td>GNU</td>
+<tr class="row-odd"><td>GNU</td>
 <td>gnu, fftw</td>
 <td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+</tr>
+<tr class="row-even"><td>PGI</td>
+<td>pgi, fftw</td>
+<td>./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
 </tr>
 </tbody>
 </table>
@@ -342,9 +342,9 @@
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>intel</td>
-<td>fftw3</td>
-<td>./configure --enable-fftw --enable-intel CC=mpicc FC=mpif90  FCFLAGS=&quot;-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512&quot; CCFLAGS=&quot;-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512&quot; --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc</td>
+<tr class="row-even"><td>Intel</td>
+<td>intel, fftw3</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc</td>
 </tr>
 </tbody>
 </table>
@@ -360,8 +360,8 @@
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td>Intel</td>
-<td>fftw</td>
-<td>./configure --enable-fftw --enable-intel --with-fftw=$FFTW_LIB/.. CC=mpicc FC=mpif90</td>
+<td>intel, fftw3</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc</td>
 </tr>
 </tbody>
 </table>

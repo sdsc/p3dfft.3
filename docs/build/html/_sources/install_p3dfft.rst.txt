@@ -51,18 +51,17 @@ Compiling on Comet (XSEDE/SDSC)
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
-        "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
         "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+        "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
 
 Compiling on Stampede2 (XSEDE/TACC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
-        :escape: '
 
-        "intel", "fftw3", "./configure --enable-fftw --enable-intel CC=mpicc FC=mpif90  FCFLAGS='"-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512'" CCFLAGS='"-O3 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512'" --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc"
+        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc"
 
 Compiling on Bridges (PSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +69,7 @@ Compiling on Bridges (PSC)
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
-        "Intel", "fftw", "./configure --enable-fftw --enable-intel --with-fftw=$FFTW_LIB/.. CC=mpicc FC=mpif90"
+        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc"
 
 Compiling on Mira/Cetus/Vesta (ALCF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
