@@ -51,8 +51,8 @@ Compiling on Comet (XSEDE/SDSC)
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
-        "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
-        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+        "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm"
         "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
 
 Compiling on Stampede2 (XSEDE/TACC)
@@ -69,7 +69,7 @@ Compiling on Bridges (PSC)
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
-        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc"
+        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc CFLAGS=-lm"
 
 Compiling on Mira/Cetus/Vesta (ALCF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

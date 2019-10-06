@@ -319,11 +319,11 @@
 <tbody valign="top">
 <tr class="row-even"><td>Intel</td>
 <td>intel, fftw</td>
-<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpifort</td>
 </tr>
 <tr class="row-odd"><td>GNU</td>
 <td>gnu, fftw</td>
-<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm</td>
 </tr>
 <tr class="row-even"><td>PGI</td>
 <td>pgi, fftw</td>
@@ -361,7 +361,7 @@
 <tbody valign="top">
 <tr class="row-even"><td>Intel</td>
 <td>intel, fftw3</td>
-<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc CFLAGS=-lm</td>
 </tr>
 </tbody>
 </table>
