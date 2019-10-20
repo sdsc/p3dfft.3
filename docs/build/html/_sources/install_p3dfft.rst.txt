@@ -100,7 +100,7 @@ Choose a MPI.
         :widths: auto
 
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
-        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm"
 
 .. raw:: html
 
@@ -111,9 +111,10 @@ Choose a MPI.
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
+        :escape: '
 
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
-        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpichf90"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS='"-lm -lmpichf90'""
         "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
 
 .. raw:: html
@@ -205,9 +206,10 @@ Choose a MPI.
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
+        :escape: '
 
         "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
-        "GNU", "fftw3", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm"
+        "GNU", "fftw3", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS='"-lm -lmpichf90'""
 
 .. raw:: html
 

@@ -361,7 +361,7 @@
 </tr>
 <tr class="row-odd"><td>GNU</td>
 <td>gnu, fftw</td>
-<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm</td>
 </tr>
 </tbody>
 </table>
@@ -381,7 +381,7 @@
 </tr>
 <tr class="row-odd"><td>GNU</td>
 <td>gnu, fftw</td>
-<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpichf90</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=&quot;-lm -lmpichf90&quot;</td>
 </tr>
 <tr class="row-even"><td>PGI</td>
 <td>pgi, fftw</td>
@@ -496,7 +496,7 @@
 </tr>
 <tr class="row-odd"><td>GNU</td>
 <td>fftw3</td>
-<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=&quot;-lm -lmpichf90&quot;</td>
 </tr>
 </tbody>
 </table>
