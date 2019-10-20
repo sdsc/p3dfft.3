@@ -45,31 +45,204 @@ Currently the package supports four compiler suites: PGI, Intel, IBM and GNU. So
         "CFLAGS='"<C compiler flags>"", "Optional, recommended", "C compiler flags", "CFLAGS='"-O3'""
         "LDFLAGS='"<linker flags>"", "Optional", "Linker flags", ""
 
+.. raw:: html
+
+        <style>
+
+        .tab {
+                overflow: hidden;
+                border: 1px solid #e1e4e5;
+                background-color: #f1f1f1;
+        }
+
+        .tab button {
+                background-color: inherit;
+                float: left;
+                border: none;
+                outline: none;
+                cursor: pointer;
+                padding: 14px 16px;
+                transition: 0.3s;
+                font-size: 15px;
+        }
+
+        .tab button:hover {
+                background-color: #ddd;
+        }
+
+        .tab button.active {
+                background-color: #ccc;
+        }
+
+        .tabcontent {
+                display: none;
+                border-top: none;
+        }
+        </style>
+
 Compiling on Comet (XSEDE/SDSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Choose a MPI.
+
+.. raw:: html
+
+        <div class="tab">
+                <button class="tablinks" onclick="openTab(event, 'Comet_Intel_MPI')">Intel MPI</button>
+                <button class="tablinks" onclick="openTab(event, 'Comet_MVAPICH2')" id="defaultOpen">MVAPICH2</button>
+                <button class="tablinks" onclick="openTab(event, 'Comet_Open_MPI')">Open MPI</button>
+        </div>
+
+        <div id="Comet_Intel_MPI" class="tabcontent">
+
+.. csv-table::
+        :header: "Compiler", "Modules", "Arguments"
+        :widths: auto
+
+        "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+
+.. raw:: html
+
+        </div>
+
+        <div id="Comet_MVAPICH2" class="tabcontent">
+
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
         "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
-        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpichf90"
         "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+
+.. raw:: html
+
+        </div>
+
+        <div id="Comet_Open_MPI" class="tabcontent">
+
+.. csv-table::
+        :header: "Compiler", "Modules", "Arguments"
+        :widths: auto
+
+        "Intel", "intel, fftw", "./configure --enable-intel --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+        "GNU", "gnu, fftw", "./configure --enable-gnu --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm"
+        "PGI", "pgi, fftw", "./configure --enable-pgi --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc"
+
+.. raw:: html
+
+        </div><p></p>
+
 
 Compiling on Stampede2 (XSEDE/TACC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Choose a MPI.
+
+.. raw:: html
+
+        <div class="tab">
+                <button class="tablinks" onclick="openTab(event, 'Stampede2_Intel_MPI')" id="defaultOpen">Intel MPI</button>
+                <button class="tablinks" onclick="openTab(event, 'Stampede2_MVAPICH2')">MVAPICH2</button>
+        </div>
+
+        <div id="Stampede2_Intel_MPI" class="tabcontent">
+
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
         "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$TACC_FFTW3_DIR FC=mpif90 CC=mpicc"
 
+.. raw:: html
+
+        </div>
+
+        <div id="Stampede2_MVAPICH2" class="tabcontent">
+
+.. csv-table::
+        :header: "Compiler", "Modules", "Arguments"
+        :widths: auto
+
+        "Intel", "intel", "./configure --enable-intel --enable-fftw --with-fftw=/PATH/TO/FFTW/LIBRARY FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
+
+.. note::
+        Stampede2's FFTW3 module is not compatible with its MVAPICH2 module. Users must install their own FFTW library.
+
+
+.. raw:: html
+
+        </div><p></p>
+
 Compiling on Bridges (PSC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Choose a MPI.
+
+.. raw:: html
+
+        <div class="tab">
+                <button class="tablinks" onclick="openTab(event, 'Bridges_Intel_MPI')" id="defaultOpen">Intel MPI</button>
+                <button class="tablinks" onclick="openTab(event, 'Bridges_MVAPICH2')">MVAPICH2</button>
+                <button class="tablinks" onclick="openTab(event, 'Bridges_Open_MPI')">Open MPI</button>
+        </div>
+
+        <div id="Bridges_Intel_MPI" class="tabcontent">
+
 .. csv-table::
         :header: "Compiler", "Modules", "Arguments"
         :widths: auto
 
         "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpiifort CC=mpicc CFLAGS=-lm"
+
+.. raw:: html
+
+        </div>
+
+        <div id="Bridges_MVAPICH2" class="tabcontent">
+
+.. csv-table::
+        :header: "Compiler", "Modules", "Arguments"
+        :widths: auto
+
+        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lmpifort"
+        "GNU", "fftw3", "./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm"
+
+.. raw:: html
+
+        </div>
+
+        <div id="Bridges_Open_MPI" class="tabcontent">
+
+.. csv-table::
+        :header: "Compiler", "Modules", "Arguments"
+        :widths: auto
+
+        "Intel", "intel, fftw3", "./configure --enable-intel --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc"
+        "GNU", "fftw3", "./configure --enable-gnu --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm"
+        "PGI", "pgi, fftw3", "./configure --enable-pgi --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc"
+
+.. raw:: html
+
+        </div><p></p>
+
+        <script>
+        function openTab(evt, platform_mpi) {
+                var i, tabcontent, tablinks;
+                tabcontent = document.getElementsByClassName("tabcontent");
+                for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].style.display = "none";
+                }
+                tablinks = document.getElementsByClassName("tablinks");
+                for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].className = tablinks[i].className.replace(" active", "");
+                }
+                document.getElementById(platform_mpi).style.display = "block";
+                evt.currentTarget.className += " active";
+        }
+        </script>
+
 
 Compiling on Mira/Cetus/Vesta (ALCF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

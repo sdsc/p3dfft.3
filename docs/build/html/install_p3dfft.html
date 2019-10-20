@@ -307,9 +307,67 @@
 </tr>
 </tbody>
 </table>
-<div class="section" id="compiling-on-comet-xsede-sdsc">
+<style>
+
+.tab {
+        overflow: hidden;
+        border: 1px solid #e1e4e5;
+        background-color: #f1f1f1;
+}
+
+.tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 15px;
+}
+
+.tab button:hover {
+        background-color: #ddd;
+}
+
+.tab button.active {
+        background-color: #ccc;
+}
+
+.tabcontent {
+        display: none;
+        border-top: none;
+}
+</style><div class="section" id="compiling-on-comet-xsede-sdsc">
 <h3>Compiling on Comet (XSEDE/SDSC)<a class="headerlink" href="#compiling-on-comet-xsede-sdsc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-auto docutils">
+<p>Choose a MPI.</p>
+<div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'Comet_Intel_MPI')">Intel MPI</button>
+        <button class="tablinks" onclick="openTab(event, 'Comet_MVAPICH2')" id="defaultOpen">MVAPICH2</button>
+        <button class="tablinks" onclick="openTab(event, 'Comet_Open_MPI')">Open MPI</button>
+</div>
+
+<div id="Comet_Intel_MPI" class="tabcontent"><table border="1" class="colwidths-auto docutils">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Compiler</th>
+<th class="head">Modules</th>
+<th class="head">Arguments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Intel</td>
+<td>intel, fftw</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+</tr>
+<tr class="row-odd"><td>GNU</td>
+<td>gnu, fftw</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div id="Comet_MVAPICH2" class="tabcontent"><table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -323,7 +381,7 @@
 </tr>
 <tr class="row-odd"><td>GNU</td>
 <td>gnu, fftw</td>
-<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lmpichf90</td>
 </tr>
 <tr class="row-even"><td>PGI</td>
 <td>pgi, fftw</td>
@@ -332,9 +390,39 @@
 </tbody>
 </table>
 </div>
+
+<div id="Comet_Open_MPI" class="tabcontent"><table border="1" class="colwidths-auto docutils">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Compiler</th>
+<th class="head">Modules</th>
+<th class="head">Arguments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Intel</td>
+<td>intel, fftw</td>
+<td>./configure --enable-intel --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+</tr>
+<tr class="row-odd"><td>GNU</td>
+<td>gnu, fftw</td>
+<td>./configure --enable-gnu --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc CFLAGS=-lm</td>
+</tr>
+<tr class="row-even"><td>PGI</td>
+<td>pgi, fftw</td>
+<td>./configure --enable-pgi --enable-fftw --enable-openmpi --with-fftw=$FFTWHOME FC=mpif90 CC=mpicc</td>
+</tr>
+</tbody>
+</table>
+</div><p></p></div>
 <div class="section" id="compiling-on-stampede2-xsede-tacc">
 <h3>Compiling on Stampede2 (XSEDE/TACC)<a class="headerlink" href="#compiling-on-stampede2-xsede-tacc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-auto docutils">
+<p>Choose a MPI.</p>
+<div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'Stampede2_Intel_MPI')" id="defaultOpen">Intel MPI</button>
+        <button class="tablinks" onclick="openTab(event, 'Stampede2_MVAPICH2')">MVAPICH2</button>
+</div>
+
+<div id="Stampede2_Intel_MPI" class="tabcontent"><table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -349,9 +437,36 @@
 </tbody>
 </table>
 </div>
+
+<div id="Stampede2_MVAPICH2" class="tabcontent"><table border="1" class="colwidths-auto docutils">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Compiler</th>
+<th class="head">Modules</th>
+<th class="head">Arguments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Intel</td>
+<td>intel</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=/PATH/TO/FFTW/LIBRARY FC=mpif90 CC=mpicc CFLAGS=-lmpifort</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Stampede2's FFTW3 module is not compatible with its MVAPICH2 module. Users must install their own FFTW library.</p>
+</div>
+</div><p></p></div>
 <div class="section" id="compiling-on-bridges-psc">
 <h3>Compiling on Bridges (PSC)<a class="headerlink" href="#compiling-on-bridges-psc" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="colwidths-auto docutils">
+<p>Choose a MPI.</p>
+<div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'Bridges_Intel_MPI')" id="defaultOpen">Intel MPI</button>
+        <button class="tablinks" onclick="openTab(event, 'Bridges_MVAPICH2')">MVAPICH2</button>
+        <button class="tablinks" onclick="openTab(event, 'Bridges_Open_MPI')">Open MPI</button>
+</div>
+
+<div id="Bridges_Intel_MPI" class="tabcontent"><table border="1" class="colwidths-auto docutils">
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Compiler</th>
 <th class="head">Modules</th>
@@ -366,6 +481,66 @@
 </tbody>
 </table>
 </div>
+
+<div id="Bridges_MVAPICH2" class="tabcontent"><table border="1" class="colwidths-auto docutils">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Compiler</th>
+<th class="head">Modules</th>
+<th class="head">Arguments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Intel</td>
+<td>intel, fftw3</td>
+<td>./configure --enable-intel --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lmpifort</td>
+</tr>
+<tr class="row-odd"><td>GNU</td>
+<td>fftw3</td>
+<td>./configure --enable-gnu --enable-fftw --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div id="Bridges_Open_MPI" class="tabcontent"><table border="1" class="colwidths-auto docutils">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Compiler</th>
+<th class="head">Modules</th>
+<th class="head">Arguments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Intel</td>
+<td>intel, fftw3</td>
+<td>./configure --enable-intel --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc</td>
+</tr>
+<tr class="row-odd"><td>GNU</td>
+<td>fftw3</td>
+<td>./configure --enable-gnu --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc CFLAGS=-lm</td>
+</tr>
+<tr class="row-even"><td>PGI</td>
+<td>pgi, fftw3</td>
+<td>./configure --enable-pgi --enable-fftw --enable-openmpi --with-fftw=$FFTW3_LIB/.. FC=mpif90 CC=mpicc</td>
+</tr>
+</tbody>
+</table>
+</div><p></p>
+
+<script>
+function openTab(evt, platform_mpi) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(platform_mpi).style.display = "block";
+        evt.currentTarget.className += " active";
+}
+</script></div>
 <div class="section" id="compiling-on-mira-cetus-vesta-alcf">
 <h3>Compiling on Mira/Cetus/Vesta (ALCF)<a class="headerlink" href="#compiling-on-mira-cetus-vesta-alcf" title="Permalink to this headline">¶</a></h3>
 <table border="1" class="colwidths-auto docutils">
