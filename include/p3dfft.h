@@ -513,7 +513,7 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
   
   ~trans_type1D()
     {
-      delete [] name;
+      //      delete [] name;
     }
 
 };
