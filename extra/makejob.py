@@ -124,7 +124,7 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 					batchf.write("echo " + dims + " > dims\n")
 					batchf.write(runline(platform,mt,output_dir,test))
 				if uneven:
-					batchf.write("echo '14 26 38 2 1' > stdin\n")
+					batchf.write("echo '58 139 199 2 1' > stdin\n")
 					batchf.write("echo " + all_dims[0] + " > dims\n")
 					batchf.write(runline(platform, mt, output_dir, test))
 		elif '1D' in basename:
@@ -165,6 +165,10 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 				batchf.write("echo '128 128 128 2 1 " + str(direction) + "' > stdin\n")
 				for dims in all_dims:
 					batchf.write("echo " + dims + " > dims\n")
+					batchf.write(runline(platform, mt, output_dir, test))
+				if uneven:
+					batchf.write("echo '58 139 199 2 1 " + str(direction) + "' > stdin\n")
+					batchf.write("echo " + all_dims[0] + " >dims\n")
 					batchf.write(runline(platform, mt, output_dir, test))
 
 # Test for performance
