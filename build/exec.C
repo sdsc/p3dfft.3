@@ -790,8 +790,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
     Type1 *pin_t1,*pIN;
     Type2 *tmp,*pin2,*pout2;
-    float *pin,*pin1,*pout,*pout1,*ptran2; 
-    int ds=sizeof(Type2)/4;
+    Type2 *pin,*pin1,*pout,*pout1,*ptran2; 
+    //    int ds=sizeof(Type2)/4;
 #ifdef FFTW
     if(dt1 > dt2 && !OW) {
       pIN = new Type1[d1[0]*d1[1]*d1[2]];
@@ -819,7 +819,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  else
 	    (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp);
 
-	  pout = (float *) out+ds*k*d2[0]*d2[1];
+	  pout = out+k*d2[0]*d2[1];
 #ifdef MKL_BLAS
 #ifdef DEBUG
 	  if(taskid == 0) {
@@ -845,13 +845,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	
 #else
 
-	  pout = (float *) out +ds*k*d2[0]*d2[1];
+	  pout = out +k*d2[0]*d2[1];
 	  for(j=0;j < d2[1];j++) {
-	    pin = (float *) tmp + ds*j;
+	    pin = tmp + j;
 	    for(i=0;i < d2[0];i++) {
-	      for(int m=0;m<ds;m++)
-		*pout++ = *pin++;
-	      pin += ds*(d2[1]-1);
+	      *pout++ = *pin;
+	      pin += d2[1];
 	    }	
 	 
 	  }
@@ -890,18 +889,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	    pout2 =  out + i*d2[0];
 	    pin2 =  tmp + i;
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) pin2;
-	      pout1 = (float *) pout2+ds*kk;
+	      pin1 = pin2;
+	      pout1 = pout2+ kk;
 	      for(j=0;j < d1[1];j++) {
 		pin = pin1  ;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d2[0]-1);
+		  *pout = *pin++;
+		  pout += d2[0];
 		}
-		pin1 += ds*d2[1];
-		pout1+= ds*d2[0]*d2[1];
+		pin1 += d2[1];
+		pout1+= d2[0]*d2[1];
 	      }
 	      pin2 += d2[1]*d2[2];
 	    }
@@ -936,18 +934,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(i=0;i < d2[2];i+=nb13) {
 	    i2 = min(i+nb13,d2[2]);
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) tmp + ds*(kk*d2[2]*d2[1] +i);
-	      pout1 = (float *) out + ds*(kk + i *d2[1]*d2[0]);
+	      pin1 = tmp + kk*d2[2]*d2[1] +i;
+	      pout1 = out + kk + i *d2[1]*d2[0];
 	      for(j=0;j < d2[1];j++) {
 		pin = pin1;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d2[0]*d2[1]-1);
+		  *pout = *pin++;
+		  pout += d2[0]*d2[1];
 		}
-		pin1 += ds*d2[2];
-		pout1 += ds*d2[0];
+		pin1 += d2[2];
+		pout1 += d2[0];
 	      }
 	    }
 	  }
@@ -977,18 +974,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(j=0;j < d1[2];j+=nb23) {
 	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = (float *) tmp +ds*(kk*d2[2] +j*d2[0]*d2[2]);
-	      pout1 = (float *) out +ds*(kk +j*d2[0]);
+	      pin1 = tmp + kk*d2[2] +j*d2[0]*d2[2];
+	      pout1 =  out + kk +j*d2[0];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
 		for(i=0;i < d2[2];i++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ =  *pin++;
-		  pout += ds*(d2[0]*d2[1]-1);
+		  *pout =  *pin++;
+		  pout += d2[0]*d2[1];
 		}
-		pin1 += ds*d2[2]*d2[0];
-		pout1+= ds*d2[0];
+		pin1 += d2[2]*d2[0];
+		pout1+= d2[0];
 	      }
 	    }
 	  }
@@ -1060,9 +1056,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   else { // Scheme is transform after reordering
 
     Type1 *tmp,*pin2,*pin3,*pout3,*pout4;
-    float *pin,*pout,*pin1,*pout1,*ptran;
+    Type1 *pin,*pout,*pin1,*pout1,*ptran;
     Type2 *pout2,*ptran2;
-    int ds=sizeof(Type1)/4;
+    //    int ds=sizeof(Type1)/4;
 
     switch(mc[0]) {
     case 1:
@@ -1073,17 +1069,16 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
 	tmp = new Type1[d1[0]*d1[1]*d1[2]];
 	for(k=0;k <d1[2];k++) {
-	  pin = (float *) in + ds*k*d1[0]*d1[1];
+	  pin = in + k*d1[0]*d1[1];
 #ifdef MKL_BLAS
 	  blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
 #else
-	  pout1 = (float *) tmp +ds*k*d1[0]*d1[1];
+	  pout1 = tmp +k*d1[0]*d1[1];
 	  for(j=0;j < d1[1];j++) {
-	    pout = pout1 + ds*j;
+	    pout = pout1 + j;
 	    for(i=0;i < d1[0];i++) {
-	      for(int m=0;m<ds;m++)
-		*pout++ = *pin++;
-	      pout += ds*(d1[1]-1);
+	      *pout = *pin++;
+	      pout += d1[1];
 	    }	
 	  }
 #endif
@@ -1095,16 +1090,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	else {
 	tmp = new Type1[d1[0]*d1[1]];
 	for(k=0;k <d1[2];k++) {
-	  pin = (float *) in + ds*k*d1[0]*d1[1];
+	  pin = in + k*d1[0]*d1[1];
 #ifdef MKL_BLAS
 	  blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
 #else
 	  for(j=0;j < d1[1];j++) {
-	    pout = (float *) tmp +ds*j;
+	    pout = tmp +j;
 	    for(i=0;i < d1[0];i++) {
-	      for(int m=0;m<ds;m++)
-		*pout++ = *pin++;
-	      pout += ds*(d1[1]-1);
+	      *pout = *pin++;
+	      pout += d1[1];
 	    }	
 	  }
 #endif
@@ -1129,8 +1123,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	tmp = new Type1[d1[0]*d1[1]*d1[2]]; // tmp[k][i][j] = in[i][j][k]
 
 	for(j=0;j < d1[1];j++) {
-	  pin1 = (float *) in +ds*j*d1[0];
-	  pout1 =(float *)  tmp + ds*j*d1[2]*d1[0];
+	  pin1 = in +j*d1[0];
+	  pout1 = tmp + j*d1[2]*d1[0];
 	  for(k=0;k <d1[2];k+=nb31) {
 	    k2 = min(k+nb31,d1[2]);
 	    
@@ -1139,20 +1133,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      
 	      for(kk=k; kk < k2; kk++) {
 		
-		pin = pin1 + ds*(i + kk*d1[0]*d1[1]);
-		pout = pout1 + ds*(i*d1[2] +kk);
+		pin = pin1 + i + kk*d1[0]*d1[1];
+		pout = pout1 + i*d1[2] +kk;
 		
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d1[2]-1);
+		  *pout = *pin++;
+		  pout += d1[2];
 		}
 	      }
 	    }
 	  }
 	}
 	for(j=0;j < d1[1];j++) {
-	  pout1 =(float *)  tmp + ds*j*d1[2]*d1[0];
+	  pout1 =tmp + j*d1[2]*d1[0];
 	  pout2 = out + j*d2[0]*d2[1];
 	  (*(trans_type->exec))(plan->libplan_out,(Type1 *) pout1,pout2);
 	}
@@ -1161,7 +1154,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
 
 	for(j=0;j < d1[1];j++) {
-	  pin1 = (float *) in +ds*j*d1[0];
+	  pin1 = in +j*d1[0];
 	  for(k=0;k <d1[2];k+=nb31) {
 	    k2 = min(k+nb31,d1[2]);
 	    
@@ -1170,13 +1163,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      
 	      for(kk=k; kk < k2; kk++) {
 		
-		pin = pin1 + ds*(i + kk*d1[0]*d1[1]);
-		pout = (float *)  tmp + ds*(i*d1[2] +kk);
+		pin = pin1 + i + kk*d1[0]*d1[1];
+		pout = tmp + i*d1[2] +kk;
 		
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d1[2]-1);
+		  *pout = *pin++;
+		  pout += d1[2];
 		}
 	      }
 	    }
@@ -1212,18 +1204,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(i=0;i < d1[0];i+=nb13) {
 	    i2 = min(i+nb13,d1[0]);
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +i);
-	      pout1 = (float *) tmp + ds*(kk +i*d1[2]*d1[1]);
+	      pin1 = in + kk*d1[0]*d1[1] +i;
+	      pout1 = tmp + kk +i*d1[2]*d1[1];
 	      for(j=0;j < d1[1];j++) {
 		pin = pin1;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d1[2]*d1[1]-1);
+		  *pout = *pin++;
+		  pout += d1[2]*d1[1];
 		}
-		pin1 += ds*d1[0];
-		pout1 += ds*d1[2];
+		pin1 += d1[0];
+		pout1 += d1[2];
 	      }
 	    }
 	  }
@@ -1246,18 +1237,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(j=0;j < d1[2];j+=nb23) {
 	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = (float *) in + ds*(kk*d1[0] +j*d1[0]*d1[1]);
-	      pout1 = (float *) tmp + ds*(kk +j*d1[1]);
+	      pin1 = in + kk*d1[0] +j*d1[0]*d1[1];
+	      pout1 = tmp + kk +j*d1[1];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
 		for(i=0;i < d1[0];i++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ =  *pin++;
-		  pout += ds*(d1[1]*d1[2]-1);
+		  *pout =  *pin++;
+		  pout += d1[1]*d1[2];
 		}
-		pin1 += ds*d1[0]*d1[1];
-		pout1 += ds*d1[1];
+		pin1 += d1[0]*d1[1];
+		pout1 += d1[1];
 	      }
 	    }
 	  }
@@ -1405,8 +1395,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
     Type1 *pin_t1;
     Type2 *tmp,*pin2,*pout2;
-    float *pin,*pin1,*pout,*pout1,*ptran2; 
-    int ds=sizeof(Type2)/4;
+    Type2 *pin,*pin1,*pout,*pout1,*ptran2; 
+    //    int ds=sizeof(Type2)/4;
 
    switch(mc[0]) {
     case 1:
@@ -1421,7 +1411,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	for(k=0;k <d1[2];k++) {
 	  (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
 	  compute_deriv_loc(tmp,tmp,dims);
-	  pout = (float *) out+ds*k*d2[0]*d2[1];
+	  pout = out+k*d2[0]*d2[1];
 #ifdef MKL_BLAS
 #ifdef DEBUG
 	  if(taskid == 0) {
@@ -1447,13 +1437,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	
 #else
 
-	  pout = (float *) out +ds*k*d2[0]*d2[1];
+	  pout =  out + k*d2[0]*d2[1];
 	  for(j=0;j < d2[1];j++) {
-	    pin = (float *) tmp + ds*j;
+	    pin = tmp + j;
 	    for(i=0;i < d2[0];i++) {
-	      for(int m=0;m<ds;m++)
-		*pout++ = *pin++;
-	      pin += ds*(d2[1]-1);
+	      *pout++ = *pin;
+	      pin += d2[1];
 	    }	
 	 
 	  }
@@ -1489,18 +1478,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	    pout2 =  out + i*d2[0];
 	    pin2 =  tmp + i;
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) pin2;
-	      pout1 = (float *) pout2+ds*kk;
+	      pin1 = pin2;
+	      pout1 = pout2+kk;
 	      for(j=0;j < d1[1];j++) {
 		pin = pin1  ;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d2[0]-1);
+		  *pout = *pin++;
+		  pout += d2[0];
 		}
-		pin1 += ds*d2[1];
-		pout1+= ds*d2[0]*d2[1];
+		pin1 += d2[1];
+		pout1+= d2[0]*d2[1];
 	      }
 	      pin2 += d2[1]*d2[2];
 	    }
@@ -1541,18 +1529,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(i=0;i < d2[2];i+=nb13) {
 	    i2 = min(i+nb13,d2[2]);
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) tmp + ds*(kk*d2[2]*d2[1] +i);
-	      pout1 = (float *) out + ds*(kk + i *d2[1]*d2[0]);
+	      pin1 = tmp + kk*d2[2]*d2[1] +i;
+	      pout1 =  out + kk + i *d2[1]*d2[0];
 	      for(j=0;j < d2[1];j++) {
 		pin = pin1;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d2[0]*d2[1]-1);
+		  *pout = *pin++;
+		  pout += (d2[0]*d2[1]);
 		}
-		pin1 += ds*d2[2];
-		pout1 += ds*d2[0];
+		pin1 += d2[2];
+		pout1 += d2[0];
 	      }
 	    }
 	  }
@@ -1586,18 +1573,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(j=0;j < d1[2];j+=nb23) {
 	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = (float *) tmp +ds*(kk*d2[2] +j*d2[0]*d2[2]);
-	      pout1 = (float *) out +ds*(kk +j*d2[0]);
+	      pin1 = tmp +kk*d2[2] +j*d2[0]*d2[2];
+	      pout1 =  out +kk +j*d2[0];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
 		for(i=0;i < d2[2];i++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ =  *pin++;
-		  pout += ds*(d2[0]*d2[1]-1);
+		  *pout =  *pin++;
+		  pout += (d2[0]*d2[1]);
 		}
-		pin1 += ds*d2[2]*d2[0];
-		pout1+= ds*d2[0];
+		pin1 += d2[2]*d2[0];
+		pout1+= d2[0];
 	      }
 	    }
 	  }
@@ -1648,9 +1634,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   else { // Scheme is transform after reordering
 
     Type1 *tmp,*pin2;
-    float *pin,*pout,*pin1,*pout1,*ptran;
+    Type1 *pin,*pout,*pin1,*pout1,*ptran;
     Type2 *pout2,*ptran2;
-    int ds=sizeof(Type1)/4;
+    //    int ds=sizeof(Type1)/4;
 
     switch(mc[0]) {
     case 1:
@@ -1666,16 +1652,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
 	tmp = new Type1[d1[0]*d1[1]];
 	for(k=0;k <d1[2];k++) {
-	  pin = (float *) in + ds*k*d1[0]*d1[1];
+	  pin = in + k*d1[0]*d1[1];
 #ifdef MKL_BLAS
 	  blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
 #else
 	  for(j=0;j < d1[1];j++) {
-	    pout = (float *) tmp +ds*j;
+	    pout = tmp +j;
 	    for(i=0;i < d1[0];i++) {
-	      for(int m=0;m<ds;m++)
-		*pout++ = *pin++;
-	      pout += ds*(d1[1]-1);
+	      *pout = *pin++;
+	      pout += d1[1];
 	    }	
 	  }
 #endif
@@ -1704,7 +1689,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
 
 	for(j=0;j < d1[1];j++) {
-	  pin1 = (float *) in +ds*j*d1[0];
+	  pin1 =  in +j*d1[0];
 	  for(k=0;k <d1[2];k+=nb31) {
 	    k2 = min(k+nb31,d1[2]);
 	    
@@ -1713,13 +1698,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	      
 	      for(kk=k; kk < k2; kk++) {
 		
-		pin = pin1 + ds*(i + kk*d1[0]*d1[1]);
-		pout = (float *)  tmp + ds*(i*d1[2] +kk);
+		pin = pin1 + i + kk*d1[0]*d1[1];
+		pout = tmp + i*d1[2] +kk;
 		
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d1[2]-1);
+		  *pout = *pin++;
+		  pout += d1[2];
 		}
 	      }
 	    }
@@ -1761,18 +1745,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(i=0;i < d1[0];i+=nb13) {
 	    i2 = min(i+nb13,d1[0]);
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +i);
-	      pout1 = (float *) tmp + ds*(kk +i*d1[2]*d1[1]);
+	      pin1 = in + kk*d1[0]*d1[1] +i;
+	      pout1 = tmp + kk +i*d1[2]*d1[1];
 	      for(j=0;j < d1[1];j++) {
 		pin = pin1;
 		pout = pout1;
 		for(ii=i; ii < i2; ii++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ = *pin++;
-		  pout += ds*(d1[2]*d1[1]-1);
+		  *pout = *pin++;
+		  pout += d1[2]*d1[1];
 		}
-		pin1 += ds*d1[0];
-		pout1 += ds*d1[2];
+		pin1 += d1[0];
+		pout1 += d1[2];
 	      }
 	    }
 	  }
@@ -1804,18 +1787,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	  for(j=0;j < d1[2];j+=nb23) {
 	    j2 = min(j+nb23,d1[2]);
 	    for(kk=k; kk < k2; kk++){
-	      pin1 = (float *) in + ds*(kk*d1[0] +j*d1[0]*d1[1]);
-	      pout1 = (float *) tmp + ds*(kk +j*d1[1]);
+	      pin1 = in + kk*d1[0] +j*d1[0]*d1[1];
+	      pout1 = tmp + kk +j*d1[1];
 	      for(jj=j; jj < j2; jj++) {
 		pin = pin1;
 		pout = pout1;
 		for(i=0;i < d1[0];i++) {
-		  for(int m=0;m<ds;m++)
-		    *pout++ =  *pin++;
-		  pout += ds*(d1[1]*d1[2]-1);
+		  *pout =  *pin++;
+		  pout += d1[1]*d1[2];
 		}
-		pin1 += ds*d1[0]*d1[1];
-		pout1 += ds*d1[1];
+		pin1 += d1[0]*d1[1];
+		pout1 += d1[1];
 	      }
 	    }
 	  }
@@ -1885,9 +1867,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
   void rel_change(int *,int *,int *);
-  float *pin,*pout,*pin1,*pout1;
+  Type2 *pin,*pout,*pin1,*pout1;
   int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31,nb23,nb32;
-  int ds=sizeof(Type2) /4;
+  //  int ds=sizeof(Type2) /4;
 
   // Inverse storage mapping
   inv_mo(mo1,imo1);
@@ -1900,19 +1882,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 
   // Find relative change in the memory mapping from input to output
   rel_change(imo1,imo2,mc);
-  pin = (float *) in;
+  pin =  in;
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
       for(k=0;k <d1[2];k++) {
-	pout1 = (float *) out + ds*k*d1[0]*d1[1];
+	pout1 = out + k*d1[0]*d1[1];
 	for(j=0;j < d1[1];j++)
 	  pout = pout1 + j;
 	  for(i=0;i < d1[0];i++) {
-	    for(int m=0;m<ds;m++)
-	      *(pout++)  = *(pin++);
-	    pout += ds*(d2[0]-1);
+	    *(pout)  = *(pin++);
+	    pout += d2[0];
 	  }
       }
       break;
@@ -1929,18 +1910,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(i=0;i < d1[0];i+=nb13) {
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = (float *) in +ds*(kk*d1[0]*d1[1] +i);
-	    pout1 = (float *) out + ds*(kk*d2[1] +i*d2[0]*d2[1]);
+	    pin1 = in +kk*d1[0]*d1[1] +i;
+	    pout1 =  out + kk*d2[1] +i*d2[0]*d2[1];
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
-		for(int m=0;m<ds;m++)
-		  *pout++ = *pin++;
-		pout += ds*(d2[0]*d2[1]-1);
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += ds*d1[0];
-	      pout1+=ds;
+	      pin1 += d1[0];
+	      pout1+= 1;
 	    }
 	  }
 	}
@@ -1964,18 +1944,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(i=0;i < d1[0];i+=nb13) {
 	  i2 = min(i+nb13,d1[0]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +i);
-	    pout1 = (float *) out + ds*(kk + i * d2[0]*d2[1]);
+	    pin1 = in + kk*d1[0]*d1[1] +i;
+	    pout1 = out + kk + i * d2[0]*d2[1];
 	    for(j=0;j < d1[1];j++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
-		for(int m=0;m<ds;m++)
-		  *pout++ = *pin++;
-		pout += ds*(d2[0]*d2[1]-1);
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
 	      }
-	      pin1 += ds*d1[0];
-	      pout1 += ds*d2[0];
+	      pin1 += d1[0];
+	      pout1 += d2[0];
 	    }
 	  }
 	}
@@ -1997,15 +1976,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = (float *) in +ds*kk*d1[0]*d1[1];
-	    pout1 = (float *) out +ds*kk;
+	    pin1 = in +kk*d1[0]*d1[1];
+	    pout1 = out +kk;
 	    for(jj=j; jj < j2; jj++) {
-	      pin = pin1 +ds*jj*d1[0];
-	      pout = pout1 +ds*jj*d2[0]*d2[1];
+	      pin = pin1 +jj*d1[0];
+	      pout = pout1 +jj*d2[0]*d2[1];
 	      for(i=0;i < d1[0];i++) {
-		for(int m=0;m<ds;m++)
-		  *pout++ = *pin++;
-		pout += ds*(d2[0]-1);
+		*pout = *pin++;
+		pout += d2[0];
 	      }
 	    }
 	  }
@@ -2031,16 +2009,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 = (float *) in + ds*(kk*d1[0]*d1[1] +j*d1[0]);
-	    pout1 = (float *) out +ds*(kk*d2[0] +j*d2[0]*d2[1]);
+	    pin1 = in + kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;
 	      pout = pout1;
 	      for(i=0;i < d1[0];i++) 
-		for(int m=0;m<ds;m++)
-		  *pout++ = *pin++;
-	      pin += ds*d1[0];
-	      pout += ds*d2[0]*d2[1];
+		*pout++ = *pin++;
+	      pin += d1[0];
+	      pout += d2[0]*d2[1];
 	    }
 	  }
 	}
