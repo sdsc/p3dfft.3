@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC)
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) --std=c++11
 
 ARFLAGS = -v -r -u
 
