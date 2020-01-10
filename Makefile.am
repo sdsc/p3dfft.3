@@ -4,6 +4,12 @@ include_HEADERS = include/p3dfft.h include/p3dfft3config.h include/Fwrap.h inclu
 
 SUBDIRS = build sample
 
+library: p3dfft3config.h
+	$(MAKE) -C build
+
+sample: library
+	$(MAKE) -C sample
+
 all-local:
 	@echo $(SUCCESS)
 clean-local:
