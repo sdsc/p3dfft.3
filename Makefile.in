@@ -816,6 +816,12 @@ uninstall-am: uninstall-includeHEADERS
 	uninstall-includeHEADERS
 
 
+library: p3dfft3config.h
+	$(MAKE) -C build
+
+sample: library
+	$(MAKE) -C sample
+
 all-local:
 	@echo $(SUCCESS)
 clean-local:
