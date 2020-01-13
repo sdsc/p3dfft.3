@@ -124,7 +124,11 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 					batchf.write("echo " + dims + " > dims\n")
 					batchf.write(runline(platform,mt,output_dir,test))
 				if uneven:
+<<<<<<< HEAD
 					batchf.write("echo '58 139 199 2 1' > stdin\n")
+=======
+					batchf.write("echo '14 26 38 2 1' > stdin\n")
+>>>>>>> 1ac34efd1ac6fcb989e26e89d2661f2f7306dd03
 					batchf.write("echo " + all_dims[0] + " > dims\n")
 					batchf.write(runline(platform, mt, output_dir, test))
 		elif '1D' in basename:
@@ -166,10 +170,13 @@ def buildall(platform, mt, all_tests, all_dims, batchf, output_dir, uneven):
 				for dims in all_dims:
 					batchf.write("echo " + dims + " > dims\n")
 					batchf.write(runline(platform, mt, output_dir, test))
+<<<<<<< HEAD
 				if uneven:
 					batchf.write("echo '58 139 199 2 1 " + str(direction) + "' > stdin\n")
 					batchf.write("echo " + all_dims[0] + " >dims\n")
 					batchf.write(runline(platform, mt, output_dir, test))
+=======
+>>>>>>> 1ac34efd1ac6fcb989e26e89d2661f2f7306dd03
 
 # Test for performance
 #TODO NOT WORKING
