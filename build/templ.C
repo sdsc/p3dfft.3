@@ -316,7 +316,7 @@ void inv_mo(int mo[3],int imo[3]);
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
 	curr_stage->kind = MPI_ONLY;
 	Stages = prev_stage = curr_stage;
-	delete [] tmpgrid0;
+	delete tmpgrid0;
 	tmpgrid0 = tmpgrid1;
       }
 
