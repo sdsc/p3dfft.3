@@ -142,7 +142,8 @@ using namespace p3dfft;
 
   //Set up transform types for 1D cosine transform
 
-  type_ids1 = type_ids2 = DCT1_REAL_D;
+  type_ids1 = DCT1_REAL_D;
+  type_ids2 = DCT1_REAL_D;
 
   //Set up global dimensions of the grid
 
@@ -222,7 +223,7 @@ using namespace p3dfft;
 
   if(myid == 0)
     printf("Results of forward transform: \n");
-  print_res(OUT,gdims,sdims2,glob_start2,gdims[dim]);
+  print_res(OUT,gdims,sdims2,glob_start2,dim);
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
 
   // Execution of backward transform
