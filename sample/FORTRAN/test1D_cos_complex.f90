@@ -66,9 +66,7 @@
          endif
          dim = 1
 
-        read (3,*) nx, ny, nz, dim,n
-        read (3,*) mem_order1(1:3)
-        read (3,*) mem_order2(1:3)
+        read (3,*) nx, ny, nz, dim,n,mem_order1(1:3),mem_order2(1:3)
         dim = dim +1
 	print *,'P3DFFT++ test, Fortran, 1D cosine complex transform, 3D wave input'
         write (*,*) "procs=",nproc," nx=",nx, &
