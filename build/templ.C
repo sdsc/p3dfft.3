@@ -94,23 +94,19 @@ void inv_mo(int mo[3],int imo[3]);
   print_type3D(type);
 #endif
 
-  int prec2,dt;
+  int prec2;
   Stages = NULL;is_set = false;
   if(typeid(Type1) == type_float) {
     prec = 4;
-    dt = 1;
   }
   else if(typeid(Type1) == type_double) {
     prec = 8;
-    dt = 1;
   }
   else if(typeid(Type1) == type_complex) {
     prec = 4;
-    dt = 2;
   }
   else if(typeid(Type1) == type_complex_double) {
     prec = 8;
-    dt = 2;
   }
 
   if(typeid(Type2) == type_float) {
@@ -127,10 +123,12 @@ void inv_mo(int mo[3],int imo[3]);
   }
   if(prec != prec2)
     cout << "Error in transform3D: precisions don't match!" << endl;
-  int dt_init = dt;
+
+  int dt = dt1 = sizeof(Type1)/prec;
+  dt2 = sizeof(Type2)/prec;
 
   int pgrid1[3],pgrid2[3],nstages,pgrid[3],proc_order[3],gdims[3],L[3],Lfin,st;
-  int ns,d1,d2,nd,dt1,dt2,i,df,L1,L2,L3,excl(int,int),dist(int);
+  int ns,d1,d2,nd,i,df,L1,L2,L3,excl(int,int),dist(int);
   void swap0(int new_mo[3],int mo[3],int L);
   int monext[3];
   int dims1[3],dims2[3];
@@ -151,8 +149,6 @@ void inv_mo(int mo[3],int imo[3]);
 
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
-  dt = dt_init;
-  dt1 = dt;
 
   memcpy(pgrid1,grid1_.pgrid,sizeof(int)*3);
   memcpy(pgrid2,grid2_.pgrid,sizeof(int)*3);
@@ -204,6 +200,7 @@ void inv_mo(int mo[3],int imo[3]);
     tmptype = types1D[type->types[i]];
   // First, see if we have a R2C 1D transform, and start there
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      printf("type %d: real-to-complex\n",i);
       if(L[0] >= 0)
 	printf("ERror in transform3D: more than one real-to-complex 1D transform\n");
       else
@@ -211,6 +208,7 @@ void inv_mo(int mo[3],int imo[3]);
     }
     // End on C2R
     else if(tmptype->dt1 > tmptype->dt2) { // Complex-to-real
+      printf("type %d: complex-to-real\n",i);
       if(L[2] >= 0)
 	printf("ERror in transform3D: more than one complex-to-real 1D transforms\n");
       else
@@ -219,6 +217,9 @@ void inv_mo(int mo[3],int imo[3]);
   }
 
   bool init_steps = false;
+#ifdef DEBUG
+  printf("Choosing init_steps: L0=%d,L2=%d\n",L[0],L[2]);
+#endif
 
   if(L[0] >= 0 && L[2] >= 0)
     printf("Error in transform3D: can't have both R2C and C2R transforms\n");
@@ -238,6 +239,8 @@ void inv_mo(int mo[3],int imo[3]);
       init_steps = true;
     }
   }
+
+
 
       // Next choose intermediate and final local dimensions, L[1] and L[2]
   if(L[2] >= 0) {
@@ -366,11 +369,12 @@ void inv_mo(int mo[3],int imo[3]);
     int dim_conj_sym = tmpgrid0->dim_conj_sym;
     tmptype = types1D[type->types[L[st]]];
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
-      gdims[L[st]] = gdims[L[st]]/2+1;
       dim_conj_sym = L[st];
+      gdims[dim_conj_sym] = gdims[dim_conj_sym]/2+1;
     }
     else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
-      gdims[L[st]] = (gdims[L[st]]-1)*2;
+      dim_conj_sym = -1;
+      gdims[dim_conj_sym] = (gdims[dim_conj_sym]-1)*2;
     }
 
     inpl = true;
@@ -416,7 +420,7 @@ void inv_mo(int mo[3],int imo[3]);
       // Set up the ending grid for this stage
       tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 #ifdef DEBUG
-      printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
+      printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), pgrid=(%d %d %d), dim-conj_sym=%d, mem_order=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],pgrid[0],pgrid[1],pgrid[2],dim_conj_sym,monext[0],monext[1],monext[2]);
 #endif
 
       // Determine if can use inplace transform
@@ -475,7 +479,11 @@ void inv_mo(int mo[3],int imo[3]);
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
-      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+#ifdef DEBUG
+      printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
+      tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
       curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
@@ -501,7 +509,10 @@ void inv_mo(int mo[3],int imo[3]);
         pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
-	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+#ifdef DEBUG
+      printf("MPI plan 2 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid0->pgrid[0],tmpgrid0->pgrid[1],tmpgrid0->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
+	tmpgrid1 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
@@ -521,6 +532,9 @@ void inv_mo(int mo[3],int imo[3]);
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
+#ifdef DEBUG
+      printf("MPI plan 3 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
       tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
       prev_stage = curr_stage;
@@ -536,6 +550,9 @@ void inv_mo(int mo[3],int imo[3]);
 	pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
+#ifdef DEBUG
+      printf("MPI plan 4 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid0->pgrid[0],tmpgrid0->pgrid[1],tmpgrid0->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
 	tmpgrid1 = new grid(gdims,tmpgrid0->dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
@@ -557,14 +574,14 @@ void inv_mo(int mo[3],int imo[3]);
     if(!iseq) { //If not in the final memory ordering
       tmpgrid0 = new grid(grid2_);
       prev_stage = curr_stage;
-#ifdef DEBUG
-      printf("Calling init_transplan, trans_dim=%d\n",grid2_.L[0]);
-#endif
       //      inpl = true;
       gen_trans_type *t=empty_type<Type2>();
       int trans_dim = grid2_.L[0];
       if(nd == 1 && tmpgrid1->mem_order[trans_dim] != 0 && tmpgrid0->mem_order[trans_dim] != 0)
 	trans_dim = grid2_.L[1];
+#ifdef DEBUG
+      printf("Calling final init_transplan, trans_dim=%d\n",grid2_.L[0]);
+#endif
       curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
 
       // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
@@ -582,6 +599,7 @@ void inv_mo(int mo[3],int imo[3]);
   //  cout << "Done transform3D planning" << endl;
   is_set = true;
   return;
+
 
 }
 
@@ -704,7 +722,9 @@ int dist(int a)
     return;
   }
   if(!trans_type->is_empty)
-    find_plan(trans_type); 
+    find_plan(trans_type);
+  else
+    is_empty = true;
 
 }  
 
@@ -784,6 +804,8 @@ int dist(int a)
 
   if(!trans_type->is_empty)
     find_plan(trans_type); 
+  else
+    is_empty = true;
 
 }
 
@@ -856,7 +878,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 {
   kind = TRANSMPI;
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
-  if(trplan->plan == NULL)
+  if(trplan->plan == NULL && !trplan->is_empty)
     cout << "Error in trans_MPIplan: null plan" << endl;
 
   stage_prec = trplan->prec;
