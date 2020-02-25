@@ -373,8 +373,8 @@ void inv_mo(int mo[3],int imo[3]);
       gdims[dim_conj_sym] = gdims[dim_conj_sym]/2+1;
     }
     else if(tmptype->dt2 < tmptype->dt1) { // Complex-to-real
-      dim_conj_sym = -1;
       gdims[dim_conj_sym] = (gdims[dim_conj_sym]-1)*2;
+      dim_conj_sym = -1;
     }
 
     inpl = true;
@@ -992,6 +992,7 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
   //  is_trans = false;
   kind = MPI_ONLY;
   mpicomm = mpicomm_;
+  dt1 = dt2 = sizeof(Type)/prec;
 
 }
 
