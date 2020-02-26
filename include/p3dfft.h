@@ -588,6 +588,7 @@ template <class Type1,class Type2>   class transplan : public stage {
 
   public :
 
+  bool is_empty=false;
   int trans_dim;  // Rank of dimension of the transform
   int mo1[3],mo2[3];
   bool is_set;
