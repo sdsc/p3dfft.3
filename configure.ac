@@ -137,7 +137,7 @@ AS_IF([test "$fourlib" = "fftw"],
               AS_IF([test -d "${withfftw}/lib"],
                     [LDFLAGS_save=$LDFLAGS
                      LDFLAGS="-L${withfftw}/lib"
-                     AC_SEARCH_LIBS([fftw_plan_dft], [fftw3],
+                     AC_SEARCH_LIBS([fftw_execute], [fftw3],
                                     [AC_SUBST(FFTW_LIB, "-L${withfftw}/lib -lfftw3")],
                                     [AC_MSG_ERROR([libfftw3 not found!])])
                      AC_SEARCH_LIBS([fftwf_execute_r2r], [fftw3f],
