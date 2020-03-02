@@ -370,7 +370,7 @@
       real(8) Nglob
 
       do i=1,3
-         imo(mo(i))=i
+         imo(mo(i)+1)=i
       enddo
 
       do z=1,mydims(3)
