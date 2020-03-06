@@ -11,20 +11,21 @@ from itertools import combinations
 from time import strftime, localtime
 
 
-platforms = ["comet", "bridges","stampede"]
-compilers = ["intel", "gnu", "pgi", "cray", "ibm"]
+platforms = ["comet", "bridges", "stampede", "summit"]
+compilers = ["intel", "gnu", "pgi"]
 #Add configure options to this list once there are some
 options = []
-configs = { "comet": './configure --enable-fftw',
-			"stampede": './configure --enable-fftw --with-fftw-lib=$TACC_FFTW3_LIB --with-fftw-inc=$TACC_FFTW3_INC',
-			"bridges": './configure --enable-fftw CXX=mpiicpc CC=mpiicc FC=mpiifort'
+configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME',
+			"stampede": './configure --enable-fftw --with-fftw=$TACC_FFTW3_DIR',
+			"bridges": './configure --enable-fftw --with-fftw=$FFTW3_LIB/..',
+			"summit": './configure --enable-fftw --with-fftw=$OLCF_FFTW_ROOT'
 			}
 sourcedir = "p3dfft.3"
 destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
 
 def usage_exit(msg):
 	print msg
-	print "USAGE: ./all_configs.py -s comet|bridges|stampede [-c intel|gnu|pgi|cray|ibm] [-p] [-f extra flags]"
+	print "USAGE: ./all_configs.py -s comet|bridges|stampede|summit [-c intel|gnu|pgi] [-p] [-f extra flags]"
 	print "Make sure to run this script from one level above your p3dfft.3 source directory!"
 	print "-h displays usage information"
 	print "-s specifies which platform"

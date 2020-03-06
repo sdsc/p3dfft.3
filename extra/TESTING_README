@@ -8,15 +8,17 @@ your source directory, then run:
 python [source directory]/extra/all_configs.py -s [platform]
 
 The platform is the only mandatory option, and the available platforms are
-comet, bridges, and stampede.
+comet, bridges, stampede, and summit.
 
-You can also use the -h option to see the help menu
+You can also use the -h option to see the help menu.
 
 This script will build a configuration folder in your current directory titled:
 p3dfft++_configs_[time stamp]_[compiler]
 
 Within this folder will be folders for all the possible permutations of builds
 depending on the options in the "options" list in all_configs.py
+
+Example: python p3dfft.3/extra/all_configs.py -s comet -c intel -f "FC=mpif90 CC=mpicc CXX=mpicxx"
 
 
 **********
