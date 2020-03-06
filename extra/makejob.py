@@ -12,7 +12,7 @@ from itertools import product, permutations
 
 #Add more platforms as necessary to this list (Note that when more platforms are added, you must update the functions
 #as well to include that option
-platforms = ["comet", "stampede", "bridges"]
+platforms = ["comet", "stampede", "bridges", "summit"]
 
 #Generates all permunations for memory orders as string of space-separated numbers
 one_dim_perms = map(lambda a: a.replace('(', '').replace(')', '').replace(',', '')
@@ -32,7 +32,7 @@ assert(MT_NUMTHREADS * MT_RANKSPERNODE == TASKSPERNODE)
 #Exit message when input error occurs
 def usage_exit(msg):
 	print msg
-	print "USAGE: ./makejob.py -s comet|gordon|edison|cori|stampede -d [directory] [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]"
+	print "USAGE: ./makejob.py -s comet|stampede|bridges|summit -d [directory] [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]"
 	print "Make sure to run this script from one level above your p3dfft.3 source directory!"
 	print "-h displays usage information"
 	print "-d source directory created from configure.py"
@@ -96,6 +96,11 @@ def runline(platform, mt, output_dir, test):
 			r = "mpirun -n " + str(MT_RANKSPERNODE) + " " + test
 		else:
 			r = "mpirun -n " + str(TASKSPERNODE * NUMNODES) + " " + test
+	elif platform == "summit":
+		if mt:
+			r = "" # -mt branch not ready
+		else:
+			r = "jsrun -n " + str(TASKSPERNODE * NUMNODES) + " " + test
 	# Output is appended to the test output file in the output directory
 	return r + " &>> " + os.path.join(output_dir, "output_" + os.path.basename(test)) + "\n"
 
@@ -289,6 +294,14 @@ def script_header(platform, batchf, mt, perf, email, output_dir, sd, account):
 			batchf.write('#SBATCH --mail-user=' + email + '\n')
 			batchf.write('#SBATCH --mail-type=ALL\n')
 		batchf.write('#SBATCH -t 02:00:00\n')
+	elif platform == "summit":
+		batchf.write('#BSUB -P CSC369' + '\n')
+		batchf.write('#BSUB -W 2:00' + '\n')
+		batchf.write('#BSUB -nnodes ' + str(NUMNODES) + '\n')
+		batchf.write('#BSUB -J P3DFFT' + '\n')
+		batchf.write('#BSUB -o out.%J' + '\n')
+		batchf.write('#BSUB -e out.%J' + '\n')
+		
 	batchf.write('cd ' + sd + '\n')
 	batchf.write('\n')
 
