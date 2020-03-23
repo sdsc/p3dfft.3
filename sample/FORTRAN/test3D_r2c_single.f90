@@ -38,7 +38,8 @@
 
       integer(8) Ntot
       real factor
-      real(8) rtime1,rtime2,Nglob,prec
+      real(8) rtime1,rtime2
+      real Nglob,prec
       real(8) gt(12,3),gtcomm(3),tc
       integer ierr,nu,ndim,dims(2),nproc,proc_id
       integer istart(3),iend(3),isize(3)
@@ -260,7 +261,7 @@
       end do
 
 ! Free work space
-      call p3dfft_cleanup
+!      call p3dfft_cleanup
 
 ! Check results
       call check_res(C,gdims1,mydims1,gstart1,Nglob)
@@ -414,7 +415,7 @@
       integer x,y,z,proc_id,ldims(3),gstart(3)
       integer(8) i,Nar
       complex Ar(ldims(1),ldims(2),ldims(3))
-      real(8) Nglob
+      real Nglob
 
       do z=1,ldims(3)
          do y=1,ldims(2)
