@@ -6,7 +6,9 @@ CCLD = $(CXX)
 
 csampledir = $(datadir)/p3dfft++_samples/
 
-csample_PROGRAMS = test1D_cos_c test1D_cos_complex_c test1D_r2c_c test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test3D_c2c_inplace_c testIDIR_deriv2_c test3D_r2c_memord_c
+csample_PROGRAMS = test1D_cos_c test1D_cos_complex_c test1D_r2c_c test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test3D_c2c_inplace_c testIDIR_deriv2_c test3D_r2c_memord_c test3D_r2c_single_c
+
+test3D_r2c_single_c_SOURCES = test3D_r2c_single.c
 
 test1D_cos_c_SOURCES = test1D_cos.c
 
