@@ -39,7 +39,7 @@ void print_res(double *,int *,int *,int *, int);
 void normalize(double *,long int,int *,int);
 double check_res(double*,double *,int *);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
 
 using namespace p3dfft;

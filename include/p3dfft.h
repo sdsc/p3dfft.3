@@ -869,15 +869,6 @@ template<class Type> gen_trans_type *empty_type()
  //CHEB_REAL_S,CHEB_REAL_D,CHEB_COMPLEX_S,CHEB_COMPLEX_D;
 
 
-template class transform3D<float,float>;
-template class transform3D<double,double>;
-template class transform3D<mycomplex,float>;
-template class transform3D<complex_double,double>;
-template class transform3D<float,mycomplex>;
-template class transform3D<double,complex_double>;
-template class transform3D<mycomplex,mycomplex>;
-template class transform3D<complex_double,complex_double>;
-
 /*
 template class trans_type1D<float,float>;
 template class trans_type1D<double,double>;
@@ -888,14 +879,6 @@ template class trans_type1D<double,complex_double>;
 template class trans_type1D<mycomplex,mycomplex>;
 template class trans_type1D<complex_double,complex_double>;
 */
-template class transplan<float,float>;
-template class transplan<double,double>;
-template class transplan<mycomplex,float>;
-template class transplan<complex_double,double>;
-template class transplan<float,mycomplex>;
-template class transplan<double,complex_double>;
-template class transplan<mycomplex,mycomplex>;
-template class transplan<complex_double,complex_double>;
 
 #ifdef TIMERS
   class timer {

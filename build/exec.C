@@ -744,7 +744,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 #ifdef DEBUG
   int taskid;
   MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
-  printf("%d: In transplan::reorder_trans, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
+  printf("%d: In transplan::reorder_trans, mo1=%d %d %d, mo2=%d %d %d, dims2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],dims2[0],dims2[1],dims2[2]);
 #endif
 
   // Find inverse memory mappings
@@ -2654,6 +2654,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   tmpdims = trplan->grid2->ldims;
 
+  printf("%d: Allocating sendbuf; tmpdims= %d %d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2]);
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   double t1=MPI_Wtime();
@@ -2668,6 +2669,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
+  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
   MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->mpicomm);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
@@ -2960,5 +2962,13 @@ void inv_mo(int mo[3],int imo[3])
  }
 #endif
 
+template class transform3D<float,float>;
+template class transform3D<double,double>;
+template class transform3D<mycomplex,float>;
+template class transform3D<complex_double,double>;
+template class transform3D<float,mycomplex>;
+template class transform3D<double,complex_double>;
+template class transform3D<mycomplex,mycomplex>;
+template class transform3D<complex_double,complex_double>;
 
 }
