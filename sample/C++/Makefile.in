@@ -80,7 +80,7 @@ cppsample_PROGRAMS = test3D_c2c_cpp$(EXEEXT) test3D_r2c_cpp$(EXEEXT) \
 	test1D_transplan_cpp$(EXEEXT) test1D_cos_cpp$(EXEEXT) \
 	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
 	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_cpp$(EXEEXT) \
-	testIDIR_deriv2_cpp$(EXEEXT)
+	testIDIR_deriv2_cpp$(EXEEXT) test3D_r2c_single_cpp$(EXEEXT)
 subdir = sample/C++
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -136,6 +136,12 @@ test3D_r2c_cpp_LDADD = $(LDADD)
 test3D_r2c_cpp_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+am_test3D_r2c_single_cpp_OBJECTS = test3D_r2c_single.$(OBJEXT)
+test3D_r2c_single_cpp_OBJECTS = $(am_test3D_r2c_single_cpp_OBJECTS)
+test3D_r2c_single_cpp_LDADD = $(LDADD)
+test3D_r2c_single_cpp_DEPENDENCIES =  \
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_testIDIR_deriv2_cpp_OBJECTS = test_deriv2.$(OBJEXT)
 testIDIR_deriv2_cpp_OBJECTS = $(am_testIDIR_deriv2_cpp_OBJECTS)
 testIDIR_deriv2_cpp_LDADD = $(LDADD)
@@ -179,12 +185,13 @@ am__v_CXXLD_1 =
 SOURCES = $(test1D_cos_complex_cpp_SOURCES) $(test1D_cos_cpp_SOURCES) \
 	$(test1D_sin_cpp_SOURCES) $(test1D_transplan_cpp_SOURCES) \
 	$(test3D_c2c_cpp_SOURCES) $(test3D_c2c_inplace_cpp_SOURCES) \
-	$(test3D_r2c_cpp_SOURCES) $(testIDIR_deriv2_cpp_SOURCES) \
-	$(testIDIR_deriv_cpp_SOURCES)
+	$(test3D_r2c_cpp_SOURCES) $(test3D_r2c_single_cpp_SOURCES) \
+	$(testIDIR_deriv2_cpp_SOURCES) $(testIDIR_deriv_cpp_SOURCES)
 DIST_SOURCES = $(test1D_cos_complex_cpp_SOURCES) \
 	$(test1D_cos_cpp_SOURCES) $(test1D_sin_cpp_SOURCES) \
 	$(test1D_transplan_cpp_SOURCES) $(test3D_c2c_cpp_SOURCES) \
 	$(test3D_c2c_inplace_cpp_SOURCES) $(test3D_r2c_cpp_SOURCES) \
+	$(test3D_r2c_single_cpp_SOURCES) \
 	$(testIDIR_deriv2_cpp_SOURCES) $(testIDIR_deriv_cpp_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -321,6 +328,7 @@ testIDIR_deriv2_cpp_SOURCES = test_deriv2.C
 test3D_c2c_inplace_cpp_SOURCES = test3D_c2c_inplace.C
 test3D_c2c_cpp_SOURCES = test3D_c2c.C
 test3D_r2c_cpp_SOURCES = test3D_r2c.C
+test3D_r2c_single_cpp_SOURCES = test3D_r2c_single.C
 test1D_transplan_cpp_SOURCES = test_transplan.C
 test1D_cos_cpp_SOURCES = test1D_cos.C
 test1D_cos_complex_cpp_SOURCES = test1D_cos_complex.C
@@ -429,6 +437,10 @@ test3D_c2c_inplace_cpp$(EXEEXT): $(test3D_c2c_inplace_cpp_OBJECTS) $(test3D_c2c_
 test3D_r2c_cpp$(EXEEXT): $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_DEPENDENCIES) $(EXTRA_test3D_r2c_cpp_DEPENDENCIES) 
 	@rm -f test3D_r2c_cpp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test3D_r2c_cpp_OBJECTS) $(test3D_r2c_cpp_LDADD) $(LIBS)
+
+test3D_r2c_single_cpp$(EXEEXT): $(test3D_r2c_single_cpp_OBJECTS) $(test3D_r2c_single_cpp_DEPENDENCIES) $(EXTRA_test3D_r2c_single_cpp_DEPENDENCIES) 
+	@rm -f test3D_r2c_single_cpp$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test3D_r2c_single_cpp_OBJECTS) $(test3D_r2c_single_cpp_LDADD) $(LIBS)
 
 testIDIR_deriv2_cpp$(EXEEXT): $(testIDIR_deriv2_cpp_OBJECTS) $(testIDIR_deriv2_cpp_DEPENDENCIES) $(EXTRA_testIDIR_deriv2_cpp_DEPENDENCIES) 
 	@rm -f testIDIR_deriv2_cpp$(EXEEXT)
