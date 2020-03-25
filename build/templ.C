@@ -200,7 +200,6 @@ void inv_mo(int mo[3],int imo[3]);
     tmptype = types1D[type->types[i]];
   // First, see if we have a R2C 1D transform, and start there
     if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
-      printf("type %d: real-to-complex\n",i);
       if(L[0] >= 0)
 	printf("ERror in transform3D: more than one real-to-complex 1D transform\n");
       else
@@ -208,7 +207,6 @@ void inv_mo(int mo[3],int imo[3]);
     }
     // End on C2R
     else if(tmptype->dt1 > tmptype->dt2) { // Complex-to-real
-      printf("type %d: complex-to-real\n",i);
       if(L[2] >= 0)
 	printf("ERror in transform3D: more than one complex-to-real 1D transforms\n");
       else
