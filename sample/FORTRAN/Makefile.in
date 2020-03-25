@@ -79,7 +79,8 @@ POST_UNINSTALL = :
 fsample_PROGRAMS = test1D_cos_f$(EXEEXT) test1D_cos_complex_f$(EXEEXT) \
 	test1D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
 	test3D_r2c_f$(EXEEXT) testIDIR_deriv_f$(EXEEXT) \
-	test3D_c2c_inplace_f$(EXEEXT) testIDIR_deriv2_f$(EXEEXT)
+	test3D_c2c_inplace_f$(EXEEXT) testIDIR_deriv2_f$(EXEEXT) \
+	test3D_r2c_single_f$(EXEEXT)
 subdir = sample/FORTRAN
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -135,6 +136,13 @@ test3D_r2c_f_LDADD = $(LDADD)
 test3D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+am_test3D_r2c_single_f_OBJECTS = test3D_r2c_single.$(OBJEXT) \
+	wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
+test3D_r2c_single_f_OBJECTS = $(am_test3D_r2c_single_f_OBJECTS)
+test3D_r2c_single_f_LDADD = $(LDADD)
+test3D_r2c_single_f_DEPENDENCIES =  \
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_testIDIR_deriv2_f_OBJECTS = test_deriv2.$(OBJEXT) wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 testIDIR_deriv2_f_OBJECTS = $(am_testIDIR_deriv2_f_OBJECTS)
@@ -179,11 +187,13 @@ am__v_FCLD_1 =
 SOURCES = $(test1D_cos_complex_f_SOURCES) $(test1D_cos_f_SOURCES) \
 	$(test1D_r2c_f_SOURCES) $(test3D_c2c_f_SOURCES) \
 	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(testIDIR_deriv2_f_SOURCES) $(testIDIR_deriv_f_SOURCES)
+	$(test3D_r2c_single_f_SOURCES) $(testIDIR_deriv2_f_SOURCES) \
+	$(testIDIR_deriv_f_SOURCES)
 DIST_SOURCES = $(test1D_cos_complex_f_SOURCES) $(test1D_cos_f_SOURCES) \
 	$(test1D_r2c_f_SOURCES) $(test3D_c2c_f_SOURCES) \
 	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(testIDIR_deriv2_f_SOURCES) $(testIDIR_deriv_f_SOURCES)
+	$(test3D_r2c_single_f_SOURCES) $(testIDIR_deriv2_f_SOURCES) \
+	$(testIDIR_deriv_f_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -324,6 +334,7 @@ test1D_r2c_f_SOURCES = test1D_r2c.f90 wrap.f90 p3dfft++.f90
 #test3D_f_SOURCES = test3D.f90 wrap.f90
 test3D_c2c_inplace_f_SOURCES = test3D_c2c_inplace.f90 wrap.f90 p3dfft++.f90
 test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90 p3dfft++.f90
+test3D_r2c_single_f_SOURCES = test3D_r2c_single.f90 wrap.f90 p3dfft++.f90
 test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90 p3dfft++.f90
 testIDIR_deriv_f_SOURCES = test_deriv.f90 wrap.f90 p3dfft++.f90
 testIDIR_deriv2_f_SOURCES = test_deriv2.f90 wrap.f90 p3dfft++.f90
@@ -427,6 +438,10 @@ test3D_c2c_inplace_f$(EXEEXT): $(test3D_c2c_inplace_f_OBJECTS) $(test3D_c2c_inpl
 test3D_r2c_f$(EXEEXT): $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_DEPENDENCIES) $(EXTRA_test3D_r2c_f_DEPENDENCIES) 
 	@rm -f test3D_r2c_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_LDADD) $(LIBS)
+
+test3D_r2c_single_f$(EXEEXT): $(test3D_r2c_single_f_OBJECTS) $(test3D_r2c_single_f_DEPENDENCIES) $(EXTRA_test3D_r2c_single_f_DEPENDENCIES) 
+	@rm -f test3D_r2c_single_f$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(test3D_r2c_single_f_OBJECTS) $(test3D_r2c_single_f_LDADD) $(LIBS)
 
 testIDIR_deriv2_f$(EXEEXT): $(testIDIR_deriv2_f_OBJECTS) $(testIDIR_deriv2_f_DEPENDENCIES) $(EXTRA_testIDIR_deriv2_f_DEPENDENCIES) 
 	@rm -f testIDIR_deriv2_f$(EXEEXT)
@@ -669,6 +684,8 @@ test1D_r2c.o: test1D_r2c.f90 p3dfft_plus_plus.mod
 test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft_plus_plus.mod
 
 test3D_r2c.o: test3D_r2c.f90 p3dfft_plus_plus.mod
+
+test3D_r2c_single.o: test3D_r2c_single.f90 p3dfft_plus_plus.mod
 
 test3D_c2c.o: test3D_c2c.f90 p3dfft_plus_plus.mod
 
