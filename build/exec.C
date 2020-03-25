@@ -2971,4 +2971,13 @@ template class transform3D<double,complex_double>;
 template class transform3D<mycomplex,mycomplex>;
 template class transform3D<complex_double,complex_double>;
 
+template class transplan<float,float>;
+template class transplan<double,double>;
+template class transplan<mycomplex,float>;
+template class transplan<complex_double,double>;
+template class transplan<float,mycomplex>;
+template class transplan<double,complex_double>;
+template class transplan<mycomplex,mycomplex>;
+template class transplan<complex_double,complex_double>;
+
 }
