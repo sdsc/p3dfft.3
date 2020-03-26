@@ -38,7 +38,7 @@ void print_res(complex<float> *,int *,int *,int *);
 void normalize(complex<float> *,long int,int *);
 float check_res(float*,float *,int *);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   using namespace p3dfft;
 
