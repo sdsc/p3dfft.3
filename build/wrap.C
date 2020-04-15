@@ -272,7 +272,7 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
     int res;
 
     for(i=0;i<cnt;i++) {
-      grid *gr=&stored_grids[i];
+      grid *gr=stored_grids[i];
       if((arcmp(gr->gdims,gdims,3) == 0) && (arcmp(gr->pgrid,pgrid,3) == 0))
 	if((arcmp(gr->proc_order,proc_order,3) == 0) && (arcmp(gr->mem_order,mem_order,3)== 0)) {
 	MPI_Comm_compare(gr->mpi_comm_glob,mpicomm,&res);
@@ -558,8 +558,8 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 
   void p3dfft_plan_1Dtrans_f(int *plan,int *Fgr1,int *Fgr2,int *type_ID,int *d)
 {
-  grid *gr1 = &stored_grids[*Fgr1];
-  grid *gr2 = &stored_grids[*Fgr2];
+  grid *gr1 = stored_grids[*Fgr1];
+  grid *gr2 = stored_grids[*Fgr2];
   stage *tr;
   gen_trans_type *tp = types1D[*type_ID];
 
@@ -597,13 +597,13 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   }
 
   void p3dfft_compute_deriv_single_f(float *in,float *out,int *igrid,int *idir) {
-    grid *grid1 = &stored_grids[*igrid];
+    grid *grid1 = stored_grids[*igrid];
 
     compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,*idir-1);
   }
 
   void p3dfft_compute_deriv_double_f(double *in,double *out,int *igrid,int *idir) {
-    grid *grid1 = &stored_grids[*igrid];
+    grid *grid1 = stored_grids[*igrid];
 
     compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,*idir-1);
   }
@@ -620,8 +620,8 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 #endif
   */
 
-  grid *gr1 = &stored_grids[*Fgr1];
-  grid *gr2 = &stored_grids[*Fgr2];
+    grid *gr1 = stored_grids[*Fgr1];
+    grid *gr2 = stored_grids[*Fgr2];
 
   //  grid *gr2 = new grid(Fgr2->gdims,Fgr2->pgrid,Fgr2->proc_order,Fgr2->mem_order,MPI_Comm_f2c(Fgr2->mpi_comm_glob));
   trans_type3D *type3D = &types3D[*tp];
@@ -695,7 +695,7 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   memcpy(ldims,gr1->ldims,3*sizeof(int));
   memcpy(glob_start,gr1->glob_start,3*sizeof(int));
   num = stored_grids.size();
-  stored_grids.push_back(*gr1);
+  stored_grids.push_back(gr1);
   *mygrid = num;
 //  return(num);
     }

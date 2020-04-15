@@ -133,7 +133,8 @@ void inv_mo(int mo[3],int imo[3]);
   int monext[3];
   int dims1[3],dims2[3];
   gen_trans_type *tmptype;
-  MPI_Comm mpicomm,splitcomm;
+  MPI_Comm mpicomm;
+  int splitcomm;
   bool reverse_steps;
   bool orig_input=true;
 
@@ -179,7 +180,7 @@ void inv_mo(int mo[3],int imo[3]);
     grid1->D[0] = grid1->D[1];
     grid1->D[1] = grid1->D[2];
     grid1->D[2] = -1;
-    splitcomm = grid1->mpicomm[0];
+    splitcomm = 0;
 
     curr_stage = init_MPIplan(grid1_,*grid1,splitcomm,d1,d2,dt_prev,prec);
     Stages = prev_stage = curr_stage;
@@ -307,12 +308,14 @@ void inv_mo(int mo[3],int imo[3]);
 	pgrid[d2] = pgrid[L[0]];
 	d1 = L[0];
 	pgrid[L[0]] = 1;
-	if(d2 == grid1_.D[0])
-	  splitcomm = grid1_.mpicomm[0];
-	else 
-	  splitcomm = grid1_.mpicomm[1];
 
 	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+	if(d2 == grid1_.D[0])
+	  splitcomm = 0;
+	else 
+	  splitcomm = 1;
+
 
 	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
 	curr_stage->kind = MPI_ONLY;
@@ -341,7 +344,7 @@ void inv_mo(int mo[3],int imo[3]);
 	  if(L[st+1] == tmpgrid0->D[i]) {
 	    d1 = L[st+1];
 	    d2 = L[st];
-	    splitcomm = tmpgrid0->mpicomm[i];
+	    splitcomm = i;
 	    break;
 	  }	
 
@@ -357,7 +360,7 @@ void inv_mo(int mo[3],int imo[3]);
 	if(L[st] == tmpgrid0->D[i]) {
 	  d1 = L[st];
 	  d2 = Lfin;
-	  splitcomm = tmpgrid0->mpicomm[i];
+	  splitcomm = i;
 	  break;
 	}
     }
@@ -471,9 +474,9 @@ void inv_mo(int mo[3],int imo[3]);
       // Exchange D1 with L0
       d2 = L1 = tmpgrid1->L[0];
       if(d1 == grid1_.D[0])
-	splitcomm = grid1_.mpicomm[0];
-    else
-      splitcomm = grid1_.mpicomm[1];
+	splitcomm = 0;
+      else
+	splitcomm = 1;
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
@@ -501,9 +504,9 @@ void inv_mo(int mo[3],int imo[3]);
 	d2 = tmpgrid0->L[0];
 	d1 = tmpgrid0->D[0];
 	if(d1 == grid1_.D[0])
-	  splitcomm = grid1_.mpicomm[0];
+	  splitcomm = 0;
         else
-          splitcomm = grid1_.mpicomm[1];
+          splitcomm = 1;
         pgrid[d1] = 1;
 	pgrid[d2] = tmpgrid0->pgrid[d1];
 	
@@ -524,9 +527,9 @@ void inv_mo(int mo[3],int imo[3]);
       // Again exchange D1 with L0
       d2 = L1 = tmpgrid1->L[0];
       if(d1 == grid1_.D[0])
-	splitcomm = grid1_.mpicomm[0];
+	splitcomm = 0;
       else
-	splitcomm = grid1_.mpicomm[1];
+	splitcomm = 1;
       pgrid[d1] = 1;
       pgrid[d2] = tmpgrid1->pgrid[d1];
 
@@ -554,7 +557,7 @@ void inv_mo(int mo[3],int imo[3]);
 	tmpgrid1 = new grid(gdims,tmpgrid0->dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 	
 	prev_stage = curr_stage;
-	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,tmpgrid0->mpicomm[0],d1,d2,dt_prev,prec);
+	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,0,d1,d2,dt_prev,prec);
 	prev_stage->next = curr_stage;
 	curr_stage->kind = MPI_ONLY;
 	delete tmpgrid0;	
@@ -872,7 +875,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 
 }
 
-  template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int d) //bool inplace_)   
+  template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const grid &gr1,const grid &intergrid, const grid &gr2,int mpicomm_ind,int d1,int d2,const gen_trans_type *type,int d) //bool inplace_)   
 {
   kind = TRANSMPI;
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
@@ -880,7 +883,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     cout << "Error in trans_MPIplan: null plan" << endl;
 
   stage_prec = trplan->prec;
-  mpiplan = new MPIplan<Type2>(intergrid,gr2,mpicomm,d1,d2,stage_prec);
+  mpiplan = new MPIplan<Type2>(intergrid,gr2,mpicomm_ind,d1,d2,stage_prec);
   is_set = true;
   //  inplace = inplace_;
   dt1 = trplan->dt1;
@@ -899,7 +902,7 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
 }
 */
 
-template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm_,int d1_,int d2_, int prec_)  
+template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind_,int d1_,int d2_, int prec_)  
 {
   int i,d3,l;
 
@@ -908,6 +911,8 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
     printf("Error in MPIplan constr.: grids are not set up\n");
     return;
   }
+  mpicomm_ind = mpicomm_ind_;
+
   for(i=0; i < 3; i++){
     mo1[i] = gr1.mem_order[i];
     mo2[i] = gr2.mem_order[i];
@@ -925,15 +930,18 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
 
   stage_prec = prec = prec_;
 
+  MPI_Comm mpicomm = gr1.mpicomm[mpicomm_ind];
+
   if(p >1) {
 
-  MPI_Comm_size(mpicomm_,&numtasks);
+ 
+  MPI_Comm_size(mpicomm,&numtasks);
   if(p != numtasks) {
     cout << "Error in MPIplan constr.: proc. grid dimension doesnt match communicator size" << p << numtasks << endl;
     return;
   }
 
-  MPI_Comm_rank(gr1.mpi_comm_glob,&taskid);
+  MPI_Comm_rank(mpicomm,&taskid);
   //  MPI_Comm_rank(mpicomm_,&commid);
 
 
@@ -989,7 +997,6 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,MPI
   is_set = true;
   //  is_trans = false;
   kind = MPI_ONLY;
-  mpicomm = mpicomm_;
   dt1 = dt2 = sizeof(Type)/prec;
 
 }

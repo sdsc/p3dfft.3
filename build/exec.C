@@ -2301,7 +2301,9 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
   Type *in,*out;
   in = (Type *) in_;
   out = (Type *) out_;
-  Type *sendbuf = new Type[dims1[0]*dims1[1]*dims1[2]];
+  Type *sendbuf = new Type[dims1[0]*dims1[1]*dims1[2]*4];
+  void MPI_Alltoallv4(float *sendbuf,int *sndcnts,int *sndstrt,float *recvbuf,int *rcvcnts,int *rcvstar,MPI_Comm mpicomm,int n);
+
 #ifdef TIMERS
   double t1=MPI_Wtime();
 #endif
@@ -2309,11 +2311,12 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 #ifdef TIMERS
       timers.packsend += MPI_Wtime() -t1;
 #endif
-  Type *recvbuf = new Type[dims2[0]*dims2[1]*dims2[2]];
+  Type *recvbuf = new Type[dims2[0]*dims2[1]*dims2[2]*4];
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,mpicomm);
+  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,grid1->mpicomm[mpicomm_ind]);
+  //  MPI_Alltoallv4((float *)sendbuf,SndCnts,SndStrt,(float *) recvbuf,RcvCnts,RcvStrt,grid1.mpicomm[mpicomm_ind],numtasks);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2328,6 +2331,21 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 
   delete [] recvbuf;
 }
+
+  void MPI_Alltoallv4(float *sendbuf,int *sndcnts,int *sndstrt,float *recvbuf,int *rcvcnts,int *rcvstrt,MPI_Comm mpicomm,int n)
+  {
+    float *p;
+    int i;
+    MPI_Status status[n];
+    MPI_Request req[n];
+
+    for(i=0;i<n;i++)
+      MPI_Irecv(recvbuf+rcvstrt[i],rcvcnts[i],MPI_REAL,i,MPI_ANY_TAG,mpicomm,req+i);
+    for(i=0;i<n;i++)
+      MPI_Send(sendbuf+sndstrt[i],sndcnts[i],MPI_REAL,i,0,mpicomm);
+
+    MPI_Waitall(n,req,status);
+  }
 
 template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 {
@@ -2670,7 +2688,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   t1=MPI_Wtime();
 #endif
   printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->mpicomm);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->grid1->mpicomm[mpiplan->mpicomm_ind]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2717,7 +2735,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->mpicomm);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->grid1->mpicomm[mpiplan->mpicomm_ind]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif

@@ -101,7 +101,7 @@ vector<gen_trans_type *> types1D; // Defined 1D transform types
 vector<trans_type3D> types3D; // Defined 3D transform types
 vector<stage *> stored_trans1D; // Initialized and planned 1D transforms
 vector<gen_transform3D *> stored_trans3D; // Initialized and planned 3D transforms
-vector<grid> stored_grids; // Defined grids (used in Fortran and C wrappers)
+vector<grid*> stored_grids; // Defined grids (used in Fortran and C wrappers)
 
 
   //  extern "C" {
@@ -828,7 +828,11 @@ void cleanup()
   //  stored_grids.erase(stored_grids.begin(),stored_grids.end());
   //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
   //    types3D.erase(types3D.begin(),types3D.end());
-  stored_grids.clear();
+  vector<grid *>::iterator itg=stored_grids.begin();
+  while(itg != stored_grids.end()) {
+    delete *itg;
+    itg = stored_grids.erase(itg);
+  }
   types3D.clear();
 
   // Since these are vectors of pointers, simply erasing is not enough; must delete each referenced class. 
@@ -1415,7 +1419,9 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
   MPI_Comm mpi_comm_tmp;
 
   dim_conj_sym = dim_conj_sym_;
-  MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
+  mpi_comm_glob = mpicomm_;
+  //  MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
+  
   nd=0;
   P[0]=P[1]=P[2]=1;
   D[0]=D[1]=D[2]=L[0]=L[1]=L[2]=-1;
@@ -1534,13 +1540,16 @@ grid::grid(const grid &rhs)
   
   if(rhs.is_set) {
     is_set = true;
-    mpi_comm_glob = rhs.mpi_comm_glob;
-    //    MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
+
     //    prec = rhs.prec;
     int i,j,m,l;
     pm = rhs.pm;
     nd = rhs.nd;
     dim_conj_sym = rhs.dim_conj_sym;
+    mpi_comm_glob = rhs.mpi_comm_glob;
+    MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
+    for(i=0;i<nd;i++)
+      MPI_Comm_dup(rhs.mpicomm[i],&mpicomm[i]);
 
     /*    st = new int[pm][3];
     sz = new int[pm][3];
@@ -1559,7 +1568,7 @@ grid::grid(const grid &rhs)
       grid_id[i] = rhs.grid_id[i];
     }
     for(i=0;i<nd; i++) {
-      mpicomm[i] = rhs.mpicomm[i];
+      //      mpicomm[i] = rhs.mpicomm[i];
       P[i] = rhs.P[i];
     }
     taskid = rhs.taskid;
@@ -1608,9 +1617,9 @@ grid::~grid()
     delete [] sz;
     delete [] en;
     */
-    //    MPI_Comm_free(&mpi_comm_cart);
-    //for(int i=0;i<nd;i++)
-    // MPI_Comm_free(&mpicomm[i]);
+    for(int i=0;i<nd;i++)
+       MPI_Comm_free(&mpicomm[i]);
+    MPI_Comm_free(&mpi_comm_cart);
   }
 }
 

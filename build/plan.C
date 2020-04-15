@@ -131,7 +131,7 @@ void swap0(int newmo[3],int mo[3],int L)
 
 
 
-stage *init_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,int dt, int prec)
+stage *init_MPIplan(const grid &gr1,const grid &gr2,int mpicomm,int d1,int d2,int dt, int prec)
 {
   if(dt == REAL) {
     if(prec == 4) 
@@ -151,7 +151,7 @@ stage *init_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int 
     }
 }
 
-stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_, int prec)
+stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,int mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_, int prec)
 {
 
 

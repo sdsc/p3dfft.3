@@ -551,7 +551,7 @@ template <class Type> class MPIplan : public stage {
   int prec;
   int numtasks,taskid;
   grid *grid1,*grid2;
-  MPI_Comm mpicomm;
+  int mpicomm_ind;
   int *SndCnts,*RcvCnts,*SndStrt,*RcvStrt;
   int d1,d2,du; // Dimension ranks: from local, to local, and unchanged
   int comm_id; //which communicator is this? 0=row, 1=column etc
@@ -563,7 +563,7 @@ template <class Type> class MPIplan : public stage {
 
  public :
 
-  MPIplan(const grid &gr1,const grid &gr2,MPI_Comm comm,int d1,int d2, int prec_);
+  MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, int prec_);
   //MPIplan() {};
    ~MPIplan();
   void exec(char *in,char *out);
@@ -630,7 +630,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
 
-  trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,MPI_Comm mpicomm,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
+  trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,int mpicomm_ind,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
   ~trans_MPIplan();
   void exec(char *in,char *out, bool OW);
   void exec_deriv(char *in,char *out, bool OW);
@@ -792,8 +792,8 @@ class variable { // Do we need this?
 */
 
   stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d,int prec);
-  stage *init_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2, int dt,int prec);
-  stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,MPI_Comm mpicomm,int d1,int d2, const gen_trans_type *type,int d, int prec);
+  stage *init_MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, int dt,int prec);
+  stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, const gen_trans_type *type,int d, int prec);
 
 class gen_transform3D
 {
@@ -849,7 +849,7 @@ extern vector<gen_trans_type *> types1D;
 extern vector<gen_transform3D *> stored_trans3D;
 extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
-extern vector<grid> stored_grids;
+extern vector<grid *> stored_grids;
 
 template<class Type> gen_trans_type *empty_type();
 template<class Type> gen_trans_type *empty_type()
