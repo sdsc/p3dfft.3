@@ -2672,7 +2672,6 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   tmpdims = trplan->grid2->ldims;
 
-  printf("%d: Allocating sendbuf; tmpdims= %d %d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2]);
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   double t1=MPI_Wtime();
@@ -2687,7 +2686,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
+  //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
   MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->grid1->mpicomm[mpiplan->mpicomm_ind]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
