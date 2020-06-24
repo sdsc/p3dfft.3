@@ -20,7 +20,7 @@ configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME',
 			"bridges": './configure --enable-fftw --with-fftw=$FFTW3_LIB/..',
 			"summit": './configure --enable-fftw --with-fftw=$OLCF_FFTW_ROOT'
 			}
-sourcedir = "p3dfft.3"
+#sourcedir = "p3dfft.3"
 destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
 
 def usage_exit(msg):
@@ -33,6 +33,7 @@ def usage_exit(msg):
 	#print "-m to build -mt branch"
 	#print "-p to build performance test"
 	print "-f extra configure flags"
+	print "-d to specify non-default root directory name"
 	sys.exit(1)
 
 def main():
@@ -42,10 +43,11 @@ def main():
 	extra = ''
 	#mt = False
 	perf = False
+	source = 'p3dfft.3'
 
 	# parse command line options
 	try:
-		opts = getopt.getopt(sys.argv[1:], 'hs:c:pf:')
+		opts = getopt.getopt(sys.argv[1:], 'hs:c:pf:d:')
 	except getopt.GetoptError as err:
 		usage_exit(str(err))
 	for o, a in opts[0]:
@@ -61,6 +63,8 @@ def main():
 			pass
 		elif o == '-f':
 			extra = a
+		elif o == '-d':
+			source = a
 		else:
 			usage_exit( "unhandled option")
 	if platform == None:
@@ -85,7 +89,7 @@ def main():
 		configline += '\"'
 
 	# ensure that the source dir exists
-	source = sourcedir
+	#source = sourcedir
 	dest = destdir
 	dest = dest + "_" + comp
 	if perf:
