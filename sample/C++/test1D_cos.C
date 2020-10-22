@@ -77,6 +77,8 @@ using namespace p3dfft;
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
+  {
+
   // Read input parameters
 
    if(myid == 0) {
@@ -247,6 +249,7 @@ using namespace p3dfft;
 
   p3dfft_cleanup();
 
+  }
   MPI_Finalize();
 }
 

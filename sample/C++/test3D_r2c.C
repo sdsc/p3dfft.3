@@ -61,6 +61,8 @@ int main(int argc,char **argv)
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
+  {
+
    if(myid == 0) {
      printf("P3DFFT++ C++ test program. Running on %d cores\n",nprocs);
      printf("GitVersion = %s\n", GIT_VERSION);
@@ -263,8 +265,8 @@ int main(int argc,char **argv)
 
   // Clean up P3DFFT++ structures
 
-  
   cleanup();
+  }
   MPI_Finalize();
 
 }

@@ -2200,7 +2200,7 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++){
-	    pin1 = tmp +kk*d1[0]*d1[1] +j*d1[0];
+	    pin1 = tmp +kk*(d1[0]+1)*d1[1] +j*(d1[0]+1);
 	    pout1 = in +kk +j*d1[0]*d1[2];
 	    for(jj=j; jj < j2; jj++) {
 	      pin = pin1;

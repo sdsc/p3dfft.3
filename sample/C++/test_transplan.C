@@ -77,6 +77,8 @@ int main(int argc,char **argv)
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
+  {
+
   // Read input parameters
 
    if(myid == 0) {
@@ -245,6 +247,8 @@ int main(int argc,char **argv)
   // Clean up all P3DFFT++ data
 
   p3dfft_cleanup();
+
+  }
 
   MPI_Finalize();
 }
