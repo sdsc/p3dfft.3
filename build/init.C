@@ -1388,6 +1388,7 @@ long plan_dst4_complex_d(int rank, const int *n,
 
 
 
+
 /*
 grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 {
@@ -1408,6 +1409,27 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 } 
 */
 
+  void Psort(int P[3],int nd,int *po)
+  {
+    int i,j;
+    for(j=0;j<nd-1;j++) {
+      int m=j;
+      for(i=j+1;i<nd;i++)
+	if(po[i] < po[m])
+	  m = i;
+
+      if(m != j) {
+	int tmp=P[j];
+	P[j] = P[m];
+	P[m] = tmp;
+	tmp = po[j];
+	po[j] = po[m];
+	po[m] = tmp;
+      }
+    }	
+
+
+  }
 
  // grid constructor: initialize grid description and setup up MPI structures
 grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int mem_order_[3],
@@ -1417,6 +1439,7 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
   int i,j;
   int myid[2];
   MPI_Comm mpi_comm_tmp;
+  void Psort(int P[3],int nd,int *po);
 
   dim_conj_sym = dim_conj_sym_;
   mpi_comm_glob = mpicomm_;
@@ -1427,19 +1450,29 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
   D[0]=D[1]=D[2]=L[0]=L[1]=L[2]=-1;
   // Find dimension of processor grid (1 to 3 non-unit values in pgrid)
 
+  int po[3];
   for(i=0;i <3; i++) {
     pgrid[i] = pgrid_[i];
     gdims[i] = gdims_[i];
     proc_order[i] = proc_order_[i];
     mem_order[i] = mem_order_[i];
     if(pgrid[i] > 1) {
-      P[proc_order[nd]] = pgrid[i];
-      D[proc_order[nd]] = i;
+      P[nd] = pgrid[i];
+      D[nd] = i;
+      po[nd] = proc_order[i];
       nd++;
     }
   }
+
   if(nd == 0) {
     nd = 1;
+    po[0] = 0;
+    P[0] = 1;
+    D[0] = 0;
+  }
+  else {
+    Psort(P,nd,po);
+    Psort(D,nd,po);
   }
 
   //  prec = prec_; dt = dt_;
