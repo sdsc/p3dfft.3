@@ -234,23 +234,22 @@ void exec_r2r_complex_d(long,double *,double *);
 
 class gen_trans_type {
  public :
-  char *name;
   int isign;
   bool is_set,is_empty;
   int dt1,dt2;   //Datatype before and after
   int prec;
-  inline gen_trans_type(const char *name_,int isign_=0)
+  inline gen_trans_type(int isign_=0)
   {
-    name = new char[strlen(name_)+1];
-    strcpy(name,name_);
+    //    name = new char[strlen(name_)+1];
+    //    strcpy(name,name_);
     is_empty=false;
     is_set = true;
     isign = isign_;
   }
-  inline gen_trans_type(const char *name_,int dt1_, int dt2_,int prec_,int isign_=0)
+  inline gen_trans_type(int dt1_, int dt2_,int prec_,int isign_=0)
   {
-    name = new char[strlen(name_)+1];
-    strcpy(name,name_);
+    //    name = new char[strlen(name_)+1];
+    //strcpy(name,name_);
     is_set = true;
     is_empty=false;
     isign = isign_;
@@ -258,7 +257,7 @@ class gen_trans_type {
     dt2 = dt2_;
     prec = prec_;
   }
-  ~gen_trans_type() { delete [] name;}
+  ~gen_trans_type() {}
   bool operator==(const gen_trans_type &) const;
   inline bool operator==(const gen_trans_type &rhs) {
     if(rhs.isign == isign && rhs.is_set == is_set && rhs.dt1 == dt1 &&
@@ -270,6 +269,7 @@ class gen_trans_type {
   }
 
 };
+
 
 #ifdef FFTW
 #define plan_r2c_s fftwf_plan_many_dft_r2c
@@ -482,6 +482,7 @@ long plan_dst4_complex_d(int rank, const int *n,
 template <class Type1,class Type2>  class trans_type1D  : public gen_trans_type{
 
   int ID;
+  char *name;
   public :
 
 typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,...);
@@ -513,7 +514,7 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
   
   ~trans_type1D()
     {
-      //      delete [] name;
+      delete [] name;
     }
 
 };
@@ -565,7 +566,7 @@ template <class Type> class MPIplan : public stage {
 
   MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, int prec_);
   //MPIplan() {};
-   ~MPIplan();
+  ~MPIplan();
   void exec(char *in,char *out);
   template <class Type1,class Type2> friend class trans_MPIplan;
   };
@@ -631,7 +632,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   MPIplan<Type2>* mpiplan;
 
   trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,int mpicomm_ind,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
-  ~trans_MPIplan();
+  ~trans_MPIplan() {};
   void exec(char *in,char *out, bool OW);
   void exec_deriv(char *in,char *out, bool OW);
 
@@ -678,6 +679,18 @@ class grid {
   grid(const grid &rhs);
   grid() {};
   ~grid();
+  inline void set_gdims(int gdims_[3]) {
+    for(int i=0;i<3;i++) {
+      gdims[i] = gdims_[i];
+      //      ldims[i] = div_proc(gdims[i],pgrid[i],grid_id[i]);
+      //      ldims[i] = gdims[i] / pgrid[i];
+    }
+    InitPencil();
+  };
+
+
+  void get_gdims(int gdims_[3]) {for(int i=0;i<3;i++) gdims_[i] = gdims[i];};
+
   void set_mo(int mo[3]) {for(int i=0;i<3;i++) mem_order[i] = mo[i];};
 
 template<class Type>  friend  class MPIplan;

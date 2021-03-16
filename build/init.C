@@ -129,8 +129,9 @@ void setup()
   cout << "p3dfft_setup: adding Empty Type Single" << endl;
 #endif
   name = "Empty Type Single";
-  p = new gen_trans_type(name,1,1,4,0);
-  p->is_empty = true;
+  p = new trans_type1D<float,float>(name,NULL,NULL,true);
+  //  p = new gen_trans_type(name,1,1,4,0);
+  //p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -141,8 +142,9 @@ void setup()
   cout << "p3dfft_setup: adding Empty Type Double" << endl;
 #endif
   name = "Empty Type Double";
-  p = new gen_trans_type(name,1,1,8,0);
-  p->is_empty = true;
+  p = new trans_type1D<double,double>(name,NULL,NULL,true);
+  //  p = new gen_trans_type(name,1,1,8,0);
+  //p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -153,8 +155,9 @@ void setup()
   cout << "p3dfft_setup: adding Empty Type Single Complex" << endl;
 #endif
   name = "Empty Type Single Complex";
-  p = new gen_trans_type(name,2,2,4,0);
-  p->is_empty = true;
+  p = new trans_type1D<mycomplex,mycomplex>(name,NULL,NULL,true);
+  //  p = new gen_trans_type(name,2,2,4,0);
+  //p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -165,8 +168,9 @@ void setup()
   cout << "p3dfft_setup: adding Empty TypeDouble Complex" << endl;
 #endif
   name = "Empty Type Double Complex";
-  p = new gen_trans_type(name,2,2,8,0);
-  p->is_empty = true;
+  p = new trans_type1D<complex_double,complex_double>(name,NULL,NULL,true);
+  //  p = new gen_trans_type(name,2,2,8,0);
+  //p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -820,29 +824,62 @@ void timer::print(MPI_Comm comm)
 #endif
 
 
+template <class Type> MPIplan<Type>::~MPIplan()
+{
+  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+  delete grid1,grid2;
+}
 
 void cleanup()
 {
   
-  //  vector<grid>::iterator it1=stored_grids.begin();
-  //  stored_grids.erase(stored_grids.begin(),stored_grids.end());
-  //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
-  //    types3D.erase(types3D.begin(),types3D.end());
-  vector<grid *>::iterator itg=stored_grids.begin();
-  while(itg != stored_grids.end()) {
-    delete *itg;
-    itg = stored_grids.erase(itg);
-  }
+  stored_grids.clear();
   types3D.clear();
 
   // Since these are vectors of pointers, simply erasing is not enough; must delete each referenced class. 
   //  printf("Clearing types1D\n");
   vector<gen_trans_type *>::iterator it1=types1D.begin();
   while(it1 != types1D.end()) {
-    delete *it1;
+    if((*it1)->prec == 4) {
+      if((*it1)->dt1 == 1 && (*it1)->dt2 == 1) {
+	trans_type1D<float,float> *t = reinterpret_cast<trans_type1D<float,float>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 1 && (*it1)->dt2 == 2) {
+	trans_type1D<float,mycomplex> *t = reinterpret_cast<trans_type1D<float,mycomplex>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 2 && (*it1)->dt2 == 1) {
+	trans_type1D<mycomplex,float> *t = reinterpret_cast<trans_type1D<mycomplex,float>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 2 && (*it1)->dt2 == 2) {
+	trans_type1D<mycomplex,mycomplex> *t = reinterpret_cast<trans_type1D<mycomplex,mycomplex>*>( *it1);
+	delete t;
+      }
+    }
+    else if((*it1)->prec == 8) {
+      if((*it1)->dt1 == 1 && (*it1)->dt2 == 1) {
+	trans_type1D<double,double> *t = reinterpret_cast<trans_type1D<double,double>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 1 && (*it1)->dt2 == 2) {
+	trans_type1D<double,complex_double> *t = reinterpret_cast<trans_type1D<double,complex_double>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 2 && (*it1)->dt2 == 1) {
+	trans_type1D<complex_double,double> *t = reinterpret_cast<trans_type1D<complex_double,double>*>( *it1);
+	delete t;
+      }
+      else      if((*it1)->dt1 == 2 && (*it1)->dt2 == 2) {
+	trans_type1D<complex_double,complex_double> *t = reinterpret_cast<trans_type1D<complex_double,complex_double>*>( *it1);
+	delete t;
+      }
+    }
+    
     it1 = types1D.erase(it1);
   }
-
+  
   //  printf("Clearing Plans\n");
   //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
   vector<Plan *>::iterator it=Plans.begin();
@@ -852,22 +889,209 @@ void cleanup()
       fftw_destroy_plan((fftw_plan) (*it)->libplan_in);
     if((*it)->libplan_out != NULL) 
       fftw_destroy_plan((fftw_plan) (*it)->libplan_out);
+#elif defined CUDA
+    if((*it)->libplan_in != NULL) 
+      cufftDestroy((cufftHandle) (*it)->libplan_in);
+    if((*it)->libplan_out != NULL) 
+      cufftDestroy((cufftHandle) (*it)->libplan_out);
 #endif
-    delete *it;
+
+    /*
+    if((*it)->prec == 4) {
+      if((*it)->dt1 == 1 && (*it)->dt2 == 1) {
+	Plantype<float,float> *t = reinterpret_cast<Plantype<float,float>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 1 && (*it)->dt2 == 2) {
+	Plantype<float,mycomplex> *t = reinterpret_cast<Plantype<float,mycomplex>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 2 && (*it)->dt2 == 1) {
+	Plantype<mycomplex,float> *t = reinterpret_cast<Plantype<mycomplex,float>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 2 && (*it)->dt2 == 2) {
+	Plantype<mycomplex,mycomplex> *t = reinterpret_cast<Plantype<mycomplex,mycomplex>*>( *it);
+	delete t;
+      }
+    }
+    else if((*it)->prec == 8) {
+      if((*it)->dt1 == 1 && (*it)->dt2 == 1) {
+	Plantype<double,double> *t = reinterpret_cast<Plantype<double,double>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 1 && (*it)->dt2 == 2) {
+	Plantype<double,complex_double> *t = reinterpret_cast<Plantype<double,complex_double>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 2 && (*it)->dt2 == 1) {
+	Plantype<complex_double,double> *t = reinterpret_cast<Plantype<complex_double,double>*>( *it);
+	delete t;
+      }
+      else      if((*it)->dt1 == 2 && (*it)->dt2 == 2) {
+	Plantype<complex_double,complex_double> *t = reinterpret_cast<Plantype<complex_double,complex_double>*>( *it);
+	delete t;
+      }
+    }
+    */
     it = Plans.erase(it);
   }
+
 
   //  printf("Clearing stored_trans1D\n");
   vector<stage *>::iterator it2=stored_trans1D.begin();
   while(it2 != stored_trans1D.end()) {
-    delete *it2;
+    switch((*it2)->kind) {
+    case 1:
+    
+      if((*it2)->stage_prec == 4) {
+	if((*it2)->dt1 == 1 && (*it2)->dt2 == 1) {
+	  transplan<float,float> *t = reinterpret_cast<transplan<float,float>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 1 && (*it2)->dt2 == 2) {
+	  transplan<float,mycomplex> *t = reinterpret_cast<transplan<float,mycomplex>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 1) {
+	  transplan<mycomplex,float> *t = reinterpret_cast<transplan<mycomplex,float>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 2) {
+	  transplan<mycomplex,mycomplex> *t = reinterpret_cast<transplan<mycomplex,mycomplex>*>( *it2);
+	  delete t;
+	}
+      }
+      else if((*it2)->stage_prec == 8) {
+	if((*it2)->dt1 == 1 && (*it2)->dt2 == 1) {
+	  transplan<double,double> *t = reinterpret_cast<transplan<double,double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 1 && (*it2)->dt2 == 2) {
+	  transplan<double,complex_double> *t = reinterpret_cast<transplan<double,complex_double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 1) {
+	  transplan<complex_double,double> *t = reinterpret_cast<transplan<complex_double,double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 2) {
+	  transplan<complex_double,complex_double> *t = reinterpret_cast<transplan<complex_double,complex_double>*>( *it2);
+	  delete t;
+	}
+      }
+      
+      break;
+    case2:
+      
+      if((*it2)->stage_prec == 4) {
+	if((*it2)->dt1 == 1) {
+	  MPIplan<float> *t = reinterpret_cast<MPIplan<float>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt2 == 2) {
+	  MPIplan<mycomplex> *t = reinterpret_cast<MPIplan<mycomplex>*>( *it2);
+	  delete t;
+	}
+      }
+      else if((*it2)->stage_prec == 8) {
+	if((*it2)->dt1 == 1) {
+	  MPIplan<double> *t = reinterpret_cast<MPIplan<double> *>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt2 == 2) {
+	  MPIplan<complex_double> *t = reinterpret_cast<MPIplan<complex_double>*>( *it2);
+	  delete t;
+	}
+      }
+      
+      break;
+    case 3:
+      
+      if((*it2)->stage_prec == 4) {
+	if((*it2)->dt1 == 1 && (*it2)->dt2 == 1) {
+	  trans_MPIplan<float,float> *t = reinterpret_cast<trans_MPIplan<float,float>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 1 && (*it2)->dt2 == 2) {
+	  trans_MPIplan<float,mycomplex> *t = reinterpret_cast<trans_MPIplan<float,mycomplex>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 1) {
+	  trans_MPIplan<mycomplex,float> *t = reinterpret_cast<trans_MPIplan<mycomplex,float>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 2) {
+	  trans_MPIplan<mycomplex,mycomplex> *t = reinterpret_cast<trans_MPIplan<mycomplex,mycomplex>*>( *it2);
+	  delete t;
+	}
+      }
+      else if((*it2)->stage_prec == 8) {
+	if((*it2)->dt1 == 1 && (*it2)->dt2 == 1) {
+	  trans_MPIplan<double,double> *t = reinterpret_cast<trans_MPIplan<double,double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 1 && (*it2)->dt2 == 2) {
+	  trans_MPIplan<double,complex_double> *t = reinterpret_cast<trans_MPIplan<double,complex_double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 1) {
+	  trans_MPIplan<complex_double,double> *t = reinterpret_cast<trans_MPIplan<complex_double,double>*>( *it2);
+	  delete t;
+	}
+	else      if((*it2)->dt1 == 2 && (*it2)->dt2 == 2) {
+	  trans_MPIplan<complex_double,complex_double> *t = reinterpret_cast<trans_MPIplan<complex_double,complex_double>*>( *it2);
+	  delete t;
+	}
+      }
+      
+      break;
+    }
+    
     it2 = stored_trans1D.erase(it2);
   }
 
   //  printf("Clearing stored_trans3D\n");
   vector<gen_transform3D *>::iterator it3=stored_trans3D.begin();
   while(it3 != stored_trans3D.end()) {
-    delete *it3;
+
+    if((*it3)->prec == 4) {
+      if((*it3)->dt1 == 1 && (*it3)->dt2 == 1) {
+	transform3D<float,float> *t = reinterpret_cast<transform3D<float,float>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 1 && (*it3)->dt2 == 2) {
+	transform3D<float,mycomplex> *t = reinterpret_cast<transform3D<float,mycomplex>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 2 && (*it3)->dt2 == 1) {
+	transform3D<mycomplex,float> *t = reinterpret_cast<transform3D<mycomplex,float>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 2 && (*it3)->dt2 == 2) {
+	transform3D<mycomplex,mycomplex> *t = reinterpret_cast<transform3D<mycomplex,mycomplex>*>( *it3);
+	delete t;
+      }
+    }
+    else if((*it3)->prec == 8) {
+      if((*it3)->dt1 == 1 && (*it3)->dt2 == 1) {
+	transform3D<double,double> *t = reinterpret_cast<transform3D<double,double>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 1 && (*it3)->dt2 == 2) {
+	transform3D<double,complex_double> *t = reinterpret_cast<transform3D<double,complex_double>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 2 && (*it3)->dt2 == 1) {
+	transform3D<complex_double,double> *t = reinterpret_cast<transform3D<complex_double,double>*>( *it3);
+	delete t;
+      }
+      else      if((*it3)->dt1 == 2 && (*it3)->dt2 == 2) {
+	transform3D<complex_double,complex_double> *t = reinterpret_cast<transform3D<complex_double,complex_double>*>( *it3);
+	delete t;
+      }
+    }
+
     it3 = stored_trans3D.erase(it3);
   }
 
@@ -875,8 +1099,9 @@ void cleanup()
   //  printf("Cleaning FFTW\n");
   fftw_cleanup();
 #endif    
-
   //  printf("Done Cleaning\n");
+
+
 
 }
 
@@ -1388,7 +1613,6 @@ long plan_dst4_complex_d(int rank, const int *n,
 
 
 
-
 /*
 grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 {
@@ -1439,11 +1663,10 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
   int i,j;
   int myid[2];
   MPI_Comm mpi_comm_tmp;
-  void Psort(int P[3],int nd,int *po);
 
   dim_conj_sym = dim_conj_sym_;
-  mpi_comm_glob = mpicomm_;
-  //  MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
+  //mpi_comm_glob = mpicomm_;
+  MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
   
   nd=0;
   P[0]=P[1]=P[2]=1;
@@ -1533,12 +1756,10 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
   }
 
   // Find grid id 3D coordinates of the local grid withint the global grid
-  j=0;
-  for(i=0;i<3;i++) 
-    if(pgrid[i] == 1)
-      grid_id[i] = 0;
-    else
-      grid_id[i] = grid_id_cart[proc_order[j++]];
+  for(i=0;i<nd;i++)
+    grid_id[proc_order[i]] = grid_id_cart[i];
+  for(i=nd;i<3;i++)
+    grid_id[proc_order[i]] = 0;
 
   /*
   st = new int[pm][3];
@@ -1579,7 +1800,8 @@ grid::grid(const grid &rhs)
     pm = rhs.pm;
     nd = rhs.nd;
     dim_conj_sym = rhs.dim_conj_sym;
-    mpi_comm_glob = rhs.mpi_comm_glob;
+    //    mpi_comm_glob = rhs.mpi_comm_glob;
+    MPI_Comm_dup(rhs.mpi_comm_glob,&mpi_comm_glob);
     MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
     for(i=0;i<nd;i++)
       MPI_Comm_dup(rhs.mpicomm[i],&mpicomm[i]);
@@ -1653,6 +1875,7 @@ grid::~grid()
     for(int i=0;i<nd;i++)
        MPI_Comm_free(&mpicomm[i]);
     MPI_Comm_free(&mpi_comm_cart);
+    MPI_Comm_free(&mpi_comm_glob);
   }
 }
 
@@ -1925,9 +2148,11 @@ trans_type3D::~trans_type3D()
 }
 
 // Define a 1D transform type
-template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(const char *name_,long (*doplan_)(...),void (*exec_)(...),int isign) : gen_trans_type(name_,isign) {
+template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(const char *name_,long (*doplan_)(...),void (*exec_)(...),int isign) : gen_trans_type(isign) {
   int prec2;
 
+    name = new char[strlen(name_)+1];
+    strcpy(name,name_);
 
 #ifdef FFTW
   if(typeid(Type1) ==typeid(float)) {
@@ -2014,4 +2239,3 @@ template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(cons
   }
 
 }
-

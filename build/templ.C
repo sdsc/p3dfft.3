@@ -189,7 +189,8 @@ void inv_mo(int mo[3],int imo[3]);
   } // nd==3
 
   grid *tmpgrid0 = new grid(*grid1);
-  grid *tmpgrid1;
+  grid *tmpgrid1,*intgrid;
+  int use_type2;
   reverse_steps = false;
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
@@ -380,6 +381,7 @@ void inv_mo(int mo[3],int imo[3]);
 
     inpl = true;
 
+
     if(d1 >= 0) { // If a transpose is involved
 
       // Set up the new grid (ending grid for this stage)
@@ -388,11 +390,38 @@ void inv_mo(int mo[3],int imo[3]);
 
       tmpgrid1 = new grid(gdims,dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
+      if(tmpgrid0->mem_order[L[st]] == 0)
+	intgrid = new grid(*tmpgrid0);
+      else if(tmpgrid1->mem_order[L[st]] == 0) {
+	intgrid = new grid(*tmpgrid0);
+	intgrid->set_mo(tmpgrid1->mem_order);
+      }
+      else 
+	printf("Error initializing trans_MPIplan: neither input nor output is lead-dimension local\n");
+
       // Determine if can use inplace transform
       int size1 = tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2];
       int size2 = tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2];
       int dt_1 = tmptype->dt1;
       int dt_2 = tmptype->dt2;
+
+      if(dt_1 != dt_2) {
+	intgrid->get_gdims(gdims);
+	if(dt_1 == REAL) // R2C
+	  gdims[L[st]] = gdims[L[st]]/2+1;
+	else
+	  gdims[L[st]] = (gdims[L[st]]-1)*2;
+	intgrid->set_gdims(gdims);
+      }
+
+
+      if(dt_1 != dt_2) 
+	use_type2 = 12;
+      else if(dt_1 == dt1)
+	use_type2 = 1;
+      else
+	use_type2 = 2;
+
       // Can use in-place transform only when output size is not bigger than input size; also consider special cases for overwriting input (st=0) and using output array (st=2)
       //      if(dt_1 >= dt_2 && (OW || st>0) ) 
       //inpl = true; // Set the 1D transform to be in-place
@@ -412,8 +441,21 @@ void inv_mo(int mo[3],int imo[3]);
       printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), ldims2=(%d %d %d), mem_order=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->ldims[0],tmpgrid1->ldims[1],tmpgrid1->ldims[2],monext[0],monext[1],monext[2]);
 #endif
       // Plan/set up 1D transform combined with MPI exchange for this stage
-      curr_stage = init_trans_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],prec);
+      switch(use_type2) {
+      case 1:
+	curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st]));
+	break;
+      case 2:
+	curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st]));
+	break;
+      case 12:
+	curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st]));
+	break;
+      }
+
+      //      curr_stage = init_trans_MPIplan(*tmpgrid0,*intgrid,*tmpgrid1,splitcomm,d1,d2,tmptype,L[st],prec);
       curr_stage->kind = TRANSMPI;
+      delete intgrid;
       //      curr_stage->inplace = inpl1D;
     }
     else { // Only transform
@@ -959,7 +1001,7 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,int
       d3 = i;
 
   for(l=0;l<gr1.nd;l++) 
-    if(gr1.D[gr1.proc_order[l]] == d1)
+    if(gr1.D[l] == gr1.proc_order[d1])
       break;
 
   comm_id = l;
@@ -1001,11 +1043,6 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,int
 
 }
 
-template <class Type> MPIplan<Type>::~MPIplan()
-{
-  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
-  delete grid1,grid2;
-}
 
 
   template <class Type1,class Type2> inline void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
