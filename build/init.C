@@ -2101,8 +2101,9 @@ trans_type3D::trans_type3D(int types_IDs[3]) //,const char name_[])
     //    trans_type1D *p=new trans_type1D(*types1D[types_IDs[i]]);
     types[i] = types_IDs[i];
   }
-  dt1 = types1D[types[0]]->dt1;
-  dt2 = types1D[types[2]]->dt2;
+
+  //  dt1 = types1D[types[0]]->dt1;
+  //dt2 = types1D[types[2]]->dt2;
   prec = types1D[types[0]]->prec;
   is_set = true;
 }
@@ -2121,8 +2122,8 @@ trans_type3D::trans_type3D(gen_trans_type *types_[3]) //st char name_[])
       types1D.push_back(types_[i]);
     types[i] = j;
   }  
-  dt1 = types1D[types[0]]->dt1;
-  dt2 = types1D[types[2]]->dt2;
+  //  dt1 = types1D[types[0]]->dt1;
+  //dt2 = types1D[types[2]]->dt2;
   prec = types1D[types[0]]->prec;
   is_set = true;
 
@@ -2135,8 +2136,8 @@ trans_type3D::trans_type3D(const trans_type3D &tr) {
   for(int i=0;i<3;i++) 
     types[i] = tr.types[i];
 
-  dt1 = tr.dt1;
-  dt2 = tr.dt2;
+  //  dt1 = tr.dt1;
+  //dt2 = tr.dt2;
   is_set = true;
   prec = tr.prec;
 } 

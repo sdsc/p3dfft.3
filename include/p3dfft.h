@@ -643,6 +643,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
 template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3]);
 
+
 class grid {
  private :
 
@@ -776,7 +777,7 @@ template <class Type1,class Type2> class Plantype : public Plan
 class trans_type3D {
  public :
   char *name;
-  int dt1,dt2;
+  //  int dt1,dt2;
   int prec;
 
   //  friend class transform3D;
@@ -791,6 +792,8 @@ class trans_type3D {
  template <class Type1,class Type2>    friend class transform3D;
  friend int print_type3D(const trans_type3D *);
 };
+
+  bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *return_steps);
 
 /*
 class variable { // Do we need this?

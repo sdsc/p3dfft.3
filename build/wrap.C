@@ -156,6 +156,7 @@ void p3dfft_cleanup() {
 
   Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp){
 
+
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: type3D=%d.  initiating gr1\n",tp);
 #endif
@@ -173,25 +174,31 @@ void p3dfft_cleanup() {
   printf("p3dfft_plan_3Dtrans: new transform3D\n");
 #endif
 
+  int L[3];
+  bool reverse_steps;
+  bool init_steps = find_order(L,type3D, *gr1, *gr2, &reverse_steps);
+  int dt1 = types1D[type3D->types[L[0]]]->dt1;
+  int dt2 = types1D[type3D->types[L[2]]]->dt2;
+
   if(type3D->prec == 4) 
-    if(type3D->dt1 == 1)
-      if(type3D->dt2 == 1)
+    if(dt1 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<float,float>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<float,mycomplex>(*gr1,*gr2,type3D);
     else
-      if(type3D->dt2 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<mycomplex,float>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<mycomplex,mycomplex>(*gr1,*gr2,type3D);
     else
-    if(type3D->dt1 == 1)
-      if(type3D->dt2 == 1)
+    if(dt1 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<double,complex_double>(*gr1,*gr2,type3D);
     else
-      if(type3D->dt2 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D);
@@ -620,6 +627,7 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 #endif
   */
 
+
     grid *gr1 = stored_grids[*Fgr1];
     grid *gr2 = stored_grids[*Fgr2];
 
@@ -631,25 +639,32 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   printf("p3dfft_plan_3Dtrans: new transform3D\n");
 #endif
 
+  int L[3];
+  bool reverse_steps;
+  bool init_steps = find_order(L,type3D, *gr1, *gr2, &reverse_steps);
+  
+  int dt1 = types1D[type3D->types[L[0]]]->dt1;
+  int dt2 = types1D[type3D->types[L[2]]]->dt2;
+
   if(type3D->prec == 4) 
-    if(type3D->dt1 == 1)
-      if(type3D->dt2 == 1)
+    if(dt1 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<float,float>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<float,mycomplex>(*gr1,*gr2,type3D);
     else
-      if(type3D->dt2 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<mycomplex,float>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<mycomplex,mycomplex>(*gr1,*gr2,type3D);
     else
-    if(type3D->dt1 == 1)
-      if(type3D->dt2 == 1)
+    if(dt1 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<double,complex_double>(*gr1,*gr2,type3D);
     else
-      if(type3D->dt2 == 1)
+      if(dt2 == 1)
 	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D);

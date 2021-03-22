@@ -84,10 +84,113 @@ namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
 
+bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_steps)
+{
+  int i,Lfin,d1,d2;
+  bool init_steps=false;
+  gen_trans_type *tmptype; 
+  int excl(int,int),dist(int);
+  *reverse_steps = false;
+
+  for(i=0;i<3;i++) 
+    L[i] = -1;
+
+  for(i=0;i<3;i++) {
+    tmptype = types1D[tp->types[i]];
+  // First, see if we have a R2C 1D transform, and start there
+    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
+      if(L[0] >= 0)
+	printf("ERror in transform3D: more than one real-to-complex 1D transform\n");
+      else
+	L[0] = i;
+    }
+    // End on C2R
+    else if(tmptype->dt1 > tmptype->dt2) { // Complex-to-real
+      if(L[2] >= 0)
+	printf("ERror in transform3D: more than one complex-to-real 1D transforms\n");
+      else
+	L[2] = i;
+    }
+  }
+
+  if(L[0] >= 0 && L[2] >= 0)
+    printf("Error in transform3D: can't have both R2C and C2R transforms\n");
+
+// This is the local dimension as we start
+  if(L[0] <0) {
+    if(L[2] != gr1.L[0]) {
+      L[0] = gr1.L[0]; 
+      if(gr1.nd == 1 && gr1.mem_order[L[0]] != 0) // Make sure the first local dimension is also leading dimension in storage order (if we have a choice, as in 1D case)
+	if(gr1.mem_order[gr1.L[1]] == 0)
+	  L[0] = gr1.L[1];
+    }
+    else if(gr1.nd==1)
+      L[0] = gr1.L[1];
+    else {
+      L[0] = gr1.D[0];
+      init_steps = true;
+    }
+  }
+
+
+      // Next choose intermediate and final local dimensions, L[1] and L[2]
+  if(L[2] >= 0) {
+    Lfin = L[2];
+    L[1] = excl(L[0],L[2]);
+  }
+  else  if(gr1.mem_order[L[0]] != 0) { //      lead=false;
+    for(i=0;i<3;i++)
+      if(gr1.mem_order[i] == 0) {
+	L[1] = i;
+	Lfin = L[2] = excl(L[0],L[1]);
+	break;
+      }
+  }
+  else {
+
+       if(gr1.nd == 1) {
+	d1 = gr1.D[0];
+	d2 = gr2.D[0];
+	if(d1 == d2 && d1 > 1) 
+	  *reverse_steps=true;
+
+	if(L[0] == d2) {
+	  L[1] = (L[0]+1)%3;
+	  if(gr1.mem_order[L[1]] == 2)
+	    L[1] = (L[0]+2)%3;
+	  Lfin = L[2] = excl(L[0],L[1]);
+	}
+	else 
+	  if(gr2.mem_order[d2] <= 1){ // In case of 1D we have a choice, so choose the one with most favorable transmutation  of indices in local reordering
+	    L[1] = d2;
+	    Lfin = L[2] = excl(L[0],L[1]);
+	  }
+	  else {
+	    Lfin = L[2] = d2;
+	    L[1] = excl(L[0],L[2]);
+	  }
+      }
+
+      else { // nd=2
+      
+	Lfin = L[2] = gr2.L[0]; // This dimension will be local upon finish
+	if(L[2] == L[0]) {
+	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
+	}
+	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
+      }
+    }
+
+  return init_steps;
+}
+
   // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
   // 
   template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type)
 {
+
+  bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *return_steps);
 
 #ifdef DEBUG
   cout << "In transform3D" << endl;
@@ -128,7 +231,7 @@ void inv_mo(int mo[3],int imo[3]);
   dt2 = sizeof(Type2)/prec;
 
   int pgrid1[3],pgrid2[3],nstages,pgrid[3],proc_order[3],gdims[3],L[3],Lfin,st;
-  int ns,d1,d2,nd,i,df,L1,L2,L3,excl(int,int),dist(int);
+  int ns,d1,d2,nd,i,df,L1,L2,L3;
   void swap0(int new_mo[3],int mo[3],int L);
   int monext[3];
   int dims1[3],dims2[3];
@@ -191,105 +294,10 @@ void inv_mo(int mo[3],int imo[3]);
   grid *tmpgrid0 = new grid(*grid1);
   grid *tmpgrid1,*intgrid;
   int use_type2;
-  reverse_steps = false;
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
 
-  for(i=0;i<3;i++) 
-    L[i] = -1;
-
-  for(i=0;i<3;i++) {
-    tmptype = types1D[type->types[i]];
-  // First, see if we have a R2C 1D transform, and start there
-    if(tmptype->dt1 < tmptype->dt2) { // Real-to-complex
-      if(L[0] >= 0)
-	printf("ERror in transform3D: more than one real-to-complex 1D transform\n");
-      else
-	L[0] = i;
-    }
-    // End on C2R
-    else if(tmptype->dt1 > tmptype->dt2) { // Complex-to-real
-      if(L[2] >= 0)
-	printf("ERror in transform3D: more than one complex-to-real 1D transforms\n");
-      else
-	L[2] = i;
-    }
-  }
-
-  bool init_steps = false;
-#ifdef DEBUG
-  printf("Choosing init_steps: L0=%d,L2=%d\n",L[0],L[2]);
-#endif
-
-  if(L[0] >= 0 && L[2] >= 0)
-    printf("Error in transform3D: can't have both R2C and C2R transforms\n");
-
-// This is the local dimension as we start
-  if(L[0] <0) {
-    if(L[2] != grid1_.L[0]) {
-      L[0] = grid1_.L[0]; 
-      if(nd == 1 && mocurr[L[0]] != 0) // Make sure the first local dimension is also leading dimension in storage order (if we have a choice, as in 1D case)
-	if(mocurr[grid1_.L[1]] == 0)
-	  L[0] = grid1_.L[1];
-    }
-    else if(nd==1)
-      L[0] = grid1_.L[1];
-    else {
-      L[0] = grid1_.D[0];
-      init_steps = true;
-    }
-  }
-
-
-
-      // Next choose intermediate and final local dimensions, L[1] and L[2]
-  if(L[2] >= 0) {
-    Lfin = L[2];
-    L[1] = excl(L[0],L[2]);
-  }
-  else  if(mocurr[L[0]] != 0) { //      lead=false;
-    for(i=0;i<3;i++)
-      if(mocurr[i] == 0) {
-	L[1] = i;
-	Lfin = L[2] = excl(L[0],L[1]);
-	break;
-      }
-  }
-  else {
-
-       if(nd == 1) {
-	d1 = grid1_.D[0];
-	d2 = grid2_.D[0];
-	if(d1 == d2 && d1 > 1) 
-	  reverse_steps=true;
-
-	if(L[0] == d2) {
-	  L[1] = (L[0]+1)%3;
-	  if(mocurr[L[1]] == 2)
-	    L[1] = (L[0]+2)%3;
-	  Lfin = L[2] = excl(L[0],L[1]);
-	}
-	else 
-	  if(grid2_.mem_order[d2] <= 1){ // In case of 1D we have a choice, so choose the one with most favorable transmutation  of indices in local reordering
-	    L[1] = d2;
-	    Lfin = L[2] = excl(L[0],L[1]);
-	  }
-	  else {
-	    Lfin = L[2] = d2;
-	    L[1] = excl(L[0],L[2]);
-	  }
-      }
-
-      else { // nd=2
-      
-	Lfin = L[2] = grid2_.L[0]; // This dimension will be local upon finish
-	if(L[2] == L[0]) {
-	  reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
-	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
-	}
-	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
-      }
-    }
+  bool init_steps = find_order(L,type, grid1_, grid2_, &reverse_steps);
 
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
@@ -1229,7 +1237,7 @@ template <class Type> MPIplan<Type>::MPIplan(const grid &gr1,const grid &gr2,int
 int print_type3D(const trans_type3D *type)
 {
   printf("trans_type3D values:\n");
-  cout << "dt1,dt2=" << type->dt1 << type->dt2 << "prec=" << type->prec << "types=" << type->types[0] << type->types[1] << type->types[2] << "is_set=" << type->is_set << endl;
+  cout  << "prec=" << type->prec << "types=" << type->types[0] << type->types[1] << type->types[2] << "is_set=" << type->is_set << endl;
  
 }
 
