@@ -1925,7 +1925,7 @@ void grid::InitPencil()
     sz[i][p-1][j] = data - st[i][p-1][j];
 
     // Assign local size for this spanning dimension
-    myproc = grid_id[j];
+    myproc = grid_id[i];
     ldims[j] = sz[i][myproc][j];
     glob_start[j] = st[i][myproc][j];
   }
