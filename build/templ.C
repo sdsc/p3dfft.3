@@ -182,6 +182,9 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
       }
     }
 
+  if(gr1.pgrid[L[0]] != 1)
+    init_steps = true;
+
   return init_steps;
 }
 
@@ -190,7 +193,6 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
   template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const grid& grid1_, const grid& grid2_,const trans_type3D *type)
 {
 
-  bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *return_steps);
 
 #ifdef DEBUG
   cout << "In transform3D" << endl;
@@ -251,6 +253,7 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
       MPI_Abort(grid1_.mpi_comm_glob,0);
     }
 
+
   grid1 = new grid(grid1_);
   grid2 = new grid(grid2_);
 
@@ -299,6 +302,11 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
 
   bool init_steps = find_order(L,type, grid1_, grid2_, &reverse_steps);
 
+  if(dt1 != types1D[type->types[L[0]]]->dt1)
+    printf("Error in transform3D: input datatypes don't match\n");
+  if(d2 != types1D[type->types[L[2]]]->dt2)
+    printf("Error in transform3D: output datatypes don't match\n");
+
   for(i=0;i<3;i++) 
     monext[i] = mocurr[i];
 
@@ -320,7 +328,7 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
 
 	tmpgrid1 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
-	if(d2 == grid1_.D[0])
+	if(d1 == grid1_.D[0])
 	  splitcomm = 0;
 	else 
 	  splitcomm = 1;

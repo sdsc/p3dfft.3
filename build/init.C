@@ -1949,14 +1949,17 @@ void grid::InitPencil()
   // Next, figure out local sizes for all remaining dimensions (non-local and non-spanning) 
   for(i=0;i<nd;i++) {
     k = D[i];
-    for(j=0;j<nd;j++)
-      if(j != i) { // non-spanning
-	l = D[j];
-	myproc = grid_id[l];
+    for(j=0;j<3;j++)
+      if(j != k) { // non-spanning
+	//	l = D[j];
+	//	myproc = grid_id[l];
 	for(p=0;p<P[i];p++) {
-	  sz[i][p][l] = sz[j][myproc][l];
-	  st[i][p][l] = st[j][myproc][l];
-	  en[i][p][l] = en[j][myproc][l];
+	  sz[i][p][j] = ldims[j];
+	  st[i][p][j] = 0;
+	  en[i][p][j] = ldims[j];
+	  //	  sz[i][p][l] = sz[j][myproc][l];
+	  //st[i][p][l] = st[j][myproc][l];
+	  //en[i][p][l] = en[j][myproc][l];
 	}
       }	  
   }
@@ -2233,8 +2236,13 @@ template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(cons
 
   doplan = doplan_;
 
-    if(!doplan)
-      cout << "Error in trans_type1D: no suitable doplan" << endl;    
+
+//    if(!doplan)
+//      cout << "Error in trans_type1D: no suitable doplan" << endl;  
+    if(doplan == NULL)
+      is_empty = true;
+    else if (!doplan)
+      cout << "Error in trans_type1D: no suitable doplan" << endl;
     if(prec != prec2)
       cout << "Error in trans_type1D: precisions don't match!" << endl;
   }
