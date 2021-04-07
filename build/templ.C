@@ -521,144 +521,145 @@ bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *reverse_
 
   if(reverse_steps) {
 
-    d1 = tmpgrid1->D[1];
-
-    df = grid2_.D[1];
-
 #ifdef DEBUG
     cout << "Return steps" << endl;
 #endif
-    if(d1 != df) {
-      // Exchange D1 with L0
-      d2 = L1 = tmpgrid1->L[0];
-      if(d1 == grid1_.D[0])
-	splitcomm = 0;
-      else
-	splitcomm = 1;
-      pgrid[d1] = 1;
-      pgrid[d2] = tmpgrid1->pgrid[d1];
 
+    L1 = tmpgrid1->L[0];
 
-#ifdef DEBUG
-      printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
-#endif
-      tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+    while(1) {
+      if(L1 != grid2_.L[0] && (nd == 2 || L1 != grid2_.L[1])) {
 
-      prev_stage = curr_stage;
-      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
-      prev_stage->next = curr_stage;
-      curr_stage->kind = MPI_ONLY;
-      delete tmpgrid1;
-      L1 = d1;
-      d1 = d2;
-    }
-    else
-      tmpgrid0 = tmpgrid1;
-    
-    L1 = tmpgrid0->L[0];
-    L2 = grid2_.L[0];
-    if(d1 != df || L1 != L2) {
-	// Exchange L0 with D0
-	d2 = tmpgrid0->L[0];
-	d1 = tmpgrid0->D[0];
-	if(d1 == grid1_.D[0])
-	  splitcomm = 0;
-        else
-          splitcomm = 1;
-        pgrid[d1] = 1;
-	pgrid[d2] = tmpgrid0->pgrid[d1];
-	
-#ifdef DEBUG
-      printf("MPI plan 2 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid0->pgrid[0],tmpgrid0->pgrid[1],tmpgrid0->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
-#endif
-	tmpgrid1 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
-	
-	prev_stage = curr_stage;
-	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,splitcomm,d1,d2,dt_prev,prec);
-	prev_stage->next = curr_stage;
-	curr_stage->kind = MPI_ONLY;
-	delete tmpgrid0;	
-    }
-      
-    d1 = tmpgrid1->D[1];
-    if(d1 != df) {
-      // Again exchange D1 with L0
-      d2 = L1 = tmpgrid1->L[0];
-      if(d1 == grid1_.D[0])
-	splitcomm = 0;
-      else
-	splitcomm = 1;
-      pgrid[d1] = 1;
-      pgrid[d2] = tmpgrid1->pgrid[d1];
+	for(i=0;i<grid2_.nd;i++) 
+	  if(L1 == grid2_.D[i]) {
 
-#ifdef DEBUG
-      printf("MPI plan 3 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
-#endif
-      tmpgrid0 = new grid(gdims,grid1_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+	    d1 = grid2_.D[i];
+	    d2 = L1;
+	    splitcomm = i;
+	    break;
+	  }
 
-      prev_stage = curr_stage;
-      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
-      prev_stage->next = curr_stage;
-      curr_stage->kind = MPI_ONLY;
-      delete tmpgrid1;
-      L1 = d1;
-      if(L1 != L2) {
-	// Exchange L0 with D0
-	d2 = tmpgrid0->L[0];
-	d1 = tmpgrid0->D[0];
 	pgrid[d1] = 1;
-	pgrid[d2] = tmpgrid0->pgrid[d1];
-	
+	pgrid[d2] = tmpgrid1->pgrid[d1];
+
+
 #ifdef DEBUG
-      printf("MPI plan 4 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid0->pgrid[0],tmpgrid0->pgrid[1],tmpgrid0->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+	printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
 #endif
-	tmpgrid1 = new grid(gdims,tmpgrid0->dim_conj_sym,pgrid,proc_order,monext,mpicomm);
-	
+	tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
 	prev_stage = curr_stage;
-	curr_stage = init_MPIplan(*tmpgrid0,*tmpgrid1,0,d1,d2,dt_prev,prec);
+	curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
 	prev_stage->next = curr_stage;
 	curr_stage->kind = MPI_ONLY;
-	delete tmpgrid0;	
+	delete tmpgrid1;
+	tmpgrid1 = tmpgrid0;
+	L1 = d1;
+	d1 = d2;
       }
-    }
-    }
+      else 
+	// if(nd == 1){
+	//} else 
+	{
+	  if(tmpgrid1->D[0] == grid2_.D[0])
+	    break;
+	  d2 = L1;
+	  d1 = tmpgrid1->D[0];
+	  splitcomm = 0;
+	  pgrid[d1] = 1;
+	  pgrid[d2] = tmpgrid1->pgrid[d1];
 
-    bool iseq = true;
-    for(i=0; i < 3; i++) 
-      if(monext[i] != grid2_.mem_order[i]) {
-	iseq = false;
-	break;
-      }
 
-    if(!iseq) { //If not in the final memory ordering
-      tmpgrid0 = new grid(grid2_);
-      prev_stage = curr_stage;
-      //      inpl = true;
-      gen_trans_type *t=empty_type<Type2>();
-      int trans_dim = grid2_.L[0];
-      if(nd == 1 && tmpgrid1->mem_order[trans_dim] != 0 && tmpgrid0->mem_order[trans_dim] != 0)
-	trans_dim = grid2_.L[1];
 #ifdef DEBUG
-      printf("Calling final init_transplan, trans_dim=%d\n",grid2_.L[0]);
+	  printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
 #endif
-      curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
+	  tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
 
-      // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
-      curr_stage->kind = TRANS_ONLY;
-      prev_stage->next = curr_stage;
-      delete tmpgrid0;
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  delete tmpgrid1;
+	  tmpgrid1 = tmpgrid0;
+	  L1 = d1;
+	  d2 = L1;
+	  d1 = tmpgrid1->D[1];
+	  splitcomm = 1;
+	  pgrid[d1] = 1;
+	  pgrid[d2] = tmpgrid1->pgrid[d1];
+
+#ifdef DEBUG
+	  printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
+	  tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  delete tmpgrid1;
+	  tmpgrid1 = tmpgrid0;
+
+	  d1 = d2;
+	  d2 = grid2_.L[0];
+	  splitcomm = 0;
+	  
+	  pgrid[d1] = 1;
+	  pgrid[d2] = tmpgrid1->pgrid[d1];
+
+#ifdef DEBUG
+	  printf("MPI plan 1 from pgrid %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->pgrid[0],tmpgrid1->pgrid[1],tmpgrid1->pgrid[2],pgrid[0],pgrid[1],pgrid[2],d1,d2);
+#endif
+	  tmpgrid0 = new grid(gdims,grid2_.dim_conj_sym,pgrid,proc_order,monext,mpicomm);
+
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,splitcomm,d1,d2,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  delete tmpgrid1;
+	  tmpgrid1 = tmpgrid0;
+	  L1 = d1;
+
+	}
     }
-    delete tmpgrid1;
-
+  }
+   
+  bool iseq = true;
+  for(i=0; i < 3; i++) 
+    if(monext[i] != grid2_.mem_order[i]) {
+      iseq = false;
+      break;
+    }
+  
+  if(!iseq) { //If not in the final memory ordering
+    tmpgrid0 = new grid(grid2_);
+    prev_stage = curr_stage;
+    //      inpl = true;
+    gen_trans_type *t=empty_type<Type2>();
+    int trans_dim = grid2_.L[0];
+    if(nd == 1 && tmpgrid1->mem_order[trans_dim] != 0 && tmpgrid0->mem_order[trans_dim] != 0)
+      trans_dim = grid2_.L[1];
+#ifdef DEBUG
+    printf("Calling final init_transplan, trans_dim=%d\n",grid2_.L[0]);
+#endif
+    curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
+    
+    // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
+    curr_stage->kind = TRANS_ONLY;
+    prev_stage->next = curr_stage;
+    delete tmpgrid0;
+  }
+  delete tmpgrid1;
+  
   if(nd == 3) {
     cout << "Three-dimensional decomposition is presently not supported" << endl;
     return;
   }
-
+  
   //  cout << "Done transform3D planning" << endl;
   is_set = true;
   return;
-
+  
 
 }
 
