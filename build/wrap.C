@@ -160,13 +160,15 @@ void p3dfft_cleanup() {
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: type3D=%d.  initiating gr1\n",tp);
 #endif
-
-  grid *gr1 = new grid(Cgr1->gdims,Cgr1->dim_conj_sym,Cgr1->pgrid,Cgr1->proc_order,Cgr1->mem_order,Cgr1->mpi_comm_glob);
+  
+  ProcGrid *pgrid = stored_proc_grids[Cgr1->pgrid];
+  DataGrid *gr1 = new DataGrid(Cgr1->Gdims,Cgr1->dim_conj_sym,pgrid,Cgr1->Dmap,Cgr1->MemOrder);
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: initiating gr2\n");
 #endif
 
-  grid *gr2 = new grid(Cgr2->gdims,Cgr2->dim_conj_sym,Cgr2->pgrid,Cgr2->proc_order,Cgr2->mem_order,Cgr2->mpi_comm_glob);
+  pgrid = stored_proc_grids[Cgr2->pgrid];
+  DataGrid *gr2 = new DataGrid(Cgr2->Gdims,Cgr2->dim_conj_sym,pgrid,Cgr2->Dmap,Cgr2->MemOrder);
   trans_type3D *type3D = &types3D[tp];
   gen_transform3D *tr3D;
     
@@ -234,8 +236,10 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 {
     stage *tr;
 
-  grid *gr1 = new grid(Cgr1->gdims,Cgr1->dim_conj_sym,Cgr1->pgrid,Cgr1->proc_order,Cgr1->mem_order,Cgr1->mpi_comm_glob);
-  grid *gr2 = new grid(Cgr2->gdims,Cgr2->dim_conj_sym,Cgr2->pgrid,Cgr2->proc_order,Cgr2->mem_order,Cgr2->mpi_comm_glob);
+    ProcGrid *pgrid = stored_proc_grids[Cgr1->pgrid];
+  DataGrid *gr1 = new DataGrid(Cgr1->Gdims,Cgr1->dim_conj_sym,pgrid,Cgr1->Dmap,Cgr1->MemOrder);
+pgrid = stored_proc_grids[Cgr2->pgrid];
+  DataGrid *gr2 = new DataGrid(Cgr2->Gdims,Cgr2->dim_conj_sym,pgrid,Cgr2->Dmap,Cgr2->MemOrder);
 
   //  printf("TypeID=%d, type is %s\n",type_ID,types1D[type_ID]->name);
 
@@ -272,18 +276,16 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 
   }
 
-  int find_grid(int gdims[3],int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm) {
+  int find_grid(int gdims[3],int pgrid,int dmap[3],int mem_order[3]) {
     
-    int cnt=stored_grids.size();
+    int cnt=stored_data_grids.size();
     int i;
     int res;
 
     for(i=0;i<cnt;i++) {
-      grid *gr=stored_grids[i];
-      if((arcmp(gr->gdims,gdims,3) == 0) && (arcmp(gr->pgrid,pgrid,3) == 0))
-	if((arcmp(gr->proc_order,proc_order,3) == 0) && (arcmp(gr->mem_order,mem_order,3)== 0)) {
-	MPI_Comm_compare(gr->mpi_comm_glob,mpicomm,&res);
-	if(res == MPI_IDENT)
+      DataGrid *gr=stored_data_grids[i];
+      if((arcmp(gr->Gdims,gdims,3) == 0) && *(gr->Pgrid) == *stored_proc_grids[pgrid])
+	if((arcmp(gr->Dmap,dmap,3) == 0) && (arcmp(gr->MemOrder,mem_order,3)== 0)) {
 	  return(i);
       }
     }
@@ -291,28 +293,33 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
       
 }
 
-  Grid *p3dfft_init_grid(int gdims[3],int dim_conj_sym,int pgrid[3],int proc_order[3],int mem_order[3],MPI_Comm mpicomm) {
+  int p3dfft_init_proc_grid(int pdims[3],MPI_Comm mpicomm)
+  {
+    ProcGrid *pgrid = new ProcGrid(pdims,mpicomm);
+    stored_proc_grids.push_back(pgrid);
+    return(stored_proc_grids.size());
+  }
 
-    grid gr = grid(gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm);
-  Grid *Cgr = new Grid;
-  Cgr->numtasks = gr.numtasks;
-  Cgr->taskid = gr.taskid;
-  Cgr->nd = gr.nd;
-  Cgr->dim_conj_sym = dim_conj_sym;
-  memcpy(&Cgr->gdims,gdims,3*sizeof(int));
-  memcpy(&Cgr->ldims,gr.ldims,3*sizeof(int));
-  memcpy(&Cgr->mem_order,mem_order,3*sizeof(int));
-  memcpy(&Cgr->pgrid,pgrid,3*sizeof(int));
-  memcpy(&Cgr->proc_order,proc_order,3*sizeof(int));
-  memcpy(&Cgr->P,gr.P,3*sizeof(int));
-  memcpy(&Cgr->D,gr.D,3*sizeof(int));
-  memcpy(&Cgr->L,gr.L,3*sizeof(int));
-  memcpy(&Cgr->grid_id,gr.grid_id,3*sizeof(int));
-  memcpy(&Cgr->glob_start,gr.glob_start,3*sizeof(int));
-  memcpy(&Cgr->mpicomm,gr.mpicomm,3*sizeof(int));
-  Cgr->mpi_comm_glob = mpicomm;
 
-  return Cgr;
+  Grid *p3dfft_init_data_grid(int gdims[3],int dim_conj_sym,int pgrid_id,int dmap[3],int mem_order[3]) {
+
+    ProcGrid *pgrid = stored_proc_grids[pgrid_id];
+    DataGrid gr = DataGrid(gdims,dim_conj_sym,pgrid,dmap,mem_order);
+    Grid *Cgr = new Grid;
+    Cgr->numtasks = gr.Pgrid->numtasks;
+    Cgr->taskid = gr.Pgrid->taskid;
+    Cgr->nd = gr.nd;
+    Cgr->dim_conj_sym = dim_conj_sym;
+    memcpy(&Cgr->Gdims,gdims,3*sizeof(int));
+    memcpy(&Cgr->Ldims,gr.Ldims,3*sizeof(int));
+    memcpy(&Cgr->MemOrder,mem_order,3*sizeof(int));
+    memcpy(&Cgr->Dmap,dmap,3*sizeof(int));
+    memcpy(&Cgr->ProcDims,pgrid->ProcDims,3*sizeof(int));
+    memcpy(&Cgr->grid_id,gr.grid_id,3*sizeof(int));
+    memcpy(&Cgr->GlobStart,gr.GlobStart,3*sizeof(int));
+    Cgr->mpi_comm_glob = gr.Pgrid->mpi_comm_glob;
+
+    return Cgr;
 }
 
 /*
@@ -535,7 +542,8 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   
   void p3dfft_compute_deriv_single(float *in,float *out,Grid *Cgrid,int idir) {
 
-     grid *grid1 = new grid(Cgrid->gdims,Cgrid->dim_conj_sym,Cgrid->pgrid,Cgrid->proc_order,Cgrid->mem_order,Cgrid->mpi_comm_glob);
+    ProcGrid *pgrid = stored_proc_grids[Cgrid->pgrid];
+    DataGrid *grid1 = new DataGrid(Cgrid->Gdims,Cgrid->dim_conj_sym,pgrid,Cgrid->Dmap,Cgrid->MemOrder);
 
      compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,idir);
     delete grid1;
@@ -543,7 +551,9 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   }
 
   void p3dfft_compute_deriv_double(double *in,double *out,Grid *Cgrid,int idir) {
-  grid *grid1 = new grid(Cgrid->gdims,Cgrid->dim_conj_sym,Cgrid->pgrid,Cgrid->proc_order,Cgrid->mem_order,Cgrid->mpi_comm_glob);
+
+    ProcGrid *pgrid = stored_proc_grids[Cgrid->pgrid];
+    DataGrid *grid1 = new DataGrid(Cgrid->Gdims,Cgrid->dim_conj_sym,pgrid,Cgrid->Dmap,Cgrid->MemOrder);
 
     compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,idir);
     delete grid1;
@@ -565,8 +575,8 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 
   void p3dfft_plan_1Dtrans_f(int *plan,int *Fgr1,int *Fgr2,int *type_ID,int *d)
 {
-  grid *gr1 = stored_grids[*Fgr1];
-  grid *gr2 = stored_grids[*Fgr2];
+  DataGrid *gr1 = stored_data_grids[*Fgr1];
+  DataGrid *gr2 = stored_data_grids[*Fgr2];
   stage *tr;
   gen_trans_type *tp = types1D[*type_ID];
 
@@ -604,13 +614,13 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   }
 
   void p3dfft_compute_deriv_single_f(float *in,float *out,int *igrid,int *idir) {
-    grid *grid1 = stored_grids[*igrid];
+    DataGrid *grid1 = stored_data_grids[*igrid];
 
     compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,*idir-1);
   }
 
   void p3dfft_compute_deriv_double_f(double *in,double *out,int *igrid,int *idir) {
-    grid *grid1 = stored_grids[*igrid];
+    DataGrid *grid1 = stored_data_grids[*igrid];
 
     compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,*idir-1);
   }
@@ -628,8 +638,8 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
   */
 
 
-    grid *gr1 = stored_grids[*Fgr1];
-    grid *gr2 = stored_grids[*Fgr2];
+    DataGrid *gr1 = stored_data_grids[*Fgr1];
+    DataGrid *gr2 = stored_data_grids[*Fgr2];
 
   //  grid *gr2 = new grid(Fgr2->gdims,Fgr2->pgrid,Fgr2->proc_order,Fgr2->mem_order,MPI_Comm_f2c(Fgr2->mpi_comm_glob));
   trans_type3D *type3D = &types3D[*tp];
@@ -697,21 +707,28 @@ int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
 
 }
 
+  int p3dfft_init_proc_grid_f(int *pdims,int *mpicomm)
+  {
+    ProcGrid *pgrid = new ProcGrid(pdims,MPI_Comm_f2c(*mpicomm));
+    stored_proc_grids.push_back(pgrid);
+    return(stored_proc_grids.size());
+  }
 
-  void p3dfft_init_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *dim_conj_sym,int *pgrid,int *proc_order,int *mem_order,int *mpicomm) {
+  void p3dfft_init_data_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *dim_conj_sym,int *pgrid_id,int *dmap,int *mem_order) {
     
-    int num=find_grid(gdims,pgrid,proc_order,mem_order,MPI_Comm_f2c(*mpicomm));
+    int num=find_grid(gdims,*pgrid_id,dmap,mem_order); //,MPI_Comm_f2c(*mpicomm));
     if(num >= 0) 
       *mygrid = num;
     else {
 
-    grid *gr1;
-    gr1 = new grid(gdims,*dim_conj_sym,pgrid,proc_order,mem_order,MPI_Comm_f2c(*mpicomm));
-  memcpy(ldims,gr1->ldims,3*sizeof(int));
-  memcpy(glob_start,gr1->glob_start,3*sizeof(int));
-  num = stored_grids.size();
-  stored_grids.push_back(gr1);
-  *mygrid = num;
+    DataGrid *gr1;
+    ProcGrid *pgrid=stored_proc_grids[*pgrid_id];
+    gr1 = new DataGrid(gdims,*dim_conj_sym,pgrid,dmap,mem_order);
+    memcpy(ldims,gr1->Ldims,3*sizeof(int));
+    memcpy(glob_start,gr1->GlobStart,3*sizeof(int));
+    num = stored_data_grids.size();
+    stored_data_grids.push_back(gr1);
+    *mygrid = num;
 //  return(num);
     }
   /*

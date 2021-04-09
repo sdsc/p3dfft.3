@@ -521,7 +521,8 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
 
 
 
-class grid;
+class ProcGrid;
+class DataGrid;
 template <class Type1,class Type2> class Plantype;
 
 
@@ -551,8 +552,9 @@ template <class Type> class MPIplan : public stage {
  protected:
   int prec;
   int numtasks,taskid;
-  grid *grid1,*grid2;
-  int mpicomm_ind;
+  DataGrid *grid1,*grid2;
+  ProcGrid *Pgrid;
+  //int mpicomm_ind;
   int *SndCnts,*RcvCnts,*SndStrt,*RcvStrt;
   int d1,d2,du; // Dimension ranks: from local, to local, and unchanged
   int comm_id; //which communicator is this? 0=row, 1=column etc
@@ -564,7 +566,7 @@ template <class Type> class MPIplan : public stage {
 
  public :
 
-  MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, int prec_);
+  MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int prec_);
   //MPIplan() {};
   ~MPIplan();
   void exec(char *in,char *out);
@@ -581,7 +583,8 @@ template <class Type1,class Type2>   class transplan : public stage {
 #ifdef ESSL
   double *work1,double *work2;
 #endif
-  grid *grid1,*grid2;
+  DataGrid *grid1,*grid2;
+  ProcGrid *Pgrid;
   int N,m,istride,idist,ostride,odist,isign;
   int *inembed,*onembed;
   unsigned fft_flag;
@@ -595,8 +598,8 @@ template <class Type1,class Type2>   class transplan : public stage {
   bool is_set;
   trans_type1D<Type1,Type2> *trans_type;
   Plantype<Type1,Type2> *plan;
-  transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
-  transplan(const grid &gr1,const grid &gr2,int type_ID,int d); //, bool inplace_); 
+  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
+  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d); //, bool inplace_); 
   transplan() {};
   ~transplan() {
     delete grid1,grid2; 
@@ -631,7 +634,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
 
-  trans_MPIplan(const grid &gr1,const grid &intergrid,const grid &gr2,int mpicomm_ind,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
+  trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
   ~trans_MPIplan() {};
   void exec(char *in,char *out, bool OW);
   void exec_deriv(char *in,char *out, bool OW);
@@ -643,46 +646,93 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
 template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3]);
 
+ class ProcGrid {
 
-class grid {
+  bool is_set;
+ public:
+  int taskid,numtasks;
+  int nd;  //number of dimensions the volume is split over
+  //  int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
+  int ProcDims[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
+  int grid_id_cart[3];
+  MPI_Comm mpi_comm_glob; // Global MPi communicator we are starting from
+  MPI_Comm mpi_comm_cart;
+  MPI_Comm mpicomm[3]; //MPI communicators for each dimension 
+
+  ProcGrid(int procdims[3],MPI_Comm mpi_comm_init);
+  ProcGrid(const ProcGrid &rhs);
+  ~ProcGrid();
+  bool operator==( const ProcGrid &P1) const;
+  inline bool operator==( const ProcGrid &P) {
+    if(!this->is_set || !P.is_set)
+      return(false);
+    if(this->nd != P.nd)
+      return(false);
+    if(this->taskid != P.taskid || this->numtasks != P.numtasks)
+      return(false);
+    int res;
+    MPI_Comm_compare(this->mpi_comm_glob,P.mpi_comm_glob,&res);
+    if(res != MPI_IDENT && res != MPI_CONGRUENT)
+	return(false);
+    MPI_Comm_compare(this->mpi_comm_cart,P.mpi_comm_cart,&res);
+    if(res != MPI_IDENT && res != MPI_CONGRUENT)
+	return(false);
+    for(int i=0;i<3;i++) {
+      if(this->ProcDims[i] != P.ProcDims[i])
+	return(false);
+      if(this->grid_id_cart[i] != P.grid_id_cart[i])
+	return(false);
+    }
+    return(true);
+
+  }
+
+  friend class DataGrid;
+  template<class Type>  friend  class MPIplan;
+  template<class Type1,class Type2>  friend  class trans_plan;
+  template<class Type1,class Type2>  friend  class trans_MPIplan;
+};  
+
+
+class DataGrid {
  private :
 
   //  void InitPencil2D(int myid[2]);
   void InitPencil();
-  int pm; // Maximum of the three processor dimensions
-
+  int *st[3],*sz[3],*en[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
 
  public :
   //  int datatype;  //Datatype of each element (1 - real, 2 - complex)
   //  int prec;  //Precision (4/8)
-  int taskid,numtasks;
-  int nd;  //number of dimensions the volume is split over
-  int gdims[3];  //Global dimensions
+  int nd;
+  int Gdims[3];  //Global dimensions
   int dim_conj_sym; // Dimension of conjugate symmetry, where we store N/2+1 of the data after R2C transform due to conjugate symmety; =-1 if none
-  int mem_order[3];  //Memory ordering inside the data volume
-  int ldims[3];  //Local dimensions on THIS processor
-  int pgrid[3];  //Processor grid
-  int proc_order[3];   //Ordering of tasks in processor grid, e.g. (1,2,3) : first dimension - adjacent tasks,then second, then third dimension
-  int P[3];  //Processor grid size (in inverse order of split dimensions, i.e. rows first, then columns etc
-  int D[3];  //Ranks of Dimensions of physical grid split over rows and columns correspondingly
+  int MemOrder[3];  //Memory ordering inside the data volume
+  int Ldims[3];  //Local dimensions on THIS processor
+  ProcGrid *Pgrid;
+  int Pdims[3];  //Processor grid dimensions as mapped onto data dimensions
+  int Dmap[3]; // How this data grid maps onto processor grid dimensions 
   int L[3];  //Rank of Local dimension (p=1)
+  int D[3]; //Ranks of Dimensions of physical grid split over rows and columns correspondingly
+  int GlobStart[3]; // Starting coords of this cube in the global grid
   int grid_id[3];  //Position of this pencil/cube in the processor grid
-  int grid_id_cart[3];
-  int glob_start[3]; // Starting coords of this cube in the global grid
-  MPI_Comm mpi_comm_glob; // Global MPi communicator we are starting from
-  MPI_Comm mpi_comm_cart;
-  MPI_Comm mpicomm[3]; //MPI communicators for each dimension 
   //  int (*st)[3],(*sz)[3],(*en)[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
-  int **st[3],**sz[3],**en[3];  // Lowest, size and uppermost location in 3D, for each processor in subcommunicator
   bool is_set;
-  grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int mem_order[3],
-	    MPI_Comm mpicomm_);
-  grid(const grid &rhs);
-  grid() {};
-  ~grid();
-  inline void set_gdims(int gdims_[3]) {
+  //bool IsLocal(int);
+  inline  bool IsLocal(int dim) 
+{
+  if(dim < 0 || dim > 2)
+    return(false);
+  return(Pdims[dim] == 1);
+    
+};
+  DataGrid(int gdims_[3],int dim_conj_sym_,ProcGrid *pgrid,int dmap[3],int mem_order[3]);
+  DataGrid(const DataGrid &rhs);
+  DataGrid() {};
+  ~DataGrid();
+  inline void set_gdims(int gdims[3]) {
     for(int i=0;i<3;i++) {
-      gdims[i] = gdims_[i];
+      Gdims[i] = gdims[i];
       //      ldims[i] = div_proc(gdims[i],pgrid[i],grid_id[i]);
       //      ldims[i] = gdims[i] / pgrid[i];
     }
@@ -690,9 +740,9 @@ class grid {
   };
 
 
-  void get_gdims(int gdims_[3]) {for(int i=0;i<3;i++) gdims_[i] = gdims[i];};
+  void get_gdims(int gdims[3]) {for(int i=0;i<3;i++) gdims[i] = Gdims[i];};
 
-  void set_mo(int mo[3]) {for(int i=0;i<3;i++) mem_order[i] = mo[i];};
+  void set_mo(int mo[3]) {for(int i=0;i<3;i++) MemOrder[i] = mo[i];};
 
 template<class Type>  friend  class MPIplan;
  template<class Type1,class Type2>  friend  class trans_plan;
@@ -793,7 +843,7 @@ class trans_type3D {
  friend int print_type3D(const trans_type3D *);
 };
 
-  bool find_order(int L[3],const trans_type3D *tp,grid gr1,grid gr2,bool *return_steps);
+  bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *return_steps);
 
 /*
 class variable { // Do we need this?
@@ -802,14 +852,14 @@ class variable { // Do we need this?
   grid *decomp;<Type1,Type2>
   bool alloc;
   variable(const variable &rhs);
-  variable(const grid &gr);
+  variable(const DataGrid &gr);
   variable~();
 };
 */
 
-  stage *init_transplan(const grid &gr1,const grid &gr2,const gen_trans_type *type,int d,int prec);
-  stage *init_MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, int dt,int prec);
-  stage *init_trans_MPIplan(const grid &gr1,const grid &gr2,int mpicomm_ind,int d1,int d2, const gen_trans_type *type,int d, int prec);
+  stage *init_transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d,int prec);
+  stage *init_MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int dt,int prec);
+  stage *init_trans_MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, const gen_trans_type *type,int d, int prec);
 
 class gen_transform3D
 {
@@ -826,7 +876,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 //  trans_plan trans_plans[7];
 //  int nstages=0;
   bool is_set;
-  grid *grid1,*grid2;
+  DataGrid *grid1,*grid2;
+  ProcGrid *Pgrid;
   //  int trans_type[7];
   friend class stage;
 
@@ -835,7 +886,7 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   void exec(Type1 *in,Type2 *out, bool OW=false);
   void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false);
 
-  transform3D(const grid &grid1_, const grid &grid2_,const trans_type3D *type);
+  transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type);
   ~transform3D();
 };
 
@@ -856,7 +907,7 @@ template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],
 template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
 
 //template <class Type> void compute_deriv_loc(Type *in,Type *out,int dims[3],bool r2c); 
-template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir); 
+template <class Type> void compute_deriv(Type *in,Type *out,DataGrid *gr,int idir); 
 // template <class Type> void compute_deriv(Type *in,Type *out,grid *gr,int idir);
 
 
@@ -865,7 +916,8 @@ extern vector<gen_trans_type *> types1D;
 extern vector<gen_transform3D *> stored_trans3D;
 extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
-extern vector<grid *> stored_grids;
+extern vector<ProcGrid *> stored_proc_grids;
+extern vector<DataGrid *> stored_data_grids;
 
 template<class Type> gen_trans_type *empty_type();
 template<class Type> gen_trans_type *empty_type()

@@ -46,8 +46,6 @@ int main(int argc,char **argv)
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
   int mem_order[3];
   int i,j,k,x,y,z,p1,p2;
   float Nglob;
@@ -140,13 +138,18 @@ int main(int argc,char **argv)
 
   // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-  pgrid1[0] = 1;
-  pgrid1[1] = p1;
-  pgrid1[2] = p2;
+  pdims[0] = 1;
+  pdims[1] = p1;
+  pdims[2] = p2;
 
-  // Initialize the initial grid
+  ProcGrid pgrid(pdims,MPI_COMM_WORLD);
 
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order,MPI_COMM_WORLD);  
+  // Initialize the initial grid 
+  int dmap1[] = {0,1,2};// Mapping data dimension X onto processor dimension X, and so on - 
+                     // this is an X pencil, since Px =1
+
+
+  DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order);
 
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
@@ -162,18 +165,21 @@ int main(int argc,char **argv)
 
   // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
-  int mem_order2[] = {2,1,0};
+  int mem_order2[] = {1,2,0};
 
-  // Initialize final grid configuration
+  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+                     // Y onto Z and Z onto X
+                     // this is a Z-pencil, since Px =1 - or at least one way to define it 
+                     // (the other would be (2,1,0))
 
-  grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+  DataGrid Zpencil(gdims2,0,&pgrid,dmap2,mem_order2);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   
   int sdims1[3],glob_start1[3];
   for(i=0;i<3;i++) {
-    sdims1[mem_order[i]] = grid1.ldims[i];
-    glob_start1[mem_order[i]] = grid1.glob_start[i];
+    sdims1[mem_order[i]] = Xpencil.Ldims[i];
+    glob_start1[mem_order[i]] = Xpencil.GlobStart[i];
   }
 
   int size1 = sdims1[0]*sdims1[1]*sdims1[2];
@@ -191,8 +197,8 @@ int main(int argc,char **argv)
 
   int sdims2[3],glob_start2[3];
   for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = grid2.glob_start[i];
-    sdims2[mem_order2[i]] = grid2.ldims[i];
+    glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
+    sdims2[mem_order2[i]] = Zpencil.Ldims[i];
   }
 
   long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
@@ -200,9 +206,9 @@ int main(int argc,char **argv)
   complex<float> *OUT=new complex<float>[size2];
   
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<float,complex<float> > trans_f(grid1,grid2,&type_rcc);
+  transform3D<float,complex<float> > trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex<float>,float> trans_b(grid2,grid1,&type_ccr);
+  transform3D<complex<float>,float> trans_b(Zpencil,Xpencil,&type_ccr);
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 

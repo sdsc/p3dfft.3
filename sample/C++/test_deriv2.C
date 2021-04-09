@@ -1,5 +1,5 @@
 /*
-This program exemplifies using P3DFFT++ library for taking a spectral derivative of a 3D array in a given dimension. Derivative is computed in this test program based on 3D FFT from P3DFFT++.
+This program exemplifies using P3DFFT++ library for taking a spectral derivative of a 3D array in a given dimension. 
 
 This program initializes a 3D array with a 3D sine wave, then
 performs 3D real-to-complex forward Fourier transform, takes derivative in spectral space (multiplies by wavenumbers), then backward transform,
@@ -52,10 +52,7 @@ int main(int argc,char **argv)
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
   int mem_order1[3];
-  int mem_order2[] = {2,1,0};
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
@@ -70,7 +67,7 @@ int main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,ndim,idir;
+  int pdims[3],nx,ny,nz,n,ndim,idir;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -159,7 +156,7 @@ int main(int argc,char **argv)
   gdims[1] = ny;
   gdims[2] = nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
+     mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -167,9 +164,9 @@ int main(int argc,char **argv)
 
   // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-  pgrid1[0] = 1;
-  pgrid1[1] = p1;
-  pgrid1[2] = p2;
+  pdims[0] = 1;
+  pdims[1] = p1;
+  pdims[2] = p2;
  
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
@@ -185,20 +182,37 @@ int main(int argc,char **argv)
 
   //Initialize initial and final grids, based on the above information
 
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD);  
-  grid grid2(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+
+  ProcGrid pgrid(pdims,MPI_COMM_WORLD);
+
+  // Initialize the initial grid 
+  int dmap1[] = {0,1,2};// Mapping data dimension X onto processor dimension X, and so on - 
+                     // this is an X pencil, since Px =1
+
+
+  DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order);
+
+  int mem_order2[] = {1,2,0};
+
+  // Initialize final grid configuration
+  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+                     // Y onto Z and Z onto X
+                     // this is a Z-pencil, since Px =1 - or at least one way to define it 
+                     // (the other would be (2,1,0))
+
+  DataGrid Zpencil(gdims2,0,&pgrid,dmap2,mem_order2);
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<double,complex_double> trans_f(grid1,grid2,&type_rcc);
+  transform3D<double,complex_double> trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,double> trans_b(grid2,grid1,&type_ccr);
+  transform3D<complex_double,double> trans_b(Xpencil,Zpencil,&type_ccr);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
   for(i=0;i<3;i++) {
-    glob_start1[mem_order1[i]] = grid1.glob_start[i];
-    sdims1[mem_order1[i]] = grid1.ldims[i];
+    glob_start1[mem_order1[i]] = Xpencil.GlobStart[i];
+    sdims1[mem_order1[i]] = Xpencil.Ldims[i];
   }
 
   size1 = sdims1[0]*sdims1[1]*sdims1[2];
@@ -214,9 +228,9 @@ int main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = grid2.glob_start[i];
-    sdims2[mem_order2[i]] = grid2.ldims[i];
-    glob2[mem_order2[i]] = grid2.gdims[i];
+    glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
+    sdims2[mem_order2[i]] = Zpencil.Ldims[i];
+    glob2[mem_order2[i]] = Zpencil.Gdims[i];
   }
 
   size2 = sdims2[0]*sdims2[1]*sdims2[2];
@@ -275,109 +289,6 @@ int main(int argc,char **argv)
   }
 
   MPI_Finalize();
-}
-
-
-/* Compute derivative in a given dimension idir (1 to 3), physical dimension order. 
-   Input/output: one-dimensional array of complex_doubles, containing contiguously stored 
-                 COMPLEX 3D array of dimensions sdims[0]xsdims[1]xsdims[2].
-   glob_start: 3 numbers corresponding to starting indices of this subarray within the global array (in storage order)
-   gdims: 3 global dimensions (in storage order)
-*/
-void  compute_deriv(complex_double *IN,complex_double *OUT,int sdims[3],int glob_start[3],int gdims[3],int mem_order[3],int idir)
-{
-  int ldir,i,j,k,g,mid;
-  complex_double *p1,*p2,mult;
-
-  // Find local storage dimension to be differentiated
-  ldir = mem_order[idir-1];
-
-  // Adjust for reduced X space after real-to-complex transform
-  if(idir == 1)
-    g = (gdims[ldir]-1)*2;
-  else
-    g = gdims[ldir];
-
-  //  Compute the middle point in the spectrum (Nyquist frequency)
-  mid = g/2 -glob_start[ldir];
-
-  switch(ldir) {
-  case 0:
-    p1 = IN;
-    p2 = OUT;
-    for(k=0;k<sdims[2];k++)
-      for(j=0;j<sdims[1];j++) {
-// Lower half: complex-multiply by i*k
-	for(i=0;i < min(sdims[0],mid);i++) 
-	  *p2++ = complex_double(0.0,i+glob_start[ldir]) * *p1++;
-
-// Nyquist frequency: zero
-	if(mid >= 0 && mid < sdims[ldir]) {
-	  *p2++=0; p1++;
-	}
-
-// Upper half: complex-multiply by i*(k-N)
-	for(i=max(0,mid+1);i < sdims[0];i++)
-	  *p2++ = complex_double(0.0,i+glob_start[ldir] - g) * *p1++;
-      }
-	  
-    break;
- 
-  case 1:
-    p1 = IN;
-    p2 = OUT;
-    for(k=0;k<sdims[2];k++) {
-// Lower half: complex-multiply by i*k
-      for(j=0;j < min(sdims[1],mid);j++) { 
-	mult = complex_double(0.0,j+glob_start[ldir]);
-	for(i=0;i<sdims[0];i++) 
-	  *p2++ = mult * *p1++;
-      }
-    // Nyquist frequency: zero
-    if(mid >= 0 && mid < sdims[ldir]) 
-      for(i=0;i<sdims[0];i++) {
-	*p2++=0; p1++;
-      }
-
-      // Upper half: complex-multiply by i*(k-N)
-    for(j=max(0,mid+1);j < sdims[1];j++){
-      mult = complex_double(0.0,j+glob_start[ldir] -g);
-	for(i=0;i<sdims[0];i++) 
-	  *p2++ = mult * *p1++;
-      }
-    }
-
-    break;
-
-  case 2:
-    p1 = IN;
-    p2 = OUT;
-// Lower half: complex-multiply by i*k
-    for(k=0;k < min(sdims[2],mid);k++) { 
-      mult = complex_double(0.0,k+glob_start[ldir]);
-      for(j=0;j<sdims[1];j++)
-	for(i=0;i<sdims[0];i++) 
-	  *p2++ = mult * *p1++;
-    }
-// Nyquist frequency: zero
-    if(mid >= 0 && mid < sdims[ldir]) 
-      for(j=0;j<sdims[1];j++)
-	for(i=0;i<sdims[0];i++) {
-	  *p2++=0; p1++;
-	}
-
-// Upper half: complex-multiply by i*(k-N)
-    for(k=max(0,mid+1);k < sdims[2];k++){
-      mult = complex_double(0.0,k+glob_start[ldir] -g);
-	for(j=0;j<sdims[1];j++)
-	  for(i=0;i<sdims[0];i++) 
-	  *p2++ = mult * *p1++;
-    }
-  	  
-    break;
-    
-  }
-  
 }
 
 void normalize(complex_double *A,long int size,int *gdims)

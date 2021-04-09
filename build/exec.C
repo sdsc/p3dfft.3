@@ -113,7 +113,7 @@ void printbuf(char *,int[3],int,int);
 
 #ifdef DEBUG
   int taskid;
-  MPI_Comm_rank(grid1->mpi_comm_glob,&taskid);
+  MPI_Comm_rank(grid1->Pgrid->mpi_comm_glob,&taskid);
 #endif
 
   next = 1; curr = 0;
@@ -147,7 +147,7 @@ void printbuf(char *,int[3],int,int);
       if((!OW && buf[curr] == buf_in) || size2*dt_2 > size1 *dt_1) {
 	//  out-place
 	// check if we can use the destination array as the output buffer
-	if(dt_2 * size2 <= dt2 * grid2->ldims[0] *grid2->ldims[1] *grid2->ldims[2]) {
+	if(dt_2 * size2 <= dt2 * grid2->Ldims[0] *grid2->Ldims[1] *grid2->Ldims[2]) {
 	  buf[next] = buf_out;
 #ifdef DEBUG
 	  printf("%d: Using output buffer in out-of-place transform\n",taskid);
@@ -660,7 +660,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char 
 	(*(trans_type->exec))(plan->libplan_out,in,out); 
       int sdims[3]; // Find storage dimensions
       for(int i=0;i<3;i++)
-	sdims[mo1[i]] = grid2->ldims[i];
+	sdims[mo1[i]] = grid2->Ldims[i];
       //      bool r2c = (grid2->dim_conj_sym >= 0);
       // Now compute local derivative
       compute_deriv_loc(out,out,sdims);
@@ -1329,7 +1329,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   }
 
 #ifdef DEBUG
-  sprintf(str,"reorder_trans.out%d",cnt_reorder_trans++);
+  sprintf(str,"reorder_trans.out%d.%d",cnt_reorder_trans++,taskid);
   write_buf<Type2>(out,str,dims2,imo2);
 #endif  
 }
@@ -1854,7 +1854,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
   }
 
 #ifdef DEBUG
-  sprintf(str,"reorder_deriv.out%d",cnt_reorder_trans++);
+  sprintf(str,"reorder_deriv.out%d.%d",cnt_reorder_trans++,taskid);
   write_buf<Type2>(out,str,dims2,imo2);
 #endif  
 }
@@ -2315,7 +2315,7 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,grid1->mpicomm[mpicomm_ind]);
+  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,Pgrid->mpicomm[comm_id]);
   //  MPI_Alltoallv4((float *)sendbuf,SndCnts,SndStrt,(float *) recvbuf,RcvCnts,RcvStrt,grid1.mpicomm[mpicomm_ind],numtasks);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
@@ -2366,7 +2366,7 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
       //      istart[i][j] = grid1->st[comm_id][i][j]; iend[i][j] = grid1->en[comm_id][i][j];
     }
   for(j=0;j<numtasks;j++) {
-    istart[j][d2] = grid2->st[comm_id][j][d2]; iend[j][d2] = grid2->en[comm_id][j][d2];
+    istart[j][d2] = grid2->st[d2][j]; iend[j][d2] = grid2->en[d2][j];
   }    
 
 
@@ -2407,8 +2407,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       //istart[i][j] = grid2->st[comm_id][i][j]; iend[i][j] = grid2->en[comm_id][i][j];
     }
   for(j=0;j<numtasks;j++) {
-    isize[j][d1] = grid1->sz[comm_id][j][d1];
-    istart[j][d1] = grid1->st[comm_id][j][d1]; iend[j][d1] = grid1->en[comm_id][j][d1];
+    isize[j][d1] = grid1->sz[d1][j];
+    istart[j][d1] = grid1->st[d1][j]; iend[j][d1] = grid1->en[d1][j];
   }    
   /*
   for(i=0;i<numtasks;i++) 
@@ -2670,7 +2670,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   int *tmpdims;
 
-  tmpdims = trplan->grid2->ldims;
+  tmpdims = trplan->grid2->Ldims;
 
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
@@ -2680,14 +2680,14 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
       timers.packsend_trans += MPI_Wtime() -t1;
 #endif
-  tmpdims = mpiplan->grid2->ldims;
+  tmpdims = mpiplan->grid2->Ldims;
 
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->grid1->mpicomm[mpiplan->mpicomm_ind]);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2719,7 +2719,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //out = (Type2 *) out_;
   int *tmpdims;
 
-  tmpdims = trplan->grid2->ldims;
+  tmpdims = trplan->grid2->Ldims;
 
   Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
@@ -2729,12 +2729,12 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
       timers.packsend_deriv += MPI_Wtime() -t1;
 #endif
-  tmpdims = mpiplan->grid2->ldims;
+  tmpdims = mpiplan->grid2->Ldims;
   Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->grid1->mpicomm[mpiplan->mpicomm_ind]);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2800,7 +2800,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   nt = mpiplan->numtasks;
   int *SndStrt = mpiplan->SndStrt;
   int j,istart[nt][3],iend[nt][3];
-  int comm_id = mpiplan-> comm_id;
+  //  int comm_id = mpiplan-> comm_id;
 
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
@@ -2813,10 +2813,10 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
       //iend[i][j] = mpiplan->grid1->en[comm_id][i][j];
   }
   for(j=0;j<nt;j++) {
-    istart[j][d2] = mpiplan->grid2->st[comm_id][j][d2]; iend[j][d2] = mpiplan->grid2->en[comm_id][j][d2];
+    istart[j][d2] = mpiplan->grid2->st[d2][j]; iend[j][d2] = mpiplan->grid2->en[d2][j];
   }    
 
-  tmpdims = trplan->grid2->ldims;
+  tmpdims = trplan->grid2->Ldims;
   //tmpdims[0]*tmpdims[1]*tmpdims[2]*
   if(OW && trplan->dt2 <= trplan->dt1)  // CC or C2R 
     buf = (float *) src;
@@ -2889,7 +2889,7 @@ for(i=0;i < nt;i++) {
   nt = mpiplan->numtasks;
   int *SndStrt = mpiplan->SndStrt;
   int j,istart[nt][3],iend[nt][3];
-  int comm_id = mpiplan-> comm_id;
+  //  int comm_id = mpiplan-> comm_id;
 
   inv_mo(mo1,imo1);
 
@@ -2901,10 +2901,10 @@ for(i=0;i < nt;i++) {
       //iend[i][j] = mpiplan->grid1->en[comm_id][i][j];
   }
   for(j=0;j<nt;j++) {
-    istart[j][d2] = mpiplan->grid2->st[comm_id][j][d2]; iend[j][d2] = mpiplan->grid2->en[comm_id][j][d2];
+    istart[j][d2] = mpiplan->grid2->st[d2][j]; iend[j][d2] = mpiplan->grid2->en[d2][j];
   }    
 
-  tmpdims = trplan->grid2->ldims;
+  tmpdims = trplan->grid2->Ldims;
 
   if(OW && trplan->dt2 <= trplan->dt1) 
     buf = (float *) src;
@@ -2913,7 +2913,7 @@ for(i=0;i < nt;i++) {
 
 #ifdef DEBUG
   char str[80];
-  sprintf(str,"pack_send_trans.in%d",cnt_pack);
+  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->taskid);
   //  inv_mo(mo2,imo2);
   // Optimize in the future
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
@@ -2922,7 +2922,7 @@ for(i=0;i < nt;i++) {
   trplan->exec_deriv(src,(char *) buf,OW);
 
 #ifdef DEBUG
-  sprintf(str,"pack_send_trans.out%d",cnt_pack++);
+  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->taskid);
   write_buf<Type2>((Type2 *) buf,str,tmpdims,imo1);
 #endif
   

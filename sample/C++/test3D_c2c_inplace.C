@@ -1,25 +1,29 @@
-
-// This program exemplifies the use of P3DFFT++ for 3D complex-to-complex using 2D domain decomposition (1D is a specific case). This is an in-place transform example (output overwrites input, which is in the same array).
+// This program exemplifies the use of P3DFFT++ for 3D complex-to-complex FFT using 2D domain decomposition (1D is a specific case).
 
 /*
-! This program initializes a 3D array with a 3D sine wave, then
-! performs 3D forward Fourier transform, then backward transform,
-! and checks that
-! the results are correct, namely the same as in the start except
-! for a normalization factor. It can be used both as a correctness
-! test and for timing the library functions.
-!
-! The program expects 'stdin' file in the working directory, with
-! a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here Nx,Ny,Nz
-! are box dimensions, Ndim is the dimentionality of processor grid
-! (1 or 2), and Nrep is the number of repititions. Optionally
-! a file named 'dims' can also be provided to guide in the choice
-! of processor geometry in case of 2D decomposition. It should contain
-! two numbers in a line, with their product equal to the total number
-! of tasks. Otherwise processor grid geometry is chosen automatically.
-! For better performance, experiment with this setting, varying
-! iproc and jproc. In many cases, minimizing iproc gives best results.
-! Setting it to 1 corresponds to one-dimensional decomposition.
+This program initializes a 3D array with a 3D sine wave, then
+performs 3D forward Fourier transform, then backward transform,
+and checks that
+the results are correct, namely the same as in the start except
+for a normalization factor. It can be used both as a correctness
+test and for timing the library functions.
+
+The program expects 'stdin' file in the working directory, with
+a single line of numbers : Nx,Ny,Nz,Ndim,Nrep. Here 
+  Nx,Ny,Nz are box (grid) dimensions.
+  Ndim is the dimentionality of processor grid (1 or 2).
+  Nrep is the number of repititions for the timing loop. 
+
+Optionally, a file named 'dims' can also be provided to guide in the choice
+of processor geometry in case of 2D decomposition. It should contain
+two numbers in a line, with their product equal to the total number
+of tasks. Otherwise processor grid geometry is chosen automatically.
+For better performance, experiment with this setting, varying
+iproc and jproc. In many cases, minimizing iproc gives best results.
+Setting it to 1 corresponds to one-dimensional decomposition.
+
+If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
+
 */
 
 #include "p3dfft.h"
@@ -42,15 +46,13 @@ int main(int argc,char **argv)
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
   int mem_order1[3];
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
   int imo1[3];
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
-  int pdims[2],ndim,nx,ny,nz;
+  int pdims[3],ndim,nx,ny,nz;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -71,7 +73,7 @@ int main(int argc,char **argv)
         fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
         fclose(fp);
      }
-     printf("P3DFFT test R2C, 3D wave input\n");
+     printf("P3DFFT test C2C, 3D wave input\n");
 #ifndef SINGLE_PREC
      printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
 #else
@@ -132,85 +134,84 @@ int main(int argc,char **argv)
 
   gdims[0] = nx; gdims[1]=ny;gdims[2]=nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order1[i] = i; // The simplest case of sequential ordering
+    mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
   p2 = pdims[1];
 
-  // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
+  // Define the processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-  pgrid1[0] = 1;
-  pgrid1[1] = p1;
-  pgrid1[2] = p2;
+  pdims[0] = 1;
+  pdims[1] = p1;
+  pdims[2] = p2;
+
+  ProcGrid pgrid(pdims,MPI_COMM_WORLD);
+
+  int dmap1[] = {0,1,2}; // Mapping data dimension X onto processor dimension X, and so on - 
+                     // this is an X pencil, since Px =1
 
   // Initialize the initial grid
 
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD);  
+  DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order1);
 
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
-  pgrid2[0] =p1;
-  pgrid2[1] = p2;
-  pgrid2[2] = 1;
 
-  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 
-  for(i=0; i < 3;i++) 
-    gdims2[i] = gdims[i];
+  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array interchanged. This helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering any of the six ways, including the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
-  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
-
-  int mem_order2[] = {2,1,0};
+  int mem_order2[] = {1,2,0};
 
   // Initialize final grid configuration
 
-  grid grid2(gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);  
+  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+                     // Y onto Z and Z onto X
+                     // this is a Z-pencil, since Px =1 - or at least one way to define it 
+                     // (the other would be (2,1,0))
+
+  DataGrid Zpencil(gdims,-1,&pgrid,dmap2,mem_order2);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
   int sdims1[3],glob_start1[3];
   for(i=0;i<3;i++) {
-    glob_start1[mem_order1[i]] = grid1.glob_start[i];
-    sdims1[mem_order1[i]] = grid1.ldims[i];
+    glob_start1[mem_order1[i]] = Xpencil.GlobStart[i];
+    sdims1[mem_order1[i]] = Xpencil.Ldims[i];
   }
 
   int size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
-
-
-  //Determine local array dimensions and allocate fourier space, complex-valued out array
-
-  int ldims2[3],glob_start2[3];
-  for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = grid2.glob_start[i];
-    ldims2[mem_order2[i]] = grid2.ldims[i];
-  }
-
-  long int size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  //  cout << "allocating OUT" << endl;
-
-  // Allocate input/outpu array for in-place tansform, using the larger size of the two
-  complex_double *AR=new complex_double[size1>size2?size1:size2];
-  // Allocate the input array containing the original copy of the input
   complex_double *IN=new complex_double[size1];
 
   //Initialize the IN array with a sine wave in 3D  
 
   init_wave(IN,gdims,sdims1,glob_start1);
+
+  //Determine local array dimensions and allocate fourier space, complex-valued out array
+
+  int sdims2[3],glob_start2[3];
+  for(i=0;i<3;i++) {
+    glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
+    sdims2[mem_order2[i]] = Zpencil.Ldims[i];
+  }
+
+  long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  // Allocate input/outpu array for in-place tansform, using the larger size of the two
+  complex_double *AR=new complex_double[size1>size2?size1:size2];
   for(i=0;i<size1;i++)
     AR[i] = IN[i];
   
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(grid1,grid2,&type_forward);
+  transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(grid2,grid1,&type_backward);
+  transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  //  trans_f.exec(AR,AR,1);
+  //  trans_f.exec(IN,OUT,false);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
@@ -220,16 +221,16 @@ int main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(AR,AR,true);  // Execute forward in-place real-to-complex FFT
+    trans_f.exec(AR,AR,true);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(AR,gdims,ldims2,glob_start2);
-    normalize(AR,size2,gdims);
+    print_res(OUT,gdims,sdims2,glob_start2);
+    normalize(OUT,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(AR,AR,true);  // Execute backward (inverse) in-place complex-to-real FFT
+    trans_b.exec(AR,AR,true);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 
@@ -255,12 +256,11 @@ int main(int argc,char **argv)
     printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
 
   delete [] IN,AR;
-
   // Clean up P3DFFT++ structures
-
   
   cleanup();
   }
+
   MPI_Finalize();
 
 }
@@ -275,7 +275,7 @@ void normalize(complex_double *A,long int size,int *gdims)
 
 }
 
-void init_wave(complex_double *IN,int *gdims,int *ldims,int *gstart)
+void init_wave(complex_double *IN,int *gdims,int *sdims,int *gstart)
 {
   double *sinx,*siny,*sinz,sinyz;
   complex_double *p;
@@ -286,25 +286,25 @@ void init_wave(complex_double *IN,int *gdims,int *ldims,int *gstart)
   siny = new double[gdims[1]];
   sinz = new double[gdims[2]];
 
-   for(z=0;z < ldims[2];z++)
+   for(z=0;z < sdims[2];z++)
      sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < ldims[1];y++)
+   for(y=0;y < sdims[1];y++)
      siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < ldims[0];x++)
+   for(x=0;x < sdims[0];x++)
      sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
 
    p = IN;
-   for(z=0;z < ldims[2];z++)
-     for(y=0;y < ldims[1];y++) {
+   for(z=0;z < sdims[2];z++)
+     for(y=0;y < sdims[1];y++) {
        sinyz = siny[y]*sinz[z];
-       for(x=0;x < ldims[0];x++)
+       for(x=0;x < sdims[0];x++)
 	 *p++ = complex<double>(0.,sinx[x]*sinyz);
      }
 
    delete [] sinx,siny,sinz;
 }
 
-void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
 {
   int x,y,z;
   complex_double *p;
@@ -315,16 +315,16 @@ void print_res(complex_double *A,int *gdims,int *ldims,int *gstart)
   Nglob = gdims[0]*gdims[1];
   Nglob = Nglob *gdims[2];
   p = A;
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(abs(*p) > Nglob *1.25e-4) 
 	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
 	p++;
       }
 }
 
-double check_res(complex_double *A,complex_double *B,int *ldims)
+double check_res(complex_double *A,complex_double *B,int *sdims)
 {
   int x,y,z;
   complex_double *p1,*p2;
@@ -332,13 +332,10 @@ double check_res(complex_double *A,complex_double *B,int *ldims)
   p1 = A;
   p2 = B;
 
-  int imo[3],i,j;
-  
-
   mydiff = 0.;
-  for(z=0;z < ldims[2];z++)
-    for(y=0;y < ldims[1];y++)
-      for(x=0;x < ldims[0];x++) {
+  for(z=0;z < sdims[2];z++)
+    for(y=0;y < sdims[1];y++)
+      for(x=0;x < sdims[0];x++) {
 	if(abs(*p1 - *p2) > mydiff)
 	  mydiff = abs(*p1-*p2);
 	p1++;

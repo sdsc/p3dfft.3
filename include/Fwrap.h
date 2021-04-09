@@ -81,7 +81,7 @@ All Rights Reserved.
   void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
   void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
   void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *);
-void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *, int *);
+void p3dfft_init_grid_f(int *,int *,int *,int *,int *,int *,int *,int *);
 void p3dfft_exec_1Dtrans_double_f(int *,double *,double *, int *);
 void p3dfft_exec_1Dtrans_single_f(int *,float *,float *, int *);
 void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *, int *);

@@ -101,7 +101,8 @@ vector<gen_trans_type *> types1D; // Defined 1D transform types
 vector<trans_type3D> types3D; // Defined 3D transform types
 vector<stage *> stored_trans1D; // Initialized and planned 1D transforms
 vector<gen_transform3D *> stored_trans3D; // Initialized and planned 3D transforms
-vector<grid*> stored_grids; // Defined grids (used in Fortran and C wrappers)
+vector<ProcGrid*> stored_proc_grids; // Defined proc. grids (used in Fortran and C wrappers)
+vector<DataGrid*> stored_data_grids; // Defined data grids (used in Fortran and C wrappers)
 
 
   //  extern "C" {
@@ -833,7 +834,8 @@ template <class Type> MPIplan<Type>::~MPIplan()
 void cleanup()
 {
   
-  stored_grids.clear();
+  stored_proc_grids.clear();
+  stored_data_grids.clear();
   types3D.clear();
 
   // Since these are vectors of pointers, simply erasing is not enough; must delete each referenced class. 
@@ -1633,155 +1635,100 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 } 
 */
 
-  void Psort(int P[3],int nd,int *po)
+  ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
+{
+  int i,j,k;
+
+  nd = 0;
+  MPI_Comm_dup(mpi_comm_init,&mpi_comm_glob);
+  for(i=0;i <3; i++) {
+    if((ProcDims[i] = procdims[i]) > 1)
+      nd++;
+  }
+  if(nd == 0)
+    nd = 1;
+
+  MPI_Comm_rank(mpi_comm_glob,&taskid);
+  MPI_Comm_size(mpi_comm_glob,&numtasks);
+
+  // Set up communicators for pencils or 3D decomposition
+  // if(nd >1) {
+  int periodic[3];
+  int reorder=0;
+  
+  for(i=0;i < 3;i++)
+    periodic[i]=1;
+  MPI_Cart_create(mpi_comm_glob,3,ProcDims,periodic,reorder,&mpi_comm_cart);
+  MPI_Cart_coords(mpi_comm_cart,taskid,3,grid_id_cart);
+  
+  MPI_Comm mpi_comm_tmp;
+  int remain_dims[] = {1,0,0};
+  for(i=0;i < 3;i++) {
+    remain_dims[(i+1)%3] = 1;
+    remain_dims[i] = 0;
+    
+    // Create COLUMN sub comm.
+    MPI_Cart_sub(mpi_comm_cart,remain_dims,&mpi_comm_tmp);
+    mpicomm[i]=mpi_comm_tmp;
+    MPI_Comm_rank(mpicomm[i],grid_id_cart+i);
+    
+#ifdef DEBUG
+    printf("%d: myid=%d %d\n",taskid,grid_id_cart[i]);
+#endif
+  }
+
+}
+
+  ProcGrid::ProcGrid(const ProcGrid &rhs) 
   {
-    int i,j;
-    for(j=0;j<nd-1;j++) {
-      int m=j;
-      for(i=j+1;i<nd;i++)
-	if(po[i] < po[m])
-	  m = i;
+    
+  if(rhs.is_set) {
+    is_set = true;
 
-      if(m != j) {
-	int tmp=P[j];
-	P[j] = P[m];
-	P[m] = tmp;
-	tmp = po[j];
-	po[j] = po[m];
-	po[m] = tmp;
-      }
-    }	
+    //    prec = rhs.prec;
+    int i,j,m,l;
+    nd = rhs.nd;
+    //    mpi_comm_glob = rhs.mpi_comm_glob;
+    MPI_Comm_dup(rhs.mpi_comm_glob,&mpi_comm_glob);
+    MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
+    for(i=0;i<3;i++)
+      MPI_Comm_dup(rhs.mpicomm[i],&mpicomm[i]);
 
-
+    for(i=0;i<3; i++) {
+      ProcDims[i] = rhs.ProcDims[i];
+      grid_id_cart[i] = rhs.grid_id_cart[i];
+    }
+    taskid = rhs.taskid;
+    numtasks = rhs.numtasks;
+  }
   }
 
  // grid constructor: initialize grid description and setup up MPI structures
-grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int mem_order_[3],
-	   MPI_Comm mpicomm_)
-	   //,int prec_,int dt_)
+  DataGrid::DataGrid(int gdims[3],int dim_conj_sym_,ProcGrid *Pgrid_,int dmap[3],int mem_order[3])
 {
   int i,j;
-  int myid[2];
-  MPI_Comm mpi_comm_tmp;
 
   dim_conj_sym = dim_conj_sym_;
-  //mpi_comm_glob = mpicomm_;
-  MPI_Comm_dup(mpicomm_,&mpi_comm_glob);
-  
-  nd=0;
-  P[0]=P[1]=P[2]=1;
-  D[0]=D[1]=D[2]=L[0]=L[1]=L[2]=-1;
+  Pgrid = Pgrid_;
+
   // Find dimension of processor grid (1 to 3 non-unit values in pgrid)
-
-  int po[3];
   for(i=0;i <3; i++) {
-    pgrid[i] = pgrid_[i];
-    gdims[i] = gdims_[i];
-    proc_order[i] = proc_order_[i];
-    mem_order[i] = mem_order_[i];
-    if(pgrid[i] > 1) {
-      P[nd] = pgrid[i];
-      D[nd] = i;
-      po[nd] = proc_order[i];
-      nd++;
-    }
-  }
-
-  if(nd == 0) {
-    nd = 1;
-    po[0] = 0;
-    P[0] = 1;
-    D[0] = 0;
-  }
-  else {
-    Psort(P,nd,po);
-    Psort(D,nd,po);
-  }
-
-  //  prec = prec_; dt = dt_;
-  pm = max(P[0],P[1]);
-  pm = max(pm,P[2]);
-
-  MPI_Comm_rank(mpicomm_,&taskid);
-  MPI_Comm_size(mpicomm_,&numtasks);
-
-  // Set up communicators for pencils or 3D decomposition
-  if(nd >1) {
-    int periodic[nd];
-    int reorder=0;
-
-    for(i=0;i < nd;i++)
-      periodic[i]=1;
-    MPI_Cart_create(mpicomm_,nd,P,periodic,reorder,&mpi_comm_cart);
-    MPI_Cart_coords(mpi_comm_cart,taskid,nd,grid_id_cart);
-
-    int remain_dims[3];
-    if(nd == 2) { // 2D (pencils) decomposition
-      remain_dims[0] = 1;
-      remain_dims[1] = 0;
-      // Create COLUMN sub comm.
-      MPI_Cart_sub(mpi_comm_cart,remain_dims,&mpi_comm_tmp);
-      mpicomm[0]=mpi_comm_tmp;
-
-      remain_dims[0] = 0;
-      remain_dims[1] = 1;
-      // Create ROW sub comm.
-      MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm+1);
-
-      MPI_Comm_rank(mpicomm[0],myid);
-      MPI_Comm_rank(mpicomm[1],myid+1);
-#ifdef DEBUG
-      printf("%d: myid=%d %d\n",taskid,myid[0],myid[1]);
-#endif
-    }
-    else if(nd == 3) { // 3D (volumetric) decomsposition 
-      remain_dims[0] = 1;
-      remain_dims[1] = 0;
-      remain_dims[2] = 0;
-      MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm+2);
-      remain_dims[1] = 1;
-      remain_dims[0] = 0;
-      remain_dims[2] = 0;
-      MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm+1);
-      remain_dims[2] = 1;
-      remain_dims[1] = 0;
-      remain_dims[0] = 0;
-      MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm);
-
-    }
-  }
-  else { //nd=1 Slab (1D) decomposition
-    grid_id_cart[0] = taskid;
-    *mpicomm = mpicomm_;
+    Gdims[i] = gdims[i];
+    Dmap[i] = dmap[i];
+    Pdims[i] = Pgrid->ProcDims[Dmap[i]];
+    MemOrder[i] = mem_order[i];
   }
 
   // Find grid id 3D coordinates of the local grid withint the global grid
-  for(i=0;i<nd;i++)
-    grid_id[proc_order[i]] = grid_id_cart[i];
-  for(i=nd;i<3;i++)
-    grid_id[proc_order[i]] = 0;
-
-  /*
-  st = new int[pm][3];
-  sz = new int[pm][3];
-  en = new int[pm][3];
-
-  st = new int**[nd];
-  sz = new int**[nd];
-  en = new int**[nd];
-  */
+  for(i=0;i<3;i++)
+    grid_id[i] = Pgrid->grid_id_cart[Dmap[i]];
 
   // Allocate structures for local data sizes
 
-  for(i=0;i<nd;i++) {
-    st[i] = new int*[P[i]];
-    sz[i] = new int*[P[i]];
-    en[i] = new int*[P[i]];
-    for(j=0; j < P[i]; j++) {
-      st[i][j] = new int[3];
-      sz[i][j] = new int[3];
-      en[i][j] = new int[3];
-    }
+  for(i=0;i<3;i++) {
+    st[i] = new int[Pdims[i]];
+    sz[i] = new int[Pdims[i]];
+    en[i] = new int[Pdims[i]];
   }
 
   InitPencil(); // Initialize pencils/slabs etc
@@ -1789,7 +1736,7 @@ grid::grid(int gdims_[3],int dim_conj_sym_,int pgrid_[3],int proc_order_[3],int 
 }
 
   // Copy constructor
-grid::grid(const grid &rhs)
+DataGrid::DataGrid(const DataGrid &rhs)
 {
   
   if(rhs.is_set) {
@@ -1797,55 +1744,32 @@ grid::grid(const grid &rhs)
 
     //    prec = rhs.prec;
     int i,j,m,l;
-    pm = rhs.pm;
-    nd = rhs.nd;
     dim_conj_sym = rhs.dim_conj_sym;
-    //    mpi_comm_glob = rhs.mpi_comm_glob;
-    MPI_Comm_dup(rhs.mpi_comm_glob,&mpi_comm_glob);
-    MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
-    for(i=0;i<nd;i++)
-      MPI_Comm_dup(rhs.mpicomm[i],&mpicomm[i]);
-
-    /*    st = new int[pm][3];
-    sz = new int[pm][3];
-    en = new int[pm][3];
-    */
-
 
     for(i=0;i<3; i++) {
-      gdims[i] = rhs.gdims[i];
-      ldims[i] = rhs.ldims[i];
-      pgrid[i] = rhs.pgrid[i];
-      proc_order[i] = rhs.proc_order[i];
-      mem_order[i] = rhs.mem_order[i];
+      Gdims[i] = rhs.Gdims[i];
+      Ldims[i] = rhs.Ldims[i];
+      Pdims[i] = rhs.Pdims[i];
+      MemOrder[i] = rhs.MemOrder[i];
       L[i] = rhs.L[i];
       D[i] = rhs.D[i];
-      grid_id[i] = rhs.grid_id[i];
+      Dmap[i] = rhs.Dmap[i];
     }
-    for(i=0;i<nd; i++) {
-      //      mpicomm[i] = rhs.mpicomm[i];
-      P[i] = rhs.P[i];
-    }
-    taskid = rhs.taskid;
-    numtasks = rhs.numtasks;
-    /*    
-    st = new int**[nd];
-    sz = new int**[nd];
-    en = new int**[nd];
-    */
-    for(i=0;i<nd;i++) {
-      st[i] = new int*[P[i]];
-      sz[i] = new int*[P[i]];
-      en[i] = new int*[P[i]];
-      for(j=0; j < P[i]; j++) {
-	st[i][j] = new int[3];
-	sz[i][j] = new int[3];
-	en[i][j] = new int[3];
-	for(int k=0;k<3; k++) {
-	  st[i][j][k] = rhs.st[i][j][k];
-	  sz[i][j][k] = rhs.sz[i][j][k];
-	  en[i][j][k] = rhs.en[i][j][k];
-	}
+
+    for(i=0;i<3;i++) {
+      st[i] = new int[Pdims[i]];
+      sz[i] = new int[Pdims[i]];
+      en[i] = new int[Pdims[i]];
+      
+      for(j=0; j < Pdims[i]; j++) {
+	//	st[i][j] = new int[3];
+	//sz[i][j] = new int[3];
+	//en[i][j] = new int[3];
+	//for(int k=0;k<3; k++) {
+	st[i][j] = rhs.st[i][j];
+	sz[i][j] = rhs.sz[i][j];
+	en[i][j] = rhs.en[i][j];
+	
       }
     }
     
@@ -1854,38 +1778,47 @@ grid::grid(const grid &rhs)
     is_set = false;
 }
 
-grid::~grid() 
+DataGrid::~DataGrid() 
 {
   if(is_set) {
     for(int i=0;i < nd;i++) {
-      for(int j=0;j<P[i];j++) {
-	delete [] st[i][j];
-	delete [] sz[i][j];
-	delete [] en[i][j];
-      }
-      delete [] st[i];
-      delete [] sz[i];
-      delete [] en[i];
+      //      for(int j=0;j<ProcGrid[i];j++) {
+	delete [] st[i];
+	delete [] sz[i];
+	delete [] en[i];
     }
+    
     /*
     delete [] st;
     delete [] sz;
     delete [] en;
     */
-    for(int i=0;i<nd;i++)
-       MPI_Comm_free(&mpicomm[i]);
-    MPI_Comm_free(&mpi_comm_cart);
-    MPI_Comm_free(&mpi_comm_glob);
   }
+
 }
 
-void grid::InitPencil()
+ProcGrid::~ProcGrid()
 {
-  int i,j,k,pm,l,size,nl,nu,data,proc,li,myproc,pdim,ploc,p;
+  for(int i=0;i<3;i++)
+    MPI_Comm_free(&mpicomm[i]);
+  MPI_Comm_free(&mpi_comm_cart);
+  MPI_Comm_free(&mpi_comm_glob);
+}
+
+
+void DataGrid::InitPencil()
+{
+  int i,j,k,n,pm,l,size,nl,nu,data,proc,li,myproc,pdim,ploc,p;
 
   // First determine local dimension(s)
-  ploc=0;
-  for(k=0; k < 3; k++) {
+  ploc=0;n=0;
+  for(k=0; k < 3; k++) 
+    if(Pdims[k] == 1) 
+      L[ploc++] = k;
+    else
+      D[n++] = k;
+  
+  /*
     for(i=0;i<nd;i++)
       if(D[i] == k)
 	break;
@@ -1893,50 +1826,53 @@ void grid::InitPencil()
       L[ploc++] = k;
       i = -1;
     }
-  }
+    }*/
       //      i = proc_order[pdim++];
 
   // Distribute the dimension each communicator spans
-  for(i=0;i<nd;i++) {
-    j = D[i];
-    data = gdims[j]; //[li];
-    proc = pgrid[j];
+  for(i=0;i<3;i++) {
+    //    j = D[i];
+    //    for(j=0;j<3;j++) {
+    
+    data = Gdims[i]; //[li];
+    proc = Pdims[i];
     size = data/proc;
     nu = data%proc;
     nl = proc-nu;
     
-    st[i][0][j] = 0;
-    sz[i][0][j] = size;
-    en[i][0][j] = size;
+    st[i][0] = 0;
+    sz[i][0] = size;
+    en[i][0] = size;
     for(p=1; p < nl; p++) {
-      st[i][p][j] = st[i][p-1][j] +size;
-      sz[i][p][j] = size;
-      en[i][p][j] = en[i][p-1][j] +size;
+      st[i][p] = st[i][p-1] +size;
+      sz[i][p] = size;
+      en[i][p] = en[i][p-1] +size;
     }
     size++;
     for(;p < proc; p++) {
-      st[i][p][j] = st[i][p-1][j] +sz[i][p-1][j];
-      sz[i][p][j] = size;
-      en[i][p][j] = en[i][p-1][j] +sz[i][p-1][j];
+      st[i][p] = st[i][p-1] +sz[i][p-1];
+      sz[i][p] = size;
+      en[i][p] = en[i][p-1] +sz[i][p-1];
     }
     //st[i][p][j] = st[i][p-1][j] + size;
     //sz[i][p][j] = size;
-    en[i][p-1][j] = data;
-    sz[i][p-1][j] = data - st[i][p-1][j];
-
+    en[i][p-1] = data;
+    sz[i][p-1] = data - st[i][p-1];
+    
     // Assign local size for this spanning dimension
     myproc = grid_id[i];
-    ldims[j] = sz[i][myproc][j];
-    glob_start[j] = st[i][myproc][j];
+    Ldims[i] = sz[i][myproc];
+    GlobStart[i] = st[i][myproc];
   }
   //      en[proc-1][i] = data;
-      //sz[proc-1][i] = data -st[proc-1][i];
+  //sz[proc-1][i] = data -st[proc-1][i];
       //      ldims[li] = sz[myid[li]][li];
 
   // Assign sizes for local dimensions
+  /*
   for(i=0;i<ploc;i++) {
     k = L[i];
-    ldims[k] = gdims[k];
+    ldims[k] = Gdims[k];
     glob_start[k] = 0;
     for(j=0;j<nd;j++) 
       for(p=0;p<P[j];p++) {
@@ -1945,6 +1881,7 @@ void grid::InitPencil()
 	st[j][p][k] = 0;
       }
   }
+  
 
   // Next, figure out local sizes for all remaining dimensions (non-local and non-spanning) 
   for(i=0;i<nd;i++) {
@@ -1963,7 +1900,7 @@ void grid::InitPencil()
 	}
       }	  
   }
-
+  */
 }
 
   /*
@@ -1979,14 +1916,14 @@ void grid::InitPencil1D()
     if(i != d) {
 	L[nloc] = i;
 	nloc++;
-	sz[0][i] = en[0][i] = ldims[i] = gdims[i];
+	sz[0][i] = en[0][i] = ldims[i] = Gdims[i];
 	st[0][i] = 0;
       }
   if(nloc != 2)
     printf("ERror in InitPencil1D: expected 2 local dimensions, got%d\n",nloc);
 
   // split dimension
-  data = gdims[d];
+  data = Gdims[d];
   proc = P[0];
   size = data/proc;
   nu = data%proc;
