@@ -1757,6 +1757,8 @@ DataGrid::DataGrid(const DataGrid &rhs)
       L[i] = rhs.L[i];
       D[i] = rhs.D[i];
       Dmap[i] = rhs.Dmap[i];
+      grid_id[i] = rhs.grid_id[i];
+      GlobStart[i] = rhs.GlobStart[i];
     }
 
     for(i=0;i<3;i++) {

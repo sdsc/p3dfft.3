@@ -202,7 +202,7 @@ int main(int argc,char **argv)
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<double,complex_double> trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,double> trans_b(Xpencil,Zpencil,&type_ccr);
+  transform3D<complex_double,double> trans_b(Zpencil,Xpencil,&type_ccr);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
