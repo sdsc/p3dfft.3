@@ -48,8 +48,7 @@ using namespace p3dfft;
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
+  int dmap[3];
   int mem_order1[3];
   int mem_order2[3];
   int i,j,k,x,y,z,p1,p2;
@@ -70,7 +69,7 @@ using namespace p3dfft;
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,dim,cnt;
+  int pdims[3],nx,ny,nz,n,dim,cnt;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -119,24 +118,24 @@ using namespace p3dfft;
      if(fp != NULL) {
        if(myid == 0)
          printf("Reading proc. grid from file dims\n");
-       fscanf(fp,"%d %d\n",pdims,pdims+1);
+       fscanf(fp,"%d %d\n",pdims+1,pdims+2);
        fclose(fp);
-       if(pdims[0]*pdims[1] != nprocs)
-          pdims[1] = nprocs / pdims[0];
+       if(pdims[1]*pdims[2] != nprocs)
+          pdims[2] = nprocs / pdims[1];
      }
      else {
        if(myid == 0)
           printf("Creating proc. grid with mpi_dims_create\n");
-       pdims[0]=pdims[1]=0;
-       MPI_Dims_create(nprocs,2,pdims);
-       if(pdims[0] > pdims[1]) {
-          pdims[0] = pdims[1];
-          pdims[1] = nprocs/pdims[0];
+       pdims[1]=pdims[2]=0;
+       MPI_Dims_create(nprocs,2,pdims+1);
+       if(pdims[1] > pdims[2]) {
+          pdims[1] = pdims[2];
+          pdims[2] = nprocs/pdims[1];
        }
      }
 
    if(myid == 0)
-      printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
+      printf("Using processor grid %d x %d\n",pdims[1],pdims[2]);
 
   // Set up work structures for P3DFFT
 
@@ -153,32 +152,34 @@ using namespace p3dfft;
   gdims[1] = ny;
   gdims[2] = nz;
 
-  cnt = 1;
-  for(i=0; i < 3;i++) 
-    proc_order[i] = i;
-
-  p1 = pdims[0];
-  p2 = pdims[1];
+  pdims[0] = 1;
 
   // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-  cnt=0;
+  ProcGrid pgrid(pdims,MPI_COMM_WORLD);
+
+  //Initialize initial and final grids, based on the above information
+  // For initial grid, intended for real-valued array, there is no conjugate symmetry, i.e. -1
+  cnt=1;
   for(i=0;i<3;i++)
     if(i == dim)
-      pgrid1[i] = 1;
+      dmap[i] = 0;
     else
-      pgrid1[i] = pdims[cnt++];
+      dmap[i] = cnt++;
 
-  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
+
+  // Initialize the initial grid 
+
+  DataGrid grid1(gdims,-1,&pgrid,dmap,mem_order1);
+
+  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform, due to conjugate symmetry)
 
   for(i=0; i < 3;i++) 
     gdims2[i] = gdims[i];
+  gdims2[dim] = gdims2[dim]/2+1;
 
-  //Initialize initial and final grids, based on the above information
-  // There is no conjugate symmetry (-1) since the arrays are real-valued
-  grid grid1(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); 
-
-  grid grid2(gdims2,-1,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
+  // For final grid, intended for complex-valued array, there will be conjugate symmetry in the dimension of the transform (dim) since it is a R2C transform
+  DataGrid grid2(gdims2,-1,&pgrid,dmap,mem_order2);
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   transplan<double,double> trans_f(grid1,grid2,type_ids1,dim);
@@ -189,7 +190,7 @@ using namespace p3dfft;
 
   //Determine local array dimensions. 
 
-  ldims = grid1.ldims;
+  ldims = grid1.Ldims;
   size1 = ldims[0]*ldims[1]*ldims[2];
 
   //Now allocate initial and final arrays in physical space (real-valued)
@@ -199,10 +200,10 @@ using namespace p3dfft;
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   int sdims1[3],sdims2[3];
   for(i=0;i<3;i++) {
-    sdims1[mem_order1[i]] = grid1.ldims[i];
-    sdims2[mem_order2[i]] = grid2.ldims[i];
-    glob_start1[mem_order1[i]] = grid1.glob_start[i];
-    glob_start2[mem_order2[i]] = grid2.glob_start[i];
+    sdims1[mem_order1[i]] = grid1.Ldims[i];
+    sdims2[mem_order2[i]] = grid2.Ldims[i];
+    glob_start1[mem_order1[i]] = grid1.GlobStart[i];
+    glob_start2[mem_order2[i]] = grid2.GlobStart[i];
   }
 
   //Initialize the IN array with a sine wave in 3D
@@ -212,7 +213,7 @@ using namespace p3dfft;
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-  ldims2 = grid2.ldims;
+  ldims2 = grid2.Ldims;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
   OUT=(double *) malloc(sizeof(double) *size2);
 

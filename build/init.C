@@ -1664,8 +1664,6 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
   MPI_Comm mpi_comm_tmp;
   int remain_dims[] = {1,0,0};
   for(i=0;i < 3;i++) {
-    remain_dims[(i+1)%3] = 1;
-    remain_dims[i] = 0;
     
     // Create COLUMN sub comm.
     MPI_Cart_sub(mpi_comm_cart,remain_dims,&mpi_comm_tmp);
@@ -1675,6 +1673,8 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 #ifdef DEBUG
     printf("%d: myid=%d %d\n",taskid,grid_id_cart[i]);
 #endif
+    remain_dims[(i+1)%3] = 1;
+    remain_dims[i] = 0;
   }
 
 }
@@ -1682,8 +1682,8 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
   ProcGrid::ProcGrid(const ProcGrid &rhs) 
   {
     
-  if(rhs.is_set) {
-    is_set = true;
+    //  if(rhs.is_set) {
+    // is_set = true;
 
     //    prec = rhs.prec;
     int i,j,m,l;
@@ -1700,7 +1700,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
     }
     taskid = rhs.taskid;
     numtasks = rhs.numtasks;
-  }
+    //}
   }
 
  // grid constructor: initialize grid description and setup up MPI structures
@@ -1710,6 +1710,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 
   dim_conj_sym = dim_conj_sym_;
   Pgrid = Pgrid_;
+  nd = Pgrid->nd;
 
   // Find dimension of processor grid (1 to 3 non-unit values in pgrid)
   for(i=0;i <3; i++) {
@@ -1745,6 +1746,8 @@ DataGrid::DataGrid(const DataGrid &rhs)
     //    prec = rhs.prec;
     int i,j,m,l;
     dim_conj_sym = rhs.dim_conj_sym;
+    nd = rhs.nd;
+    Pgrid = rhs.Pgrid;
 
     for(i=0;i<3; i++) {
       Gdims[i] = rhs.Gdims[i];
@@ -1781,7 +1784,7 @@ DataGrid::DataGrid(const DataGrid &rhs)
 DataGrid::~DataGrid() 
 {
   if(is_set) {
-    for(int i=0;i < nd;i++) {
+    for(int i=0;i < 3;i++) {
       //      for(int j=0;j<ProcGrid[i];j++) {
 	delete [] st[i];
 	delete [] sz[i];

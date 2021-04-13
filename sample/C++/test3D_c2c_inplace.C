@@ -226,8 +226,8 @@ int main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,sdims2,glob_start2);
-    normalize(OUT,size2,gdims);
+    print_res(AR,gdims,sdims2,glob_start2);
+    normalize(AR,size2,gdims);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(AR,AR,true);  // Execute backward (inverse) complex-to-real FFT

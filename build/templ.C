@@ -329,7 +329,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
   if(dt1 != types1D[type->types[L[0]]]->dt1)
     printf("Error in transform3D: input datatypes don't match\n");
-  if(d2 != types1D[type->types[L[2]]]->dt2)
+  if(dt2 != types1D[type->types[L[2]]]->dt2)
     printf("Error in transform3D: output datatypes don't match\n");
 
   for(i=0;i<3;i++) 
@@ -1048,7 +1048,7 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
 
   int p=gr1.Pdims[d1_];
   if(p != gr2.Pdims[d2_]) {
-    cout << "Error in MPIplan constr.: proc. grid dimensions dont match" << gr1.Pdims << gr2.Pdims << endl;
+    cout << "Error in MPIplan constr.: proc. grid dimensions dont match" << gr1.Pdims[d1_] << ", " << gr2.Pdims[d2_] << d1_ << ", " << d2_ << endl;
     return;
   }
 

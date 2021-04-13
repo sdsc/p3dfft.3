@@ -130,7 +130,7 @@ int main(int argc,char **argv)
 
   gdims[0] = nx; gdims[1]=ny;gdims[2]=nz;
   for(i=0; i < 3;i++) {
-    proc_order[i] = mem_order[i] = i; // The simplest case of sequential ordering
+     mem_order[i] = i; // The simplest case of sequential ordering
   }
 
   p1 = pdims[0];
@@ -153,9 +153,6 @@ int main(int argc,char **argv)
 
   //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
-  pgrid2[0] =p1;
-  pgrid2[1] = p2;
-  pgrid2[2] = 1;
 
   // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 

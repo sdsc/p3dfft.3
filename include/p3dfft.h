@@ -664,8 +664,9 @@ template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3])
   ~ProcGrid();
   bool operator==( const ProcGrid &P1) const;
   inline bool operator==( const ProcGrid &P) {
-    if(!this->is_set || !P.is_set)
-      return(false);
+    //    if(!(this->is_set))      return(false);
+    //if (!(P.is_set))     return(false);
+
     if(this->nd != P.nd)
       return(false);
     if(this->taskid != P.taskid || this->numtasks != P.numtasks)
