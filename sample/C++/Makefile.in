@@ -80,7 +80,8 @@ cppsample_PROGRAMS = test3D_c2c_cpp$(EXEEXT) test3D_r2c_cpp$(EXEEXT) \
 	test1D_transplan_cpp$(EXEEXT) test1D_cos_cpp$(EXEEXT) \
 	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
 	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_cpp$(EXEEXT) \
-	testIDIR_deriv2_cpp$(EXEEXT) test3D_r2c_single_cpp$(EXEEXT)
+	 test3D_r2c_single_cpp$(EXEEXT)
+#testIDIR_deriv2_cpp$(EXEEXT)
 subdir = sample/C++
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

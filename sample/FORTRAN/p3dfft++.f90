@@ -24,26 +24,26 @@ integer, bind(C,name='P3DFFT_DST1_COMPLEX_S') :: P3DFFT_DST1_COMPLEX_S
 integer, bind(C,name='P3DFFT_DST1_COMPLEX_D') :: P3DFFT_DST1_COMPLEX_D
 
 
-type, public, bind(C) :: grid
-      integer(C_INT) :: taskid
-      integer(C_INT) :: numtasks
-      integer(C_INT) :: nd
-      integer(C_INT) :: gdims(3)
-      integer(C_INT) :: mem_order(3)
-      integer(C_INT) :: ldims(3)
-      integer(C_INT) :: pgrid(3)
-      integer(C_INT) :: proc_order(3)
-!      integer(C_INT) :: P(3)
-!      integer(C_INT) :: D(3)
-!      integer(C_INT) :: L(3)
-!      integer(C_INT) :: grid_id(3)
-!      integer(C_INT) :: grid_id_cart(3)
-     integer(C_INT) :: glob_start(3)
-      integer(C_INT) :: mpi_comm_glob
-!
-!      integer(C_INT) :: mpi_comm_start
-!      integer(C_INT) :: mpicomm(3)
-end type grid 
+!type, public, bind(C) :: grid
+!      integer(C_INT) :: taskid
+!      integer(C_INT) :: numtasks
+!      integer(C_INT) :: nd
+!      integer(C_INT) :: gdims(3)
+!      integer(C_INT) :: mem_order(3)
+!      integer(C_INT) :: ldims(3)
+!      integer(C_INT) :: pgrid(3)
+!      integer(C_INT) :: proc_order(3)
+!!      integer(C_INT) :: P(3)
+!!      integer(C_INT) :: D(3)
+!!      integer(C_INT) :: L(3)
+!!      integer(C_INT) :: grid_id(3)
+!!      integer(C_INT) :: grid_id_cart(3)
+!     integer(C_INT) :: glob_start(3)
+!      integer(C_INT) :: mpi_comm_glob
+!!
+!!      integer(C_INT) :: mpi_comm_start
+!!      integer(C_INT) :: mpicomm(3)
+!end type grid 
 
 interface
 
@@ -61,15 +61,23 @@ interface
       subroutine p3dfft_cleanup() bind(C,name="p3dfft_cleanup")
       end subroutine
 
-!      integer(C_INT) 
-      subroutine p3dfft_init_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,proc_order,mem_order,mpicomm) &
-          &bind(C,name='p3dfft_init_grid_f')
+      subroutine p3dfft_init_data_grid(mygrid,ldims,glob_start,gdims,dim_conj_sym,pgrid,dmap,mem_order) &
+          &bind(C,name='p3dfft_init_data_grid_f')
 !        use iso_c_binding
       import 
 !      type(grid) :: gr
-      integer(C_INT), dimension(3) :: gdims,pgrid,proc_order,mem_order,ldims,glob_start
-      integer(C_INT) :: mygrid,mpicomm,dim_conj_sym
-    end subroutine p3dfft_init_grid
+      integer(C_INT), dimension(3) :: gdims,dmap,mem_order,ldims,glob_start
+      integer(C_INT) :: mygrid,dim_conj_sym,pgrid
+    end subroutine p3dfft_init_data_grid
+
+      integer(C_INT) function p3dfft_init_proc_grid(pdims,mpicomm) &
+          &bind(C,name='p3dfft_init_proc_grid_f')
+!        use iso_c_binding
+      import 
+!      type(grid) :: gr
+      integer(C_INT), dimension(3) :: pdims
+      integer(C_INT) :: mpicomm
+    end function p3dfft_init_proc_grid
 
 !      subroutine p3dfft_free_grid(gr) bind(C,name='p3dfft_free_grid_f')
 !      import

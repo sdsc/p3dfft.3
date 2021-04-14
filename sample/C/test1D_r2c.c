@@ -45,8 +45,7 @@ main(int argc,char **argv)
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
+  int dmap[3],Pgrid;
   int mem_order1[3];
   int mem_order2[3];
   int i,j,k,x,y,z,p1,p2;
@@ -68,7 +67,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,dim,cnt,ar_dim,sdims1[3],sdims2[3];
+  int pdims[3],nx,ny,nz,n,dim,cnt,ar_dim,sdims1[3],sdims2[3];
   Plan3D trans_f,trans_b;
   FILE *fp;
 
@@ -149,38 +148,37 @@ main(int argc,char **argv)
   gdims[0] = nx;
   gdims[1] = ny;
   gdims[2] = nz;
-  cnt = 1;
-  for(i=0; i < 3;i++) 
-    proc_order[i] = i;
 
   p1 = pdims[0];
   p2 = pdims[1];
 
   // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-  cnt=0;
+  pdims[0] = 1;
+  pdims[1] = p1;
+  pdims[2] = p2;
+
+  cnt=1;
   for(i=0;i<3;i++)
     if(i == dim)
-      pgrid1[i] = 1;
+      dmap[i] = 0;
     else
-      pgrid1[i] = pdims[cnt++];
+      dmap[i] = cnt++;
 
-  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension due to conjugate symmetry, since we are doing real-to-complex transform)
+  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
+
+  Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
   for(i=0; i < 3;i++) {
-    gdims2[i] = gdims[i];
-    if(i == dim) {
-      ar_dim = mem_order1[i];
-      gdims2[i] = gdims2[i]/2+1;
-    }
+    if(i == dim) 
+      ar_dim = mem_order1[i]; // Find storage dimension corresponding to dim
   }
 
   //Initialize initial and final grids, based on the above information
-
-  // Initial grid doesn't have conjugate symmetry (-1)
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD); 
+  // No conjugate symmetry (-1)
+  grid1 = p3dfft_init_data_grid(gdims,-1,Pgrid,dmap,mem_order1);
   // Final grid does have conjugate symmetry in the dimension corresponding to dim
-  grid2 = p3dfft_init_grid(gdims2,dim,pgrid1,proc_order,mem_order2,MPI_COMM_WORLD); 
+  grid2 = p3dfft_init_data_grid(gdims2,dim,Pgrid,dmap,mem_order2);
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument is for out-of-place transform (input and output spaces different).
 
@@ -192,14 +190,14 @@ main(int argc,char **argv)
 
   //Determine local array dimensions. 
 
-  ldims1 = grid1->ldims;
+  ldims1 = grid1->Ldims;
   size1 = ldims1[0]*ldims1[1]*ldims1[2];
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
   for(i=0;i<3;i++) {
     sdims1[mem_order1[i]] = ldims1[i];
-    glob_start1[mem_order1[i]] = grid1->glob_start[i];
+    glob_start1[mem_order1[i]] = grid1->GlobStart[i];
   }
 
   //Now allocate initial and final arrays in physical space (real-valued)
@@ -212,13 +210,13 @@ main(int argc,char **argv)
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-  ldims2 = grid2->ldims;
+  ldims2 = grid2->Ldims;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   for(i=0;i < 3;i++) {
     sdims2[mem_order2[i]] = ldims2[i];
-    glob_start2[mem_order2[i]] = grid2->glob_start[i];
+    glob_start2[mem_order2[i]] = grid2->GlobStart[i];
   }
 
   for(i=0;i<Nrep;i++) {
@@ -251,8 +249,9 @@ main(int argc,char **argv)
 
   // Clean up grid structures 
 
-  p3dfft_free_grid(grid1);
-  p3dfft_free_grid(grid2);
+  p3dfft_free_data_grid(grid1);
+  p3dfft_free_data_grid(grid2);
+  p3dfft_free_proc_grid(Pgrid);
 
   // Clean up all P3DFFT++ data
 

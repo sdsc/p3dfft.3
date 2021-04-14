@@ -45,9 +45,9 @@
       double precision gt(12,3),gtcomm(3),tc
       logical iex
       integer ierr,dim,dims(2),nproc,proc_id,cnt
-      integer type_ids1,type_ids2,trans_f,trans_b,pdims(2),glob_start1(3),glob_start2(3)
+      integer type_ids1,type_ids2,trans_f,trans_b,pdims(3),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
-      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid(3),gdims1(3),gdims2(3)
+      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),dmap(3),pgrid,gdims1(3),gdims2(3)
       integer(C_INT) grid1,grid2
       integer mpicomm,myid
       integer mydims1(3),mydims2(3),ar_dim,ar_dim2
@@ -138,7 +138,6 @@
       factor = 0.5d0 /(gdims1(dim)-1.0d0)
 
       do i=1,3
-         proc_order(i) = i-1
          if(mem_order2(dim) .eq. i-1) then
             ar_dim2 = i
          endif
@@ -149,25 +148,29 @@
 
 ! Define processor grid. Make the direction of transform local
 
+      pdims(1) = 1
+      pdims(2) = dims(1)
+      pdims(3) = dims(2)
+
       cnt =1
       do i=1,3
          if(i .eq. dim) then
-            pgrid(i)=1
+            dmap(i)=0
          else
-            pgrid(i) = dims(cnt)
+            dmap(i) = cnt
             cnt = cnt+1
          endif
       enddo
 
 ! Specify the default communicator for P3DFFT++. This can be different from your program default communicator if you wish to keep P3DFFT++ communications separate from yours
 
-      mpicomm = MPI_COMM_WORLD
+      pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD)
 
 ! Initialize initial and final grids, based on the above information
 ! No conjugate symmetry (-1)
-      call p3dfft_init_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid,proc_order,mem_order1,MPI_COMM_WORLD)
+      call p3dfft_init_data_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid,dmap,mem_order1)
 
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_data_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid,dmap,mem_order2)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 

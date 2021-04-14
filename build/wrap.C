@@ -330,9 +330,16 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   }
 */
 
-  void p3dfft_free_grid(Grid *gr)
+  void p3dfft_free_data_grid(Grid *gr)
   {
     delete gr;
+  }
+
+  void p3dfft_free_proc_grid(int pgrid_id)
+  {
+    ProcGrid *pgrid = stored_proc_grids[pgrid_id];
+    delete pgrid;
+    stored_proc_grids.erase(stored_proc_grids.begin() + pgrid_id);
   }
 
   void p3dfft_inv_mo(int mo[3],int imo[3]) {

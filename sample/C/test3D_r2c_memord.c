@@ -47,8 +47,9 @@ main(int argc,char **argv)
   int Nrep = 1;
   int myid,nprocs;
   int gdims[3],gdims2[3];
-  int pgrid1[3],pgrid2[3];
-  int proc_order[3];
+  int dmap1[3];
+  int dmap2[3];
+  int Pgrid;
   int mem_order1[3];
   int mem_order2[3];
   int i,j,k,x,y,z,p1,p2;
@@ -57,7 +58,7 @@ main(int argc,char **argv)
   int sdims1[3],ldims2[3],mydims1[3],mydims2[3];
   long int size1,size2;
   double *IN;
-  Grid *grid1,*grid2;
+  Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
   double *OUT;
   int type_ids1[3];
@@ -70,7 +71,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[2],nx,ny,nz,n,ndim;
+  int pdims[3],nx,ny,nz,n,ndim;
   Plan3D trans_f,trans_b;
   FILE *fp;
 
@@ -167,83 +168,60 @@ main(int argc,char **argv)
   //Set up global dimensions of the grid
 
   // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
-  gdims[0] = gdims2[0] = nx;
-  gdims[1] = gdims2[1] = ny;
-  gdims[2] = gdims2[2] = nz;
-  //TODO: Should we test all cases of this?
-  for(i=0; i < 3;i++)
-    proc_order[i] = i; // The simplest case of sequential ordering
+  gdims[0] =  nx;
+  gdims[1] =  ny;
+  gdims[2] =  nz;
 
-  p1 = pdims[0];
-  p2 = pdims[1];
+  pdims[2] = pdims[1];
+  pdims[1] = pdims[0];
+  pdims[0] = 1;
 
-  pgrid1[0] = 1;
-  pgrid1[1] = p1;
-  pgrid1[2] = p2;
+  Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
-  pgrid2[0] =p1;
-  pgrid2[1] = p2;
-  pgrid2[2] = 1;
+  // Initialize the initial grid 
+                     // this is an X pencil, since Px =1
 
-  /*
-  for (i = 0; i < 3; i++) {
-
-    // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
-    switch (mem_order1[i]) {
-      case 0:
-        pgrid1[i] = 1;
-        break;
-      case 1:
-        pgrid1[i] = p1;
-        break;
-      case 2:
-        pgrid1[i] = p2;
-        break;
-      default:
-        printf("Invalid memory order setup value: %d", mem_order1[i]);
-        exit(1);
-    }
-  */
-    //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
-
-  /*    switch (mem_order2[i]) {
-      case 0:
-        pgrid2[i] = 1;
-        break;
-      case 1:
-        pgrid2[i] = p1;
-        break;
-      case 2:
-        pgrid2[i] = p2;
-        break;
-      default:
-        printf("Invalid memory order setup value: %d", mem_order1[i]);
-        exit(1);
-    }
-
+  for(i=0;i<3;i++) {
+    dmap1[mem_order1[i]] = i;
+    dmap2[mem_order2[i]] = i;
   }
-  */
 
+  Xpencil = p3dfft_init_data_grid(gdims,-1,Pgrid,dmap1,mem_order1);
+
+  //Define the final processor grid. It can be the same as initial grid, however here it is different. 
+  // First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. 
+  // Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
+
+  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
+
+  for(i=0; i < 3;i++) 
+    gdims2[i] = gdims[i];
   gdims2[0] = gdims2[0]/2+1;
 
-  //Initialize initial and final grids, based on the above information
+  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
-  grid1 = p3dfft_init_grid(gdims,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD);
 
-  grid2 = p3dfft_init_grid(gdims2,0,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD);
+  // Initialize final grid configuration
+                     // Y onto Z and Z onto X
+                     // this is a Z-pencil, since Px =1 - or at least one way to define it 
+                     // (the other would be (2,1,0))
 
-  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(grid1,grid2,type_rcc);
+  Zpencil = p3dfft_init_data_grid(gdims2,0,Pgrid,dmap2,mem_order2);
+
+
+  //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc);
 
   //Now set up the backward transform
 
-  trans_b = p3dfft_plan_3Dtrans(grid2,grid1,type_ccr);
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr);
+
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
   for(i=0;i<3;i++) {
-    glob_start1[mem_order1[i]] = grid1->glob_start[i];
-    sdims1[mem_order1[i]] = grid1->ldims[i];
+    glob_start1[mem_order1[i]] = Xpencil->GlobStart[i];
+    sdims1[mem_order1[i]] = Xpencil->Ldims[i];
     mydims1[mem_order1[i]] = gdims[i];
   }
 
@@ -261,9 +239,9 @@ main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = grid2->glob_start[i];
-    ldims2[mem_order2[i]] = grid2->ldims[i];
-    //TODO: Why not check grid2 same way we check grid1?
+    glob_start2[mem_order2[i]] = Zpencil->GlobStart[i];
+    ldims2[mem_order2[i]] = Zpencil->Ldims[i];
+    //TODO: Why not check Zpencil same way we check Xpencil?
   }
 
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
@@ -313,8 +291,9 @@ main(int argc,char **argv)
 
   // Clean up grid structures
 
-  p3dfft_free_grid(grid1);
-  p3dfft_free_grid(grid2);
+  p3dfft_free_data_grid(Xpencil);
+  p3dfft_free_data_grid(Zpencil);
+  p3dfft_free_proc_grid(Pgrid);
 
   // Clean up all P3DFFT++ data
 

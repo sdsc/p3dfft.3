@@ -79,8 +79,8 @@ POST_UNINSTALL = :
 csample_PROGRAMS = test1D_cos_c$(EXEEXT) test1D_cos_complex_c$(EXEEXT) \
 	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
 	test3D_c2c_c$(EXEEXT) testIDIR_deriv_c$(EXEEXT) \
-	test3D_c2c_inplace_c$(EXEEXT) testIDIR_deriv2_c$(EXEEXT) \
-	test3D_r2c_memord_c$(EXEEXT) test3D_r2c_single_c$(EXEEXT)
+	test3D_c2c_inplace_c$(EXEEXT)  \
+	test3D_r2c_memord_c$(EXEEXT) test3D_r2c_single_c$(EXEEXT) #testIDIR_deriv2_c$(EXEEXT)
 subdir = sample/C
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

@@ -52,7 +52,7 @@ int main(int argc,char **argv)
   int imo1[3];
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
-  int pdims[2],ndim,nx,ny,nz;
+  int pdims[3],ndim,nx,ny,nz;
   FILE *fp;
 
   MPI_Init(&argc,&argv);

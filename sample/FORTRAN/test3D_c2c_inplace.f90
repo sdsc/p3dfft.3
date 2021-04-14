@@ -44,12 +44,13 @@
       double precision gt(12,3),gtcomm(3),tc
       integer ierr,nu,ndim,dims(2),nproc,proc_id
       logical iex
-      integer type_ids1(3),type_ids2(3),trans_f,trans_b,pdims(2)
+      integer type_ids1(3),type_ids2(3),trans_f,trans_b
       integer type_forward,type_backward,glob_start1(3),glob_start2(3)
       integer gstart1(3),gstart2(3)
       integer(8) size1,size2
-      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),proc_order(3),pgrid1(3),pgrid2(3),gdims1(3),gdims2(3)
-      integer(C_INT) grid1,grid2
+      integer(C_INT), dimension(3) :: pdims,ldims1,ldims2,mem_order1
+      integer(C_INT), dimension(3) :: mem_order2,dmap1,dmap2,gdims1,gdims2
+      integer(C_INT) grid1,grid2,pgrid
       integer mpicomm,myid,iproc,jproc
       integer mydims1(3),mydims2(3)
 
@@ -149,7 +150,6 @@
 ! Set up processor order and memory ordering, as well as the final global grid dimensions 
 
       do i=1,3
-         proc_order(i) = i-1
          mem_order1(i) = i-1
          gdims2(i) = gdims1(i)
       enddo
@@ -165,27 +165,30 @@
 
 ! Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
-      pgrid1(1) = 1
-      pgrid1(2) = iproc
-      pgrid1(3) = jproc
+      pdims(1) = 1
+      pdims(2) = iproc
+      pdims(3) = jproc
+
+      dmap1(1) = 0
+      dmap1(2) = 1
+      dmap1(3) = 2
 
 ! Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access 
 !bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to 
 !define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
-      pgrid2(1) = iproc
-      pgrid2(2) = jproc
-      pgrid2(3) = 1
+      dmap2(1) = 2
+      dmap2(2) = 0
+      dmap2(3) = 1
 
 ! Specify the default communicator for P3DFFT++. This can be different from your program default communicator if you wish to keep P3DFFT++ communications separate from yours
 
-      mpicomm = MPI_COMM_WORLD
+      pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD)
 
 ! Initialize initial and final grids, based on the above information
 ! No conjugate symmetry (-1)
-      call p3dfft_init_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid1,proc_order,mem_order1,MPI_COMM_WORLD)
-
-      call p3dfft_init_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid2,proc_order,mem_order2,MPI_COMM_WORLD)
+      call p3dfft_init_data_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid,dmap1,mem_order1)
+      call p3dfft_init_data_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid,dmap2,mem_order2)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 

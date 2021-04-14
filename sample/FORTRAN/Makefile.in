@@ -79,8 +79,7 @@ POST_UNINSTALL = :
 fsample_PROGRAMS = test1D_cos_f$(EXEEXT) test1D_cos_complex_f$(EXEEXT) \
 	test1D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
 	test3D_r2c_f$(EXEEXT) testIDIR_deriv_f$(EXEEXT) \
-	test3D_c2c_inplace_f$(EXEEXT) testIDIR_deriv2_f$(EXEEXT) \
-	test3D_r2c_single_f$(EXEEXT)
+	test3D_c2c_inplace_f$(EXEEXT) test3D_r2c_single_f$(EXEEXT) 
 subdir = sample/FORTRAN
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
