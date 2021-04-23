@@ -147,10 +147,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
 
       // Next choose intermediate and final local dimensions, L[1] and L[2]
-  if(L[2] >= 0) {
-    L[1] = excl(L[0],L[2]);
-  }
-  else // Final dimension not assigned yet 
+  if(L[2] < 0) // Final dimension not assigned yet 
     if(gr1.MemOrder[L[0]] != 0) { //      lead=false;
     for(i=0;i<3;i++)
       if(gr1.MemOrder[i] == 0) { // Choose next dimension as current stride-1
@@ -174,7 +171,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 	     L[2] = gr2.L[0];
 	   else
 	     L[2] = gr2.L[1];
-
+	 }
 	   /*	   
 	d1 = gr1.D[0];
 	d2 = gr2.D[0];
@@ -196,8 +193,6 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 	    Lfin = L[2] = d2;
 	    L[1] = excl(L[0],L[2]);
 	    }*/
-	   L[1] = excl(L[0],L[2]);
-	 }
        }
       else { // nd=2
       
@@ -210,6 +205,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
       }
   }
 
+  L[1] = excl(L[0],L[2]);
   if(gr1.Pdims[L[0]] != 1)
     init_steps = true;
 
@@ -376,17 +372,13 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
     // Determine if an MPI transpose is involved in this stage
     d1 = -1;
+
     if(st < 2) { 
       swap0(monext,mocurr,L[st]);
-      //	for(i=0;i<nd;i++)
-      //	  if(L[st+1] == tmpgrid0->D[i]) {
-      d1 = L[st+1];
-      d2 = L[st];
-	    //	    splitcomm = i;
-      //	    break;
-      //  }	
-
-
+      if(tmpgrid0->Pdims[L[st+1]] > 1) {
+	d1 = L[st+1];
+	d2 = L[st];
+      }
    }
     else   {
       for(i=0;i<3;i++) 
@@ -394,9 +386,10 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
       if(monext[L[st]] != 0)
 	swap0(monext,mocurr,L[st]);
 
+
       //      for(i=0;i<nd;i++)
       //if(L[st] == tmpgrid0->D[i]) {
-      d1 = -1; //d1 = L[st];
+      //  d1 = -1; //d1 = L[st];
       //d2 = L[2];
 	  //	  splitcomm = i;
       //	  break;

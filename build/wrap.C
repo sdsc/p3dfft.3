@@ -297,7 +297,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   {
     ProcGrid *pgrid = new ProcGrid(pdims,mpicomm);
     stored_proc_grids.push_back(pgrid);
-    return(stored_proc_grids.size());
+    return(stored_proc_grids.size()-1);
   }
 
 
@@ -309,6 +309,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     Cgr->numtasks = gr.Pgrid->numtasks;
     Cgr->taskid = gr.Pgrid->taskid;
     Cgr->nd = gr.nd;
+    Cgr->pgrid = pgrid_id;
     Cgr->dim_conj_sym = dim_conj_sym;
     memcpy(&Cgr->Gdims,gdims,3*sizeof(int));
     memcpy(&Cgr->Ldims,gr.Ldims,3*sizeof(int));
@@ -718,7 +719,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   {
     ProcGrid *pgrid = new ProcGrid(pdims,MPI_Comm_f2c(*mpicomm));
     stored_proc_grids.push_back(pgrid);
-    return(stored_proc_grids.size());
+    return(stored_proc_grids.size()-1);
   }
 
   void p3dfft_init_data_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *dim_conj_sym,int *pgrid_id,int *dmap,int *mem_order) {
