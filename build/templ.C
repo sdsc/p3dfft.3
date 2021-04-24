@@ -165,14 +165,18 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 	 else if(L[0] == gr2.L[1])
 	   L[2] = gr2.L[0];
 	 else {
-	   int l1=abs(gr2.MemOrder[gr2.L[0]]-gr1.MemOrder[L[0]]);
-	   int l2=abs(gr2.MemOrder[gr2.L[1]]-gr1.MemOrder[L[0]]);
-	   if(l1 > l2)
+	   L[1] = gr1.D[0];
+	   L[2] = excl(L[0],L[1]);
+	 }
+	   /*	   
+
+	   int l1=gr2.MemOrder[gr2.L[0]];
+	   int l2=gr2.MemOrder[gr2.L[1]];
+	   if(l1 < l2)
 	     L[2] = gr2.L[0];
 	   else
 	     L[2] = gr2.L[1];
 	 }
-	   /*	   
 	d1 = gr1.D[0];
 	d2 = gr2.D[0];
 	if(d1 == d2 && d1 > 1) 
@@ -535,7 +539,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
   if(!reverse_steps) 
     for(i=0;i<3;i++) 
-      if(dmap[i] != grid2_.Dmap[i])
+      if(dmap[i] != grid2_.Dmap[i] && grid2_.Pdims[i] > 1)
 	reverse_steps = true;
 
   if(reverse_steps) {

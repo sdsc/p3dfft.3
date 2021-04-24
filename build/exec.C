@@ -1889,12 +1889,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     case 0: //1,0,2
       for(k=0;k <d1[2];k++) {
 	pout1 = out + k*d1[0]*d1[1];
-	for(j=0;j < d1[1];j++)
+	for(j=0;j < d1[1];j++) {
 	  pout = pout1 + j;
 	  for(i=0;i < d1[0];i++) {
 	    *(pout)  = *(pin++);
 	    pout += d2[0];
 	  }
+	}
       }
       break;
 
@@ -1925,7 +1926,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-
+      
       break;
     }
   
@@ -1970,7 +1971,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
       else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
-
+      
       for(k=0;k <d1[2];k+=nb32) {
 	k2 = min(k+nb32,d1[2]);
 	for(j=0;j < d1[1];j+=nb23) {
@@ -1989,7 +1990,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-
+      
       break;
     }
     break;
@@ -2003,7 +2004,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
       else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
-
+      
       for(k=0;k <d1[2];k+=nb32) {
 	k2 = min(k+nb32,d1[2]);
 	for(j=0;j < d1[1];j+=nb23) {
