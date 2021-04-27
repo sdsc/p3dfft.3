@@ -84,7 +84,7 @@ namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
 
-bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *reverse_steps)
+bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGrid *gr2,bool *reverse_steps)
 {
   int i,d1,d2;
   bool init_steps=false;
@@ -118,17 +118,18 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
 // This is the local dimension as we start
   if(L[0] <0) { // If initial local dimension is not assigned yet
-    if(!gr1.IsLocal(L[2])) {
+    if(L[2] < 0 || gr1->Pdims[L[2]] > 1) {
       //    if(L[2] != gr1.L[0]) {
-      L[0] = gr1.L[0]; 
-      if(gr1.nd == 1 && gr1.MemOrder[L[0]] > gr1.MemOrder[L[1]]) // Make sure the first local dimension is also leading dimension in storage order (if we have a choice, as in 1D case)
+
+      L[0] = gr1->L[0]; 
+      if(gr1->nd == 1 && gr1->MemOrder[L[0]] > gr1->MemOrder[gr1->L[1]]) // Make sure the first local dimension is also leading dimension in storage order (if we have a choice, as in 1D case)
 	//	if(gr1.MemOrder[gr1.L[1]] == 0)
-	L[0] = gr1.L[1];
+	L[0] = gr1->L[1];
     }
-    else if(gr1.nd==1) {
-      L[0] = gr1.L[0];
+    else if(gr1->nd==1) {
+      L[0] = gr1->L[0];
       if(L[0] == L[2])
-	L[0] = gr1.L[1];
+	L[0] = gr1->L[1];
     }
     else {  // 2D grid and the final dimension is local - have to start with distributed dimension, and transpose data an extra time
       //      L[0] = gr1.D[0];
@@ -136,8 +137,8 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
       int m=2;
       for(i=0;i<3;i++)
 	if(i != L[2])
-	  if(gr1.MemOrder[i] < m) {
-	    m = gr1.MemOrder[i];
+	  if(gr1->MemOrder[i] < m) {
+	    m = gr1->MemOrder[i];
 	    L[0] = i;
 	  }
       if(m != 0)
@@ -147,27 +148,58 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
 
       // Next choose intermediate and final local dimensions, L[1] and L[2]
-  if(L[2] < 0) // Final dimension not assigned yet 
-    if(gr1.MemOrder[L[0]] != 0) { //      lead=false;
-    for(i=0;i<3;i++)
-      if(gr1.MemOrder[i] == 0) { // Choose next dimension as current stride-1
-	L[1] = i;
-	L[2] = excl(L[0],L[1]);
-	break;
+  if(L[2] < 0) {// Final dimension not assigned yet 
+    if(gr1->nd == 1) { // Special case of 1D proc grid
+      int d1=gr1->D[0];
+      int d2=gr2->D[0];
+      if(d1 == d2) *reverse_steps = true;
+      if(d2 == L[0])
+	L[1] = d1;
+      else
+	L[1] = excl(d1,L[0]);
+    }
+    else {  // nd=2
+      if(gr1->D[0] == gr2->D[1])
+	L[1] = gr1->D[0];
+      else if(gr1->D[1] == gr2->D[0])
+	L[1] = gr1->D[1];
+      else { *reverse_steps = true;
+	if(gr1->D[0] == gr2->D[0])
+	  L[1] = gr1->D[1];
+	else
+	  L[1] = gr1->D[0];
+
       }
+      if(gr1->L[0] == gr2->L[0])
+	*reverse_steps = true;
+      /*	
+
+      if(gr1->MemOrder[L[0]] != 0) { //      lead=false;
+	for(i=0;i<3;i++)
+	  if(gr1->MemOrder[i] == 0) { // Choose next dimension as current stride-1
+	    L[1] = i;
+	    L[2] = excl(L[0],L[1]);
+	    break;
+	  }
+      */
+    }
+    L[2] = excl(L[0],L[1]);
   }
+  /*
+  
   else {
 
-       if(gr1.nd == 1) {
+       if(gr1->nd == 1) {
 	 
-	 if(L[0] == gr2.L[0])
-	   L[2] = gr2.L[1];
-	 else if(L[0] == gr2.L[1])
-	   L[2] = gr2.L[0];
+	 if(L[0] == gr2->L[0])
+	   L[2] = gr2->L[1];
+	 else if(L[0] == gr2->L[1])
+	   L[2] = gr2->L[0];
 	 else {
-	   L[1] = gr1.D[0];
+	   L[1] = gr1->D[0];
 	   L[2] = excl(L[0],L[1]);
 	 }
+  */
 	   /*	   
 
 	   int l1=gr2.MemOrder[gr2.L[0]];
@@ -197,20 +229,23 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 	    Lfin = L[2] = d2;
 	    L[1] = excl(L[0],L[2]);
 	    }*/
+  /*
        }
       else { // nd=2
       
-	L[2] = gr2.L[0]; // This dimension will be local upon finish
+	L[2] = gr2->L[0]; // This dimension will be local upon finish
 	if(L[2] == L[0]) {
 	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
 	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
 	}
 	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
       }
-  }
+  
 
+  */
   L[1] = excl(L[0],L[2]);
-  if(gr1.Pdims[L[0]] != 1)
+
+  if(gr1->Pdims[L[0]] != 1)
     init_steps = true;
 
   return init_steps;
@@ -325,7 +360,7 @@ bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *
 
   /* Find the order of the three transforms, attempting to minimize reordering and transposes */ 
 
-  bool init_steps = find_order(L,type, grid1_, grid2_, &reverse_steps);
+  bool init_steps = find_order(L,type, &grid1_, &grid2_, &reverse_steps);
 
   if(dt1 != types1D[type->types[L[0]]]->dt1)
     printf("Error in transform3D: input datatypes don't match\n");

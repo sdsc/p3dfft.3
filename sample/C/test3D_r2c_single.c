@@ -40,7 +40,7 @@ main(int argc,char **argv)
   int myid,nprocs;
   int gdims[3],gdims2[3];
   int dmap1[] = {0,1,2};// Mapping data dimension X onto processor dimension X, and so on - 
-  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+  int dmap2[] = {1,2,0}; // Mapping data dimension X onto processor dimension Y, 
   int Pgrid;
   int mem_order1[3];
   int mem_order2[] = {1,2,0};

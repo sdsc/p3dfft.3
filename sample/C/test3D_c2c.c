@@ -46,7 +46,7 @@ main(int argc,char **argv)
                      // Y onto Z and Z onto X
                      // this is a Z-pencil, since Px =1 - or at least one way to define it 
                      // (the other would be (2,1,0))
-  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+  int dmap2[] = {1,2,0}; // Mapping data dimension X onto processor dimension Y, 
   int Pgrid;
   int mem_order1[3];
   // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
@@ -235,7 +235,7 @@ main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       printf("Results of forward transform: \n");
-    print_res(OUT,gdims,ldims1,glob_start1);
+    print_res(OUT,gdims,ldims2,glob_start2);
     normalize(OUT,size1,gdims);
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT

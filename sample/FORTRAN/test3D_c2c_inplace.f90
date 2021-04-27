@@ -177,9 +177,9 @@
 !bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to 
 !define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
-      dmap2(1) = 2
-      dmap2(2) = 0
-      dmap2(3) = 1
+      dmap2(1) = 1
+      dmap2(2) = 2
+      dmap2(3) = 0
 
 ! Specify the default communicator for P3DFFT++. This can be different from your program default communicator if you wish to keep P3DFFT++ communications separate from yours
 

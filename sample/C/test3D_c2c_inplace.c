@@ -47,7 +47,7 @@ main(int argc,char **argv)
                      // Y onto Z and Z onto X
                      // this is a Z-pencil, since Px =1 - or at least one way to define it 
                      // (the other would be (2,1,0))
-  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+  int dmap2[] = {1,2,0}; // Mapping data dimension X onto processor dimension Y, 
   int Pgrid;
   int mem_order1[3];
   // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array reversed, this helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.

@@ -164,7 +164,7 @@ int main(int argc,char **argv)
 
   int mem_order2[] = {1,2,0};
 
-  int dmap2[] = {2,0,1}; // Mapping data dimension X onto processor dimension Y, 
+  int dmap2[] = {1,2,0}; // Mapping data dimension X onto processor dimension Y, 
                      // Y onto Z and Z onto X
                      // this is a Z-pencil, since Px =1 - or at least one way to define it 
                      // (the other would be (2,1,0))

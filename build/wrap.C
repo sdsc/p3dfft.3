@@ -178,7 +178,7 @@ void p3dfft_cleanup() {
 
   int L[3];
   bool reverse_steps;
-  bool init_steps = find_order(L,type3D, *gr1, *gr2, &reverse_steps);
+  bool init_steps = find_order(L,type3D, gr1, gr2, &reverse_steps);
   int dt1 = types1D[type3D->types[L[0]]]->dt1;
   int dt2 = types1D[type3D->types[L[2]]]->dt2;
 
@@ -659,7 +659,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 
   int L[3];
   bool reverse_steps;
-  bool init_steps = find_order(L,type3D, *gr1, *gr2, &reverse_steps);
+  bool init_steps = find_order(L,type3D, gr1, gr2, &reverse_steps);
   
   int dt1 = types1D[type3D->types[L[0]]]->dt1;
   int dt2 = types1D[type3D->types[L[2]]]->dt2;

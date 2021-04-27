@@ -844,7 +844,7 @@ class trans_type3D {
  friend int print_type3D(const trans_type3D *);
 };
 
-  bool find_order(int L[3],const trans_type3D *tp,DataGrid gr1,DataGrid gr2,bool *return_steps);
+  bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGrid *gr2,bool *return_steps);
 
 /*
 class variable { // Do we need this?
