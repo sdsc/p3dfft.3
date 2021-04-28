@@ -766,13 +766,13 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
    return(p3dfft_exec_3Dtrans_single(*plan,in,out, *OW));
   }
   void p3dfft_exec_3Dderiv_double_f(Plan3D *plan,double *in,double *out,int *idir, int *OW) {
-    return(p3dfft_exec_3Dderiv_double(*plan,in,out,*idir, *OW));
+    return(p3dfft_exec_3Dderiv_double(*plan,in,out,*idir-1, *OW));
   }
 
 
   void p3dfft_exec_3Dderiv_single_f(Plan3D *plan,float *in,float *out,int *idir, int *OW) 
  {
-   return(p3dfft_exec_3Dderiv_single(*plan,in,out,*idir,*OW));
+   return(p3dfft_exec_3Dderiv_single(*plan,in,out,*idir-1,*OW));
   }
  
   void p3dfft_exec_1Dtrans_double_f(int *plan,double *in,double *out, int *OW) {
