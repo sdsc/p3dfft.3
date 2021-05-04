@@ -261,7 +261,7 @@ void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int 
     for(it[1]=0;it[1] < sdims[1];it[1]++)
       for(it[0]=0;it[0] < sdims[0];it[0]++) {
 	if(it[dim] + glob_start[dim] == 1) {
-	  ans1 = 1.0; ans2 = 0.0;
+	  ans1 = 0.5; ans2 = 0.0;
 	}
 	else ans1 = ans2 = 0.0;
 	d = fabs(*p++ - ans1) + fabs(*p++ - ans2);

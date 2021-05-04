@@ -168,10 +168,7 @@ int main(int argc,char **argv)
 
   Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
-  for(i=0; i < 3;i++) {
-    if(i == dim) 
-      ar_dim = mem_order1[i]; // Find storage dimension corresponding to dim
-  }
+  ar_dim = mem_order1[dim]; // Find storage dimension corresponding to dim
 
   //Initialize initial and final grids, based on the above information
   // No conjugate symmetry (-1)

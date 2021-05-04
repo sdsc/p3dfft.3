@@ -91,6 +91,7 @@ int main(int argc,char **argv)
         fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
+	printf("Transforming from (%d,%d,%d) to (%d %d %d)\n",mem_order1[0],mem_order1[1],mem_order1[2],mem_order2[0],mem_order2[1],mem_order2[2]);
      }
      printf("P3DFFT test, 1D wave input, 1D R2C FFT\n");
 #ifndef SINGLE_PREC
@@ -170,10 +171,7 @@ int main(int argc,char **argv)
 
   Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
-  for(i=0; i < 3;i++) {
-    if(mem_order1[i] == dim) 
-      ar_dim = i; // Find storage dimension corresponding to dim
-  }
+  ar_dim = mem_order1[dim]; // Find storage dimension corresponding to dim
 
   // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 
