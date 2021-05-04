@@ -36,7 +36,7 @@ void normalize(double *,long int,int *);
 double check_res(double*,double *,int *);
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   int N=64;
   int Nrep = 1;

@@ -41,7 +41,7 @@ void print_res(double *,int *,int *,int *);
 void normalize(double *,long int,int *);
 double check_res(double*,double *,int *);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   int N=64;
   int Nrep = 1;
@@ -248,7 +248,7 @@ main(int argc,char **argv)
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
-  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
+  //  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
 
   Nglob = mydims1[0]*mydims1[1];

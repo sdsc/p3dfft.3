@@ -584,140 +584,172 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 #endif
 
     L1 = tmpgrid1->L[0];
+    d1 = tmpgrid1->D[0];
 
-    while(1) {
-      if(L1 != grid2_.L[0] && (nd == 2 || L1 != grid2_.L[1])) {
-
-	d1 = grid2_.L[0];
-	d2 = L1;
-
-	// Swap d1 and d2 dimensions
-	tmp = dmap[d1];
-	dmap[d1] = dmap[d2];
-	dmap[d2] = tmp;
-      
-      
-	//	pdims[d1] = 1;
-	//pdims[d2] = tmpgrid1->pdims[d1];
-      
+    if(nd == 2) {
+      d2 = tmpgrid1->D[1];
+      if(dmap[d1] == grid2_.Dmap[L1]) {
+	//Exchange d1 and L
+	  tmp = dmap[d1];
+	  dmap[d1] = dmap[L1];
+	  dmap[L1] = tmp;
+	  
 #ifdef DEBUG
-	printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
+	  printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
+#endif
+	  tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,L1,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  
+	  tmp = L1;
+	  L1 = d1;
+	  d1 = tmp;
+
+	  if(dmap[d2] != grid2_.Dmap[d2]) {
+	    //Exchange d2 and L
+	    tmp = dmap[d2];
+	    dmap[d2] = dmap[L1];
+	    dmap[L1] = tmp;
+	    
+#ifdef DEBUG
+	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
+#endif
+	    delete tmpgrid1;
+	    tmpgrid1 = tmpgrid0;
+	    tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	    
+	    prev_stage = curr_stage;
+	    curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d2,L1,dt_prev,prec);
+	    prev_stage->next = curr_stage;
+	    curr_stage->kind = MPI_ONLY;
+	  }
+      }
+    
+    else
+
+      if(dmap[d2] == grid2_.Dmap[L1]) {
+	//Exchange d2 and L
+	tmp = dmap[d2];
+	dmap[d2] = dmap[L1];
+	dmap[L1] = tmp;
+       
+#ifdef DEBUG
+	printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
 #endif
 	tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
 
 	prev_stage = curr_stage;
-	curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
+	curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d2,L1,dt_prev,prec);
 	prev_stage->next = curr_stage;
 	curr_stage->kind = MPI_ONLY;
-	delete tmpgrid1;
-	tmpgrid1 = tmpgrid0;
-	L1 = d1;
-	d1 = d2;
+
+	tmp = L1;
+	L1 = d2;
+	d2 = tmp;
 	
-      }
-      else 
-	// if(nd == 1){
-	//} else 
-	{
-	  if(tmpgrid1->D[0] == grid2_.D[0])
-	    break;
+	if(dmap[d1] != grid2_.Dmap[d1]) {
+	  //Exchange d1 and L
+	  tmp = dmap[d1];
+	  dmap[d1] = dmap[L1];
+	  dmap[L1] = tmp;
 	  
-	  d2 = L1;
-	  if(nd == 1) {
-	    d1 = tmpgrid1->D[0];
-	    d2 = grid2_.D[0];
-	    //	  splitcomm = 0;
-	// Swap d1 and d2 dimensions
-	    tmp = dmap[d1];
-	    dmap[d1] = dmap[d2];
-	    dmap[d2] = tmp;
-	//	    pdims[d1] = 1;
-	//    pdims[d2] = tmpgrid1->pdims[d1];
-
 #ifdef DEBUG
-	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
+	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
 #endif
-	    tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
-
-	    prev_stage = curr_stage;
-	    curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
-	    prev_stage->next = curr_stage;
-	    curr_stage->kind = MPI_ONLY;
 	    delete tmpgrid1;
 	    tmpgrid1 = tmpgrid0;
-	    L1 = d1;
-	  }
-	  else // nd=2 
-	    {
-	      d1 = tmpgrid1->D[0];
-	      //	  splitcomm = 0;
-	// Swap d1 and d2 dimensions
-	      tmp = dmap[d1];
-	      dmap[d1] = dmap[d2];
-	      dmap[d2] = tmp;
-	      //	      pdims[d1] = 1;
-	      //pdims[d2] = tmpgrid1->pdims[d1];
-	      
-#ifdef DEBUG
-	      printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
-#endif
-	      tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
-
-	      prev_stage = curr_stage;
-	      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
-	      prev_stage->next = curr_stage;
-	      curr_stage->kind = MPI_ONLY;
-	      delete tmpgrid1;
-	      tmpgrid1 = tmpgrid0;
-	      L1 = d1;
-	      
-	      d2 = L1;
-	      d1 = tmpgrid1->D[1];
-	      //	  splitcomm = 1;
-	// Swap d1 and d2 dimensions
-	      tmp = dmap[d1];
-	      dmap[d1] = dmap[d2];
-	      dmap[d2] = tmp;
-	      // pdims[d1] = 1;
-	      //pdims[d2] = tmpgrid1->pdims[d1];
+	    tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
 	    
+	    prev_stage = curr_stage;
+	    curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,L1,dt_prev,prec);
+	    prev_stage->next = curr_stage;
+	    curr_stage->kind = MPI_ONLY;
+	  }
+      }
+	
+	else if(dmap[d1] == grid2_.Dmap[d2]) {
+	  //Exchange d1 and L
+	  tmp = dmap[d1];
+	  dmap[d1] = dmap[L1];
+	  dmap[L1] = tmp;
+	  
 #ifdef DEBUG
-	      printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
+	  printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
 #endif
-	      tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,L1,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  delete tmpgrid1;
+	  tmpgrid1 = tmpgrid0;
+	  tmp = L1;
+	  L1 = d1;
+	  d1 = tmp;
 
-	      prev_stage = curr_stage;
-	      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
-	      prev_stage->next = curr_stage;
-	      curr_stage->kind = MPI_ONLY;
-	      delete tmpgrid1;
-	      tmpgrid1 = tmpgrid0;
-	      
-	      d1 = d2;
-	      d2 = grid2_.L[0];
-	      //	  splitcomm = 0;
-	// Swap d1 and d2 dimensions
-	      tmp = dmap[d1];
-	      dmap[d1] = dmap[d2];
-	      dmap[d2] = tmp;
+
+	  //Exchange d2 and L
+	  tmp = dmap[d2];
+	  dmap[d2] = dmap[L1];
+	  dmap[L1] = tmp;
+	  
 #ifdef DEBUG
-	      printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
+	  printf("MPI plan 2 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
 #endif
-	      tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d2,L1,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	  delete tmpgrid1;
+	  tmpgrid1 = tmpgrid0;
+	  tmp = L1;
+	  L1 = d2;
+	  d2 = tmp;
 
-	      prev_stage = curr_stage;
-	      curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
-	      prev_stage->next = curr_stage;
-	      curr_stage->kind = MPI_ONLY;
-	      delete tmpgrid1;
-	      tmpgrid1 = tmpgrid0;
-	      L1 = d1;
-	      
-	    }
+	  if(dmap[d1] == grid2_.Dmap[L1]) { // difficult case: 3 steps
+	  //Exchange d1 and L
+	    tmp = dmap[d1];
+	    dmap[d1] = dmap[L1];
+	    dmap[L1] = tmp;
+	  
+#ifdef DEBUG
+	    printf("MPI plan 3 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
+#endif
+	    tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  
+	    prev_stage = curr_stage;
+	    curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,L1,dt_prev,prec);
+	    prev_stage->next = curr_stage;
+	    curr_stage->kind = MPI_ONLY;
+	  }
 	}
-    }
-  }
+	}
+	else if(nd == 1) {
+	  d2 = grid2_.D[0];
 
+	  //Exchange d2 and d1
+	  tmp = dmap[d2];
+	  dmap[d2] = dmap[d1];
+	  dmap[d1] = tmp;
+	  
+#ifdef DEBUG
+	  printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,d2);
+#endif
+	  tmpgrid0 = new DataGrid(gdims,grid2_.dim_conj_sym,Pgrid,dmap,monext);
+	  
+	  prev_stage = curr_stage;
+	  curr_stage = init_MPIplan(*tmpgrid1,*tmpgrid0,d1,d2,dt_prev,prec);
+	  prev_stage->next = curr_stage;
+	  curr_stage->kind = MPI_ONLY;
+	}
+	
+    }
   bool iseq = true;
   for(i=0; i < 3; i++) 
     if(monext[i] != grid2_.MemOrder[i]) {
@@ -726,6 +758,8 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
     }
   
   if(!iseq) { //If not in the final memory ordering
+    delete tmpgrid1;
+    tmpgrid1 = tmpgrid0;
     tmpgrid0 = new DataGrid(grid2_);
     prev_stage = curr_stage;
     //      inpl = true;
@@ -875,6 +909,11 @@ int dist(int a)
     printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
     return;
   }
+
+  Pgrid = gr1.Pgrid;
+  if(!(*Pgrid == *gr2.Pgrid))
+    printf("Error in transplan: processor grids don't match\n");
+
   if(!trans_type->is_empty)
     find_plan(trans_type);
   else
@@ -956,6 +995,10 @@ int dist(int a)
     return;
   }
 
+  Pgrid = gr1.Pgrid;
+  if(!(*Pgrid == *gr2.Pgrid))
+    printf("Error in transplan: processor grids don't match\n");
+
   if(!trans_type->is_empty)
     find_plan(trans_type); 
   else
@@ -993,9 +1036,9 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     switch(mc[1]) {
     case 0: //1,0,2                                                          
       if(scheme == TRANS_IN) 
-	m = d2[0]; // Need finer grain transform, to reuse cache     
+	m = d1[1]; // Need finer grain transform, to reuse cache     
       else
-	m = d1[0];
+	m = d2[1];
       break;
     case 2: // 1,2,0
       if(scheme == TRANS_IN) {
@@ -1011,19 +1054,20 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     
   case 0:
     if(mc[1] == 1) // 012
-      m = d1[1]*d1[2];
-    else
+      m = d2[1]*d2[2];
+    else // 021
       m = 1;
     break;
-
+    
   case 2:
-    if(scheme == TRANS_IN)
-      m =d1[1]*d1[2];
-    else
+    //    if(mc[1] == 0) { //2 0 1
       m = d2[1]*d2[2];
+      //    }
+      //else //210
+      //m = d2[1]*d2[2];
     break;
   }
-	
+  
   return(m);
 
 }

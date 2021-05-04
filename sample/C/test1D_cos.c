@@ -37,8 +37,9 @@ void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim);
 void print_res(double *A,int *mydims,int *gstart, int N     );
 void normalize(double *,long int,double);
 double check_res(double *A,double *B,int *mydims);
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   int N=64;
   int Nrep = 1;
@@ -66,7 +67,7 @@ main(int argc,char **argv)
   double gtavg=0.;
   double gtmin=INFINITY;
   double gtmax = 0.;
-  int pdims[3],nx,ny,nz,n,dim,cnt,ar_dim,sdims1[3],sdims2[3];
+  int pdims[3],nx,ny,nz,n,dim,cnt,ar_dim,ar_dim2,sdims1[3],sdims2[3];
   Plan3D trans_f,trans_b;
   FILE *fp;
 
@@ -214,16 +215,18 @@ main(int argc,char **argv)
     glob_start2[mem_order2[i]] = grid2->GlobStart[i];
   }
 
+  ar_dim2 = mem_order2[dim];
   //  double Nglob = ldims2[0]*ldims2[1]*ldims2[2];
   for(i=0;i<Nrep;i++) {
 
   // Execute forward transform
     p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,0);
 
-  if(myid == 0)
-    printf("Results of forward transform: \n");
-  print_res(OUT,sdims2,glob_start2,sdims1[ar_dim]);
+    //     if(myid == 0)
+    // printf("Results of forward transform: \n");
+    //print_res(OUT,sdims2,glob_start2,sdims1[ar_dim]);
   normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) sdims1[ar_dim]-1));
+  check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execute backward transform
   p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,1);
@@ -254,6 +257,38 @@ main(int argc,char **argv)
   p3dfft_cleanup();
 
   MPI_Finalize();
+}
+
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid)
+{
+  int it[3];
+  double ans,d,diff,cdiff=0;
+  double *p=OUT;
+
+  for(it[2]=0;it[2] < sdims[2];it[2]++)
+    for(it[1]=0;it[1] < sdims[1];it[1]++)
+      for(it[0]=0;it[0] < sdims[0];it[0]++) {
+	if(it[dim] + glob_start[dim] == 1) {
+	  ans = 0.5;
+	}
+	else ans = 0.0;
+	d = fabs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+
+	   
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-14 * sdims[dim] *0.25)
+      printf("Forward results are incorrect\n");
+    else
+      printf("Forward results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
+
 }
 
 void normalize(double *A,long int size,double f)

@@ -38,6 +38,7 @@ void init_wave1D(double *,int[3],int *,int,int);
 void print_res(double *,int *,int *,int *, int);
 void normalize(double *,long int,int *,int);
 double check_res(double*,double *,int *);
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
 int main(int argc,char **argv)
 {
@@ -47,7 +48,7 @@ using namespace p3dfft;
   int N=64;
   int Nrep = 1;
   int myid,nprocs;
-  int gdims[3],gdims2[3];
+  int gdims[3];
   int dmap[3];
   int mem_order1[3];
   int mem_order2[3];
@@ -172,14 +173,8 @@ using namespace p3dfft;
 
   DataGrid grid1(gdims,-1,&pgrid,dmap,mem_order1);
 
-  // Set up the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform, due to conjugate symmetry)
-
-  for(i=0; i < 3;i++) 
-    gdims2[i] = gdims[i];
-  gdims2[dim] = gdims2[dim]/2+1;
-
   // For final grid, intended for complex-valued array, there will be conjugate symmetry in the dimension of the transform (dim) since it is a R2C transform
-  DataGrid grid2(gdims2,-1,&pgrid,dmap,mem_order2);
+  DataGrid grid2(gdims,-1,&pgrid,dmap,mem_order2);
 
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   transplan<double,double> trans_f(grid1,grid2,type_ids1,dim);
@@ -210,6 +205,7 @@ using namespace p3dfft;
 
   int ld = mem_order1[dim];  // Storage mapping of dimension of transform
   init_wave1D(IN,gdims,sdims1,dim,ld);
+  int ar_dim2 = mem_order2[dim];
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -224,10 +220,11 @@ using namespace p3dfft;
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
-  if(myid == 0)
-    printf("Results of forward transform: \n");
-  print_res(OUT,gdims,sdims2,glob_start2,dim);
+  //  if(myid == 0)
+  //  printf("Results of forward transform: \n");
+  //print_res(OUT,gdims,sdims2,glob_start2,dim);
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
+  check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
   trans_b.exec((char *) OUT,(char *) FIN,true);
@@ -252,6 +249,38 @@ using namespace p3dfft;
 
   }
   MPI_Finalize();
+}
+
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid)
+{
+  int it[3];
+  double ans,d,diff,cdiff=0;
+  double *p=OUT;
+
+  for(it[2]=0;it[2] < sdims[2];it[2]++)
+    for(it[1]=0;it[1] < sdims[1];it[1]++)
+      for(it[0]=0;it[0] < sdims[0];it[0]++) {
+	if(it[dim] + glob_start[dim] == 1) {
+	  ans = 1.0;
+	}
+	else ans = 0.0;
+	d = fabs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+
+	   
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-14 * sdims[dim] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
+
 }
 
 void normalize(double *A,long int size,int *gdims,int dim)

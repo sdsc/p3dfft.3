@@ -33,7 +33,7 @@ void print_res(float *,int *,int *,int *);
 void normalize(float *,long int,int *);
 float check_res(float*,float*,int *);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   int N=64;
   int Nrep = 1;

@@ -39,6 +39,7 @@ void init_wave1D(double *,int[3],int *,int[3],int);
 void print_res(double *,int *,int *,int *, int);
 void normalize(double *,long int,int *,int);
 double check_res(double*,double *, int *);
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
 int main(int argc,char **argv)
 {
@@ -204,6 +205,8 @@ int main(int argc,char **argv)
     glob_start1[mem_order1[i]] = grid1.GlobStart[i];
     glob_start2[mem_order2[i]] = grid2.GlobStart[i];
   }
+
+  int ar_dim2 = mem_order2[dim];
   //Initialize the IN as 3D array with a sine wave in the dimension dim
 
   int ld = mem_order1[dim];  // Storage mapping of dimension of transform
@@ -221,10 +224,11 @@ int main(int argc,char **argv)
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
-  if(myid == 0)
-    printf("Results of forward transform: \n");
-  print_res(OUT,gdims,sdims2,glob_start2,ld);
+  //  if(myid == 0)
+  // printf("Results of forward transform: \n");
+  // print_res(OUT,gdims,sdims2,glob_start2,ld);
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,ld);
+  check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
   trans_b.exec((char *) OUT,(char *) FIN,true);
@@ -250,6 +254,38 @@ int main(int argc,char **argv)
   }
 
   MPI_Finalize();
+}
+
+void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid)
+{
+  int it[3];
+  double ans1,ans2,d,diff,cdiff=0;
+  double *p=OUT;
+
+  for(it[2]=0;it[2] < sdims[2];it[2]++)
+    for(it[1]=0;it[1] < sdims[1];it[1]++)
+      for(it[0]=0;it[0] < sdims[0];it[0]++) {
+	if(it[dim] + glob_start[dim] == 1) {
+	  ans1 = 0.0; ans2 = -0.5;
+	}
+	else ans1 = ans2 = 0.0;
+	d = fabs(*p++ - ans1) + fabs(*p++ - ans2);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+
+	   
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-14 * sdims[dim] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
+
 }
 
 void normalize(double *A,long int size,int *gdims,int dim)

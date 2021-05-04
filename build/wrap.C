@@ -725,21 +725,26 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   void p3dfft_init_data_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *dim_conj_sym,int *pgrid_id,int *dmap,int *mem_order) {
     
     int num=find_grid(gdims,*pgrid_id,dmap,mem_order); //,MPI_Comm_f2c(*mpicomm));
-    if(num >= 0) 
-      *mygrid = num;
-    else {
+    if(num < 0) {
 
-    DataGrid *gr1;
-    ProcGrid *pgrid=stored_proc_grids[*pgrid_id];
-    gr1 = new DataGrid(gdims,*dim_conj_sym,pgrid,dmap,mem_order);
-    memcpy(ldims,gr1->Ldims,3*sizeof(int));
-    memcpy(glob_start,gr1->GlobStart,3*sizeof(int));
-    num = stored_data_grids.size();
-    stored_data_grids.push_back(gr1);
-    *mygrid = num;
+      DataGrid *gr1;
+      if(*pgrid_id < 0)
+	printf("Error in p3dfft_init_data_grid_f: invalid processor grid %d\n",*pgrid_id);
+      ProcGrid *pgrid=stored_proc_grids[*pgrid_id];
+      gr1 = new DataGrid(gdims,*dim_conj_sym,pgrid,dmap,mem_order);
+      num = stored_data_grids.size();
+      stored_data_grids.push_back(gr1);
+      memcpy(ldims,gr1->Ldims,3*sizeof(int));
+      memcpy(glob_start,gr1->GlobStart,3*sizeof(int));
 //  return(num);
     }
-  /*
+    else {
+      DataGrid *gr1 = stored_data_grids[num];
+      memcpy(ldims,gr1->Ldims,3*sizeof(int));
+      memcpy(glob_start,gr1->GlobStart,3*sizeof(int));
+    }    
+    *mygrid = num;
+    /*
   memcpy(&gr->mem_order,mem_order,3*sizeof(int));
   memcpy(&gr->pgrid,pgrid,3*sizeof(int));
   memcpy(&gr->proc_order,proc_order,3*sizeof(int));

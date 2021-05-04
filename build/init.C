@@ -1666,8 +1666,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
   for(i=0;i < 3;i++) {
     
     // Create COLUMN sub comm.
-    MPI_Cart_sub(mpi_comm_cart,remain_dims,&mpi_comm_tmp);
-    mpicomm[i]=mpi_comm_tmp;
+    MPI_Cart_sub(mpi_comm_cart,remain_dims,mpicomm+i);
     MPI_Comm_rank(mpicomm[i],grid_id_cart+i);
     
 #ifdef DEBUG
