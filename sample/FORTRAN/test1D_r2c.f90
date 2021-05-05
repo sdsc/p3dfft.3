@@ -54,7 +54,7 @@
       integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),dmap(3),pgrid,gdims1(3),gdims2(3)
       integer(C_INT) grid1,grid2
       integer mpicomm,myid
-      integer mydims1(3),mydims2(3),ar_dim,ar_dim2
+      integer mydims1(3),mydims2(3),ar_dim,ar_dim2,gstart2(3)
 
       call MPI_INIT (ierr)
       call MPI_COMM_SIZE (MPI_COMM_WORLD,nproc,ierr)
@@ -187,6 +187,7 @@
       do i=1,3
          mydims1(mem_order1(i)+1) = ldims1(i)
          mydims2(mem_order2(i)+1) = ldims2(i)
+         gstart2(mem_order2(i)+1) = glob_start2(i)
       enddo
 
 ! Now allocate initial and final arrays in physical space (real-valued)
@@ -215,7 +216,7 @@
 ! normalize
       call mult_array(AEND, Ntot,factor)
 
-      call check_res_forward(AEND,mydims2,ar_dim2,glob_start2)
+      call check_res_forward(AEND,mydims2,ar_dim2,gstart2)
 
       call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
 
