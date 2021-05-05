@@ -1,5 +1,5 @@
 /*
-This program exemplifies the use of 1D transforms in P3DFFT++, using cosine 1D transform (DCT-1), for complex-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+This program exemplifies the use of 1D transforms in P3DFFT++, using cosine 1D transform (DCT-1), for complex-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). This is a complex-valued version.
 
 This program initializes a 3D array with a 1D cosine wave, then
 performs cosine transform twice and checks that
@@ -228,7 +228,7 @@ using namespace p3dfft;
   trans_b.exec((char *) OUT,(char *) FIN,true);
 
   mydiff = check_res(IN,FIN,sdims1);
-  //  printf("%d: my diff =%lf\n",myid,mydiff);
+
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

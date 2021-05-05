@@ -37,6 +37,7 @@ using namespace p3dfft;
 void print_res(complex_double *,int *,int *,int *);
   void normalize(complex_double *,long int,int *);
 double check_res(complex_double*,complex_double *,int *);
+void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid);
 
 int main(int argc,char **argv)
 {
@@ -45,7 +46,7 @@ int main(int argc,char **argv)
   int N=128;
   int Nrep = 1;
   int myid,nprocs;
-  int gdims[3],gdims2[3];
+  int gdims[3],gdims2[3],gsdims[3];
   int mem_order1[3];
   int i,j,k,x,y,z,p1,p2;
   double Nglob;
@@ -155,9 +156,7 @@ int main(int argc,char **argv)
 
   DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order1);
 
-  //Define the final processor grid. It can be the same as initial grid, however here it is different. First, in real-to-complex and complex-to-real transforms the global grid dimensions change for example from (n0,n1,n2) to (n0/2+1,n1,n2), since most applications attempt to save memory by using the conjugate symmetry of the Fourier transform of real data. Secondly, the final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
-
-
+  //Define the final processor grid. The final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
 
   // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array interchanged. This helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering any of the six ways, including the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
@@ -197,6 +196,7 @@ int main(int argc,char **argv)
   for(i=0;i<3;i++) {
     glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
     sdims2[mem_order2[i]] = Zpencil.Ldims[i];
+    gsdims[mem_order2[i]] = gdims[i];
   }
 
   long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
@@ -227,6 +227,7 @@ int main(int argc,char **argv)
       cout << "Results of forward transform: "<< endl;
     print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
+    check_res_forward(OUT,sdims2,glob_start2,gsdims,myid);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
@@ -264,6 +265,58 @@ int main(int argc,char **argv)
 
 }
 
+void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid)
+{
+  int x,y,z;
+  double d,diff,cdiff=0;
+  complex_double *p=OUT;
+  complex_double ans,ans1,ans2;
+
+  // find maximum error
+  for(z=0;z < sdims[2];z++) {
+    if(z + glob_start[2] == 1) 
+      ans1 = complex_double(0.0,0.125);
+    else if(z + glob_start[2] == gdims[2]-1)
+      ans1 = complex_double(0.0,-0.125);
+    else
+      ans1 = 0.0;
+    for(y=0;y < sdims[1];y++) {
+      if(y + glob_start[1] == 1) 
+	ans2 = ans1;
+      else if(y + glob_start[1] == gdims[1]-1)
+	ans2 = -ans1;
+      else
+	ans2 = 0.0;
+
+      for(x=0;x < sdims[0];x++) {
+	if(x + glob_start[0] == 1) 
+	  ans = ans2;
+	else if(x + glob_start[0] == gdims[0]-1)
+	  ans = -ans2;
+	else
+	  ans = 0.0;
+
+	d = abs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+    }
+  }
+	   
+  // Collect maximum error diffs from all procs
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-14 * gdims[0] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
+
+}
+
 void normalize(complex_double *A,long int size,int *gdims)
 {
   long int i;
@@ -297,7 +350,7 @@ void init_wave(complex_double *IN,int *gdims,int *sdims,int *gstart)
      for(y=0;y < sdims[1];y++) {
        sinyz = siny[y]*sinz[z];
        for(x=0;x < sdims[0];x++)
-	 *p++ = complex<double>(0.,sinx[x]*sinyz);
+	 *p++ = complex<double>(sinx[x]*sinyz,0.0);
      }
 
    delete [] sinx,siny,sinz;

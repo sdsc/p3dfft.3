@@ -1061,7 +1061,10 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     
   case 2:
     //    if(mc[1] == 0) { //2 0 1
-      m = d2[1]*d2[2];
+      if(scheme == TRANS_IN) 
+	m = d1[1]*d1[2];
+      else
+	m = d2[1]*d2[2];
       //    }
       //else //210
       //m = d2[1]*d2[2];

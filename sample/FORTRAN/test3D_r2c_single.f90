@@ -255,6 +255,7 @@
 
 ! normalize
          call mult_array(AEND, Ntot,factor)
+         call check_res_forward(AEND,mydims2,gstart2,gdims1,mem_order2(1)+1)
 
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -281,6 +282,88 @@
       call MPI_FINALIZE (ierr)
 
     end program fft3d
+
+!!=========================================================
+	subroutine check_res_forward(A,mydims,globstart,gdims,dimx)
+!=========================================================
+
+        implicit none
+        include 'mpif.h'
+
+        integer dimx,mydims(3),globstart(3),myid,ierr,gdims(3)
+        complex A(mydims(1),mydims(2),mydims(3)),ans
+        integer x,y,z
+        real d,cdiff,ccdiff,prec
+
+        cdiff = 0.0
+        ccdiff = 0.0
+
+        do z=1,mydims(3)
+        do y=1,mydims(2)
+        do x=1,mydims(1)
+           if(x+globstart(1) .eq. 2 .and. y+globstart(2) .eq. 2 .and. z+globstart(3) .eq. 2) then
+              ans = (0.0,0.125)
+           else 
+              if(dimx .eq. 1) then
+                 if(x+globstart(1) .eq. 2 .and. z +globstart(3) .eq. gdims(3) .and. y+globstart(2) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(y+globstart(2) .eq. gdims(2) .and. z +globstart(3) .eq. 2 .and. x+globstart(1) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(y+globstart(2) .eq. gdims(2) .and. z+globstart(3) .eq. gdims(3) .and. x+globstart(1) .eq. 2) then
+                    ans = (0.0,0.125)
+                 else
+                    ans = 0.0
+                 endif
+              else if(dimx .eq. 2) then
+                 if(x+globstart(1) .eq. 2 .and. z +globstart(3) .eq. gdims(3) .and. y+globstart(2) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(x+globstart(1) .eq. gdims(1) .and. z +globstart(3) .eq. 2 .and. y+globstart(2) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(x+globstart(1) .eq. gdims(1) .and. z+globstart(3) .eq. gdims(3) .and. y+globstart(2) .eq. 2) then
+                    ans = (0.0,0.125)
+                 else
+                    ans = 0.0
+                 endif
+              else if(dimx .eq. 3) then
+                 if(x+globstart(1) .eq. 2 .and. y +globstart(2) .eq. gdims(2) .and. z+globstart(3) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(x+globstart(1) .eq. gdims(1) .and. y +globstart(2) .eq. 2 .and. z+globstart(3) .eq. 2) then
+                    ans = (0.0,-0.125)
+                 else if(x+globstart(1) .eq. gdims(1) .and. y+globstart(2) .eq. gdims(2) .and. z+globstart(3) .eq. 2) then
+                    ans = (0.0,0.125)
+                 else
+                    ans = 0.0
+                 endif
+
+              endif
+           endif
+
+           d = abs(A(x,y,z) - ans) 
+           if(cdiff .lt. d) then
+              cdiff = d
+           endif
+           enddo
+        enddo
+     enddo
+
+      call MPI_Reduce(cdiff,ccdiff,1,MPI_REAL,MPI_MAX,0, &
+        MPI_COMM_WORLD,ierr)
+
+      call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
+
+      if(myid .eq. 0) then
+         prec = 1e-6
+         if(ccdiff .gt. prec * gdims(dimx) *0.25) then
+            print *,'Results are incorrect'
+         else
+            print *,'Results are correct'
+         endif
+         write (6,*) 'max diff =',ccdiff
+      endif
+
+      return
+      end subroutine
+
 
     subroutine intcpy(in,out,n)
 

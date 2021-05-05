@@ -1,5 +1,5 @@
 
-// This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real FFT using 2D domain decomposition (1D is a specific case).
+// This program exemplifies the use of P3DFFT++ for 3D real-to-complex and complex-to-real FFT using 2D domain decomposition (1D is a specific case). This is the single precision version.
 
 /*
 This program initializes a 3D array with a 3D sine wave, then
@@ -37,6 +37,7 @@ using namespace p3dfft;
 void print_res(complex<float> *,int *,int *,int *);
 void normalize(complex<float> *,long int,int *);
 float check_res(float*,float *,int *);
+void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
 int main(int argc,char **argv)
 {
@@ -230,6 +231,7 @@ int main(int argc,char **argv)
       cout << "Results of forward transform: "<< endl;
     print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
+    check_res_forward(OUT,sdims2,mem_order2[0],glob_start2,gdims,myid);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
@@ -269,6 +271,58 @@ int main(int argc,char **argv)
 
   }
   MPI_Finalize();
+
+}
+
+void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid)
+{
+  int x,y,z;
+  float d,diff,cdiff=0;
+  complex<float> *p=OUT;
+  complex<float> ans,ans1,ans2;
+
+  // Find maximum difference
+  for(z=0;z < sdims[2];z++) {
+    if(z + glob_start[2] == 1) 
+      ans1 = complex<float>(0.0,0.125);
+    else if(dimx != 2 && z + glob_start[2] == gdims[2]-1)
+      ans1 = complex<float>(0.0,-0.125);
+    else
+      ans1 = 0.0;
+    for(y=0;y < sdims[1];y++) {
+      if(y + glob_start[1] == 1) 
+	ans2 = ans1;
+      else if(dimx != 1 && y + glob_start[1] == gdims[1]-1)
+	ans2 = -ans1;
+      else
+	ans2 = 0.0;
+
+      for(x=0;x < sdims[0];x++) {
+	if(x + glob_start[0] == 1) 
+	  ans = ans2;
+	else if(dimx != 0 && x + glob_start[0] == gdims[0]-1)
+	  ans = -ans2;
+	else
+	  ans = 0.0;
+
+	d = abs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+    }
+  }
+	   
+  // Collect diffs from all procs
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_FLOAT,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-6 * gdims[dimx] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
 
 }
 

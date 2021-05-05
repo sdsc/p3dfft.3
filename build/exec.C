@@ -1232,7 +1232,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	nb23 = nb32;
 	
 	tmp = new Type1[d1[1]*d1[2]*d1[0]];
-	
+
 	for(j=0;j <d1[1];j+=nb32) {
 	  j2 = min(j+nb32,d1[1]);
 	  for(k=0;k < d1[2];k+=nb23) {

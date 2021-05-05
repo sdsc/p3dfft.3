@@ -206,9 +206,8 @@ int main(int argc,char **argv)
     glob_start2[mem_order2[i]] = grid2.GlobStart[i];
   }
 
-  int ar_dim2 = mem_order2[dim];
-  //Initialize the IN as 3D array with a sine wave in the dimension dim
 
+  //Initialize the IN as 3D array with a sine wave in the dimension dim
   int ld = mem_order1[dim];  // Storage mapping of dimension of transform
   init_wave1D(IN,gdims,sdims1,glob_start1,ld);
 
@@ -216,6 +215,7 @@ int main(int argc,char **argv)
 
   ldims2 = grid2.Ldims;
   size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  int ar_dim2 = mem_order2[dim];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Execution of forward transform
@@ -234,7 +234,7 @@ int main(int argc,char **argv)
   trans_b.exec((char *) OUT,(char *) FIN,true);
 
   mydiff = check_res(IN,FIN,sdims1);
-  //  printf("%d: my diff =%lf\n",myid,mydiff);
+
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {

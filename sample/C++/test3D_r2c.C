@@ -37,6 +37,7 @@ using namespace p3dfft;
 void print_res(complex_double *,int *,int *,int *);
   void normalize(complex_double *,long int,int *);
 double check_res(double*,double *,int *);
+void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
 int main(int argc,char **argv)
 {
@@ -125,8 +126,6 @@ int main(int argc,char **argv)
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
-  //int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,EMPTY_TYPE_DOUBLE};
-  //int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,EMPTY_TYPE_DOUBLE};
 
   // Define the transform types for these two transforms
   trans_type3D type_rcc(type_ids1); 
@@ -207,7 +206,6 @@ int main(int argc,char **argv)
   }
 
   long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
-  //  cout << "allocating OUT" << endl;
   complex_double *OUT=new complex_double[size2];
   
   // Set up 3D transforms, including stages and plans, for forward trans.
@@ -217,7 +215,7 @@ int main(int argc,char **argv)
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  trans_f.exec(IN,OUT,false);
+  //  trans_f.exec(IN,OUT,false);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
@@ -238,6 +236,8 @@ int main(int argc,char **argv)
       cout << "Results of forward transform: "<< endl;
     print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
+    check_res_forward(OUT,sdims2,mem_order2[0],glob_start2,gdims,myid);
+
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
@@ -275,6 +275,58 @@ int main(int argc,char **argv)
   cleanup();
   }
   MPI_Finalize();
+
+}
+
+void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid)
+{
+  int x,y,z;
+  double d,diff,cdiff=0;
+  complex_double *p=OUT;
+  complex_double ans,ans1,ans2;
+
+  // Find maximum difference
+  for(z=0;z < sdims[2];z++) {
+    if(z + glob_start[2] == 1) 
+      ans1 = complex_double(0.0,0.125);
+    else if(dimx != 2 && z + glob_start[2] == gdims[2]-1)
+      ans1 = complex_double(0.0,-0.125);
+    else
+      ans1 = 0.0;
+    for(y=0;y < sdims[1];y++) {
+      if(y + glob_start[1] == 1) 
+	ans2 = ans1;
+      else if(dimx != 1 && y + glob_start[1] == gdims[1]-1)
+	ans2 = -ans1;
+      else
+	ans2 = 0.0;
+
+      for(x=0;x < sdims[0];x++) {
+	if(x + glob_start[0] == 1) 
+	  ans = ans2;
+	else if(dimx != 0 && x + glob_start[0] == gdims[0]-1)
+	  ans = -ans2;
+	else
+	  ans = 0.0;
+
+	d = abs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+    }
+  }
+	   
+  // Collect maximum diffs from all procs
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-14 * gdims[dimx] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
 
 }
 

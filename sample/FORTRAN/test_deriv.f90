@@ -161,8 +161,8 @@
 !bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However it is possible to define the memory ordering the same 
 !as default (0,1,2). Note that the memory ordering is specified in C indeices, i.e. starting from 0
 
-      mem_order2(1) = 2
-      mem_order2(2) = 1
+      mem_order2(1) = 1
+      mem_order2(2) = 2
       mem_order2(3) = 0
 
 ! Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
@@ -256,6 +256,7 @@
 ! normalize
          call mult_array(AEND, Ntot,factor)
 
+
 !         call p3dfft_compute_deriv(AEND,AEND,grid2,idir)
 !         call compute_deriv(AEND,AEND,mydims2,gstart2,glob2,mem_order2,idir)
 
@@ -281,8 +282,7 @@
       call check_res(C,gdims1,mydims1,gstart1,Nglob,idir)
 
 ! Gather timing statistics
-      call MPI_Reduce(rtime1,rtime2,1,mpi_real8,MPI_MAX,0, &
-        MPI_COMM_WORLD,ierr)
+      call MPI_Reduce(rtime1,rtime2,1,mpi_real8,MPI_MAX,0, MPI_COMM_WORLD,ierr)
 
       if (proc_id.eq.0) write(6,*)'proc_id, cpu time per loop', &
          proc_id,rtime2/dble(n)
@@ -290,6 +290,8 @@
       call MPI_FINALIZE (ierr)
 
     end program fft3d
+
+
 
     subroutine write_buf(A,dims,start)
 
@@ -393,6 +395,7 @@
 
       endif
 
+      print *,'cdiff=',cdiff
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)
 

@@ -1,8 +1,8 @@
 /*
-This program exemplifies the use of 1D transforms in P3DFFT++, using cosine 1D transform (DST-1), for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
+This program exemplifies the use of 1D transforms in P3DFFT++, using sine 1D transform (DST-1), for real-valued arrays. 1D transforms are performed on 3D arrays, in the dimension specified as an argument. This could be an isolated 1D transform or a stage in a multidimensional transform. This function can do local transposition, i.e. arbitrary input and output memory ordering. However it does not do an inter-processor transpose (see test_transMPI for that). 
 
-This program initializes a 3D array with a 1D cosine wave, then
-performs cosine transform twice and checks that
+This program initializes a 3D array with a 1D sine wave, then
+performs sine transform twice and checks that
 the results are correct, namely the same as in the start except
 for a normalization factor. It can be used both as a correctness
 test and for timing the library functions.
@@ -10,7 +10,7 @@ test and for timing the library functions.
 The program expects 'trans.in' file in the working directory, with
 a single line of numbers : Nx,Ny,Nz,dim,Nrep,mem-order-in(1)-(3),mem-order-out(1)-(3). 
 Here 
-  Nx,Ny,Nz are 3D grid dimensions (Note: the dimension of cosine transform must be odd).
+  Nx,Ny,Nz are 3D grid dimensions (Note: the dimension of sine transform must be odd).
   dim is the dimension of 1D transform (valid values are 0 through 2, and the logical dimension is specified, i.e. actual storage dimension may be different as specified by mem-order mapping)
   Nrep is the number of repititions. 
   mem-order-in are 3 values for the memory order of the input grid, valid values of each is 0 - 2, not repeating.
@@ -228,7 +228,7 @@ using namespace p3dfft;
   trans_b.exec((char *) OUT,(char *) FIN,true);
 
   mydiff = check_res(IN,FIN,sdims1);
-  //  printf("%d: my diff =%lf\n",myid,mydiff);
+
   diff = 0.;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -292,7 +292,7 @@ void normalize(double *A,long int size,int *gdims,int dim)
 
 }
 
-// Initialize 3D array with a 1D cosine wave in the specified dimension
+// Initialize 3D array with a 1D sine wave in the specified dimension
 void init_wave1D(double *IN,int *gdims,int *sdims, int dim, int ld)
 {
   double *sin_coords,*p;

@@ -137,14 +137,8 @@
       enddo
       factor = 0.5d0 /(gdims1(dim)-1.0d0)
 
-      do i=1,3
-         if(mem_order2(dim) .eq. i-1) then
-            ar_dim2 = i
-         endif
-         if(mem_order1(dim) .eq. i-1) then
-            ar_dim = i
-         endif
-      enddo
+      ar_dim = mem_order1(dim)+1
+      ar_dim2 = mem_order2(dim)+1
 
 ! Define processor grid. Make the direction of transform local
 
@@ -218,13 +212,15 @@
 
          rtime1 = rtime1 + MPI_wtime()
 
-         if(proc_id .eq. 0) then
-            print *,'Result of forward transform:'
-         endif
-         call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
+!         if(proc_id .eq. 0) then
+!            print *,'Result of forward transform:'
+!         endif
+!         call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
 
 ! normalize
          call mult_array(AEND, Ntot,factor)
+
+      call check_res_forward(AEND,mydims1,dim,glob_start1)
 
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -260,6 +256,71 @@
       enddo
       return
     end subroutine intcpy
+
+!!=========================================================
+	subroutine check_res_forward(A,mydims,dim,globstart)
+!=========================================================
+
+        implicit none
+        include 'mpif.h'
+
+        integer dim,mydims(3),globstart(3),myid,ierr
+        double complex A(mydims(1),mydims(2),mydims(3)),ans
+        integer x,y,z
+        double precision d,cdiff,ccdiff,prec
+
+        cdiff = 0.0
+        ccdiff = 0.0
+
+        do z=1,mydims(3)
+        do y=1,mydims(2)
+        do x=1,mydims(1)
+           if(dim .eq. 1) then
+              if(x+globstart(dim) .eq. 2) then
+                 ans = (0.5,0.0)
+              else
+                 ans = 0.0
+              endif
+           else if(dim .eq. 2) then
+              if(y+globstart(dim) .eq. 2) then
+                 ans = (0.5,0.0)
+              else
+                 ans = 0.0
+              endif
+           else if(dim .eq. 3) then
+              if(z+globstart(dim) .eq. 2) then
+                 ans = (0.5,0.0)
+              else
+                 ans = 0.0
+              endif
+           endif
+
+
+           d = abs(A(x,y,z) - ans) 
+           if(cdiff .lt. d) then
+              cdiff = d
+           endif
+           enddo
+        enddo
+     enddo
+
+      call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
+        MPI_COMM_WORLD,ierr)
+
+      call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
+
+      if(myid .eq. 0) then
+         prec = 1e-14
+         if(ccdiff .gt. prec * mydims(dim) *0.25) then
+            print *,'Results are incorrect'
+         else
+            print *,'Results are correct'
+         endif
+         write (6,*) 'max diff =',ccdiff
+      endif
+
+      return
+      end subroutine
 
 !=========================================================
 	subroutine check_res(A,B,mydims,ar_dim)

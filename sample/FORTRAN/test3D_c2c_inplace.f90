@@ -255,6 +255,8 @@
 ! normalize
          call mult_array(INOUT, Ntot,factor)
 
+         call check_res_forward(INOUT,mydims2,gstart2,gdims1)
+
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
          rtime1 = rtime1 - MPI_wtime()
@@ -280,6 +282,71 @@
       call MPI_FINALIZE (ierr)
 
     end program fft3d
+
+!!=========================================================
+	subroutine check_res_forward(A,mydims,globstart,gdims)
+!=========================================================
+
+        implicit none
+        include 'mpif.h'
+
+        integer mydims(3),globstart(3),myid,ierr,gdims(3)
+        double complex A(mydims(1),mydims(2),mydims(3)),ans
+        integer x,y,z
+        double precision d,cdiff,ccdiff,prec
+
+        cdiff = 0.0
+        ccdiff = 0.0
+
+        do z=1,mydims(3)
+        do y=1,mydims(2)
+        do x=1,mydims(1)
+           if(x+globstart(1) .eq. 2) then
+              ans = (0.0,0.125)
+           else if(x+globstart(1) .eq. gdims(1)) then
+              ans = (0.0,-0.125)
+           else 
+              ans = (0.0,0.0)
+           endif
+           if(y+globstart(2) .eq. 2) then
+           else if(y+globstart(2) .eq. gdims(2)) then
+              ans = -ans 
+           else 
+              ans = (0.0,0.0)
+           endif
+           if(z+globstart(3) .eq. 2) then
+           else if(z+globstart(3) .eq. gdims(3)) then
+              ans = -ans 
+           else 
+              ans = (0.0,0.0)
+           endif
+
+           d = abs(A(x,y,z) - ans) 
+           if(cdiff .lt. d) then
+              cdiff = d
+           endif
+           enddo
+        enddo
+     enddo
+
+      call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
+        MPI_COMM_WORLD,ierr)
+
+      call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
+
+      if(myid .eq. 0) then
+         prec = 1e-14
+         if(ccdiff .gt. prec * gdims(1) *0.25) then
+            print *,'Results are incorrect'
+         else
+            print *,'Results are correct'
+         endif
+         write (6,*) 'max diff =',ccdiff
+      endif
+
+      return
+      end subroutine
+
 
     subroutine intcpy(in,out,n)
 

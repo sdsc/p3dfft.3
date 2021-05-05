@@ -47,7 +47,7 @@
       integer ierr,dim,dims(2),nproc,proc_id,cnt
       integer type_ids1,type_ids2,trans_f,trans_b,pdims(3),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
-      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),dmap(3),pgrid,gdims1(3),gdims2(3)
+      integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),dmap(3),pgrid,gdims(3)
       integer(C_INT) grid1,grid2
       integer mpicomm,myid
       integer mydims1(3),mydims2(3),ar_dim,ar_dim2
@@ -126,25 +126,16 @@
 
 ! Set up global dimensions of the grid
 
-      gdims1(1)=nx
-      gdims1(2)=ny
-      gdims1(3)=nz
+      gdims(1)=nx
+      gdims(2)=ny
+      gdims(3)=nz
 
 ! Set up processor order and memory ordering, as well as the final global grid dimensions (these will be different from the original dimensions in one dimension since we are doing real-to-complex transform)
 
-      do i=1,3
-         gdims2(i) = gdims1(i)
-      enddo
-      factor = 0.5d0 /(gdims1(dim)-1.0d0)
+      factor = 0.5d0 /(gdims(dim)-1.0d0)
 
-      do i=1,3
-         if(mem_order2(dim) .eq. i-1) then
-            ar_dim2 = i
-         endif
-         if(mem_order1(dim) .eq. i-1) then
-            ar_dim = i
-         endif
-      enddo
+      ar_dim = mem_order1(dim)+1
+      ar_dim2 = mem_order2(dim)+1
 
 ! Define processor grid. Make the direction of transform local
 
@@ -168,9 +159,9 @@
 
 ! Initialize initial and final grids, based on the above information
 ! No conjugate symmetry (-1)
-      call p3dfft_init_data_grid(grid1,ldims1, glob_start1,gdims1,-1,pgrid,dmap,mem_order1)
+      call p3dfft_init_data_grid(grid1,ldims1, glob_start1,gdims,-1,pgrid,dmap,mem_order1)
 
-      call p3dfft_init_data_grid(grid2,ldims2,glob_start2,gdims2,-1,pgrid,dmap,mem_order2)
+      call p3dfft_init_data_grid(grid2,ldims2,glob_start2,gdims,-1,pgrid,dmap,mem_order2)
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
@@ -218,13 +209,15 @@
 
          rtime1 = rtime1 + MPI_wtime()
 
-         if(proc_id .eq. 0) then
-            print *,'Result of forward transform:'
-         endif
-         call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
+!         if(proc_id .eq. 0) then
+!            print *,'Result of forward transform:'
+!         endif
+!         call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
 
 ! normalize
          call mult_array(AEND, Ntot,factor)
+
+      call check_res_forward(AEND,mydims1,dim,glob_start1)
 
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -262,6 +255,71 @@
       enddo
       return
     end subroutine intcpy
+
+!=========================================================
+	subroutine check_res_forward(A,mydims,dim,globstart)
+!=========================================================
+
+        implicit none
+        include 'mpif.h'
+
+        integer dim,mydims(3),globstart(3),myid,ierr
+        double precision A(mydims(1),mydims(2),mydims(3)),ans
+        integer x,y,z
+        double precision d,cdiff,ccdiff,prec
+
+        cdiff = 0.0
+        ccdiff = 0.0
+
+        do z=1,mydims(3)
+        do y=1,mydims(2)
+        do x=1,mydims(1)
+           if(dim .eq. 1) then
+              if(x+globstart(dim) .eq. 2) then
+                 ans = 0.5
+              else
+                 ans = 0.0
+              endif
+           else if(dim .eq. 2) then
+              if(y+globstart(dim) .eq. 2) then
+                 ans = 0.5
+              else
+                 ans = 0.0
+              endif
+           else if(dim .eq. 3) then
+              if(z+globstart(dim) .eq. 2) then
+                 ans = 0.5
+              else
+                 ans = 0.0
+              endif
+           endif
+
+
+           d = abs(A(x,y,z) - ans) 
+           if(cdiff .lt. d) then
+              cdiff = d
+           endif
+           enddo
+        enddo
+     enddo
+
+      call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
+        MPI_COMM_WORLD,ierr)
+
+      call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
+
+      if(myid .eq. 0) then
+         prec = 1e-14
+         if(ccdiff .gt. prec * mydims(dim) *0.25) then
+            print *,'Results are incorrect'
+         else
+            print *,'Results are correct'
+         endif
+         write (6,*) 'max diff =',ccdiff
+      endif
+
+      return
+      end subroutine
 
 !=========================================================
 	subroutine check_res(A,B,mydims,ar_dim)

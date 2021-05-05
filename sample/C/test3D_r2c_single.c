@@ -1,5 +1,5 @@
 /*
-This program exemplifies using P3DFFT++ library for 3D real-to-complex FFT. 
+This program exemplifies using P3DFFT++ library for 3D real-to-complex FFT. This is a single precision version.
 
 This program initializes a 3D array with a 3D sine wave, then
 performs 3D forward Fourier transform, then backward transform,
@@ -32,6 +32,7 @@ void init_wave(float *,int[3],int *,int[3]);
 void print_res(float *,int *,int *,int *);
 void normalize(float *,long int,int *);
 float check_res(float*,float*,int *);
+void  check_res_forward(float *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
 int main(int argc,char **argv)
 {
@@ -240,6 +241,7 @@ int main(int argc,char **argv)
 	printf("Results of forward transform: \n");
       print_res(OUT,gdims,ldims2,glob_start2);
       normalize(OUT,size2,gdims);
+      check_res_forward(OUT,ldims2,mem_order2[0],glob_start2,gdims,myid);
       t -= MPI_Wtime();
       p3dfft_exec_3Dtrans_single(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT
       t += MPI_Wtime();
@@ -276,6 +278,55 @@ int main(int argc,char **argv)
     p3dfft_cleanup();
 
     MPI_Finalize();
+}
+
+void  check_res_forward(float *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid)
+{
+  int x,y,z;
+  float ans,ans1,ans2,d,diff,cdiff=0;
+  float *p=OUT;
+
+  for(z=0;z < sdims[2];z++) {
+    if(z + glob_start[2] == 1) 
+      ans1 = 0.125;
+    else if(dimx != 2 && z + glob_start[2] == gdims[2]-1)
+      ans1 = -0.125;
+    else
+      ans1 = 0.0;
+    for(y=0;y < sdims[1];y++) {
+      if(y + glob_start[1] == 1) 
+	ans2 = ans1;
+      else if(dimx != 1 && y + glob_start[1] == gdims[1]-1)
+	ans2 = -ans1;
+      else
+	ans2 = 0.0;
+
+      for(x=0;x < sdims[0];x++) {
+	if(x + glob_start[0] == 1) 
+	  ans = ans2;
+	else if(dimx != 0 && x + glob_start[0] == gdims[0]-1)
+	  ans = -ans2;
+	else
+	  ans = 0.0;
+
+	d = fabs(*p++) + fabs(*p++ - ans);
+	if(cdiff < d)
+	  cdiff = d;
+      }
+    }
+  }
+	   
+  diff = 0.;
+  MPI_Reduce(&cdiff,&diff,1,MPI_FLOAT,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myid == 0) {
+    if(diff > 1.0e-6 * gdims[dimx] *0.25)
+      printf("Results are incorrect\n");
+    else
+      printf("Results are correct\n");
+    printf("Max. diff. =%lg\n",diff);
+  }
+	
+
 }
 
 void normalize(float *A,long int size,int *gdims)
