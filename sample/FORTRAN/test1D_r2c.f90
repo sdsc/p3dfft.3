@@ -208,14 +208,14 @@
 
 ! Start the timing loop
 
-!      if(proc_id .eq. 0) then
-!         print *,'Result of forward transform:'
-!      endif
-!      call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
+      if(proc_id .eq. 0) then
+         print *,'Result of forward transform:'
+      endif
+      call print_all(AEND,mydims2,glob_start2,mem_order2,ar_dim2)
 ! normalize
       call mult_array(AEND, Ntot,factor)
 
-      call check_res_forward(AEND,mydims1,dim,glob_start1)
+      call check_res_forward(AEND,mydims2,ar_dim2,glob_start2)
 
       call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
 

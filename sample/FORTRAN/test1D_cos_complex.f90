@@ -220,7 +220,7 @@
 ! normalize
          call mult_array(AEND, Ntot,factor)
 
-      call check_res_forward(AEND,mydims1,dim,glob_start1)
+      call check_res_forward(AEND,mydims2,ar_dim2,glob_start2)
 
 ! Barrier for correct timing
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
