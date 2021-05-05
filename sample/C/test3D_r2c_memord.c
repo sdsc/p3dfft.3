@@ -262,11 +262,11 @@ int main(int argc,char **argv)
     p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0); // Forward real-to-complex 3D FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
-    //    if(myid == 0)
-    //  printf("Results of forward transform: \n");
-    //print_res(OUT,mydims1,ldims2,glob_start2);
-    check_res_forward(OUT,ldims2,mem_order2[0],glob_start2,gdims,myid);
+        if(myid == 0)
+      printf("Results of forward transform: \n");
+    print_res(OUT,mydims1,ldims2,glob_start2);
     normalize(OUT,size2,mydims1);
+    check_res_forward(OUT,ldims2,mem_order2[0],glob_start2,gdims,myid);
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
@@ -333,7 +333,8 @@ void  check_res_forward(double *OUT,int sdims[3],int dimx,int glob_start[3], int
 	else
 	  ans = 0.0;
 
-	d = fabs(*p++) + fabs(*p++ - ans);
+	d = fabs(*p++);
+	d += fabs(*p++ - ans);
 	if(cdiff < d)
 	  cdiff = d;
       }
