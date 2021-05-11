@@ -168,7 +168,6 @@ int main(int argc,char **argv)
 
   Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
-  printf("Pgrid = %d\n",Pgrid);
   // Initialize the initial grid 
                      // this is an X pencil, since Px =1
 
