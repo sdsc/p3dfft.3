@@ -807,45 +807,31 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
       switch(mc[1]) {
       case 0: //1,0,2
 	
-	if(OW && dt2 <= dt1)
+	if(OW && dt2 <= dt1) 
 	  inplace=true;
-	else
-	  tmp = new Type2[d2[0]*d2[1]];
-      	
+	else {
+	  if((void *) in == (void *) out && dt2 > dt1) {
+	    tmp = new Type2[d2[0]*d2[1]*d2[2]];
+	    for(k=0;k <d1[2];k++) 
+	      (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp+k*d2[0]*d2[1]);
+	  }
+	  else
+	    tmp = new Type2[d2[0]*d2[1]];
+      	}
+
 	for(k=0;k <d1[2];k++) {
 	  if(inplace) {
 	    tmp = (Type2 *) (in+k*d1[0]*d1[1]);
 	    (*(trans_type->exec))(plan->libplan_in,pIN+k*d1[0]*d1[1],tmp);
 	  }
 	  else
-	    (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp);
+	    if((void *) in != (void *) out || dt2 <= dt1)
+	      (*(trans_type->exec))(plan->libplan_out,pIN+k*d1[0]*d1[1],tmp);
 
 	  pout = out+k*d2[0]*d2[1];
 #ifdef MKL_BLAS
-#ifdef DEBUG
-	  if(taskid == 0) {
-	    printf("A=\n");
-	    for(i=0;i<d2[0];i++) {
-	      for(j=0;j<d2[1];j++)
-		printf("%lf ",*(tmp+i*d2[1]+j));
-	      printf("\n");
-	    }
-	  }
-#endif
 	  blas_trans<Type2>(d2[1],d2[0],1.0,tmp,d2[1],pout,d2[0]);
-#ifdef DEBUG
-	  if(taskid == 0) {
-	    printf("B=\n");
-	    for(i=0;i<d2[1];i++) {
-	      for(j=0;j<d2[0];j++)
-		printf("%lf ",*(pout+i*d2[0]+j));
-	      printf("\n");
-	    }
-	  }
-#endif
-	
 #else
-
 	  pout = out +k*d2[0]*d2[1];
 	  for(j=0;j < d2[1];j++) {
 	    pin = tmp + j;
@@ -1083,6 +1069,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	    }	
 	  }
 #endif
+	}
+
+	for(k=0;k <d1[2];k++) {
+	  pout1 = tmp +k*d1[0]*d1[1];
 	  pout2 = out + d2[0]*d2[1]*k;
 	  (*(trans_type->exec))(plan->libplan_out,(Type1 *) pout1, pout2);
 	}
@@ -2347,9 +2337,7 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 
 #ifdef DEBUG
   char str[80];
-  int taskID;
-  MPI_Comm_rank(Pgrid->mpi_comm_glob,&taskID);
-  sprintf(str,"mpiplan.out%d.%d",cnt_mpi++,taskID);
+  sprintf(str,"mpiplan.out%d.%d",cnt_mpi++,Pgrid->taskid);
   int imo2[3];
   inv_mo(mo2,imo2);
   write_buf<Type>((Type *) out,str,dims2,imo2);
@@ -2729,9 +2717,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
 #ifdef DEBUG
   char str[80];
-  int taskid;
-  MPI_Comm_rank(mpiplan->Pgrid->mpi_comm_glob,&taskid);
-  sprintf(str,"transmpi.out%d.%d",cnt_trans++,taskid);
+  sprintf(str,"transmpi.out%d.%d",cnt_trans++,mpiplan->Pgrid->taskid);
   int imo2[3];
   inv_mo(mpiplan->mo2,imo2);
   write_buf<Type2>((Type2 *) out,str,tmpdims,imo2);
@@ -2779,9 +2765,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef DEBUG
   char filename[80],str[80];
   sprintf(filename,"transmpi.out%d",cnt_trans++);
-  int taskid;
-  MPI_Comm_rank(mpiplan->Pgrid->mpi_comm_glob,&taskid);
-  sprintf(str,".%d",taskid);
+  sprintf(str,".%d",mpiplan->Pgrid->taskid);
   strcat(filename,str);
   int imo2[3];
   inv_mo(mpiplan->mo2,imo2);
@@ -2852,9 +2836,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 
 #ifdef DEBUG
   char str[80];
-  int taskid;
-  MPI_Comm_rank(mpiplan->Pgrid->mpi_comm_glob,&taskid);
-  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,taskid);
+  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
   //  inv_mo(mo2,imo2);
   // Optimize in the future
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
@@ -2873,7 +2855,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   trplan->exec(src,(char *) buf,OW);
 
 #ifdef DEBUG
-  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->taskid);
+  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
   write_buf<Type2>((Type2 *) buf,str,tmpdims,imo2);
 #endif
   
@@ -2941,10 +2923,8 @@ for(i=0;i < nt;i++) {
     buf = new float[ds*tmpdims[0]*tmpdims[1]*tmpdims[2]];
 
 #ifdef DEBUG
-  int taskid;
-  MPI_Comm_rank(mpiplan->Pgrid->mpi_comm_glob,&taskid);
   char str[80];
-  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,taskid);
+  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
   //  inv_mo(mo2,imo2);
   // Optimize in the future
   write_buf<Type2>((Type2 *)src,str,dims1,imo1);
@@ -2953,7 +2933,7 @@ for(i=0;i < nt;i++) {
   trplan->exec_deriv(src,(char *) buf,OW);
 
 #ifdef DEBUG
-  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,taskid);
+  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
   write_buf<Type2>((Type2 *) buf,str,tmpdims,imo1);
 #endif
   

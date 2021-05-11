@@ -600,6 +600,7 @@ template <class Type1,class Type2>   class transplan : public stage {
   Plantype<Type1,Type2> *plan;
   transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
   transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d); //, bool inplace_); 
+  void init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d); // bool inplace_) 
   transplan() {};
   ~transplan() {
     delete grid1,grid2; 

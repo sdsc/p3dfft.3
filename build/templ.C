@@ -770,8 +770,9 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 #ifdef DEBUG
     printf("Calling final init_transplan, trans_dim=%d\n",grid2_.L[0]);
 #endif
-    curr_stage = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
-    
+    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
+    curr_stage = (stage *) tr;
+
     // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
     curr_stage->kind = TRANS_ONLY;
     prev_stage->next = curr_stage;
@@ -828,6 +829,10 @@ int dist(int a)
 
 
   template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
+  {   init_tr(gr1,gr2, type,d);
+  }
+
+template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
 {
   plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(!type->is_set) {
@@ -855,18 +860,22 @@ int dist(int a)
   isign = type->isign;
 
   for(int i=0;i<3;i++) {
-    dims1[i] = gr1.Ldims[i];
-    dims2[i] = gr2.Ldims[i];
-    mo1[i] = gr1.MemOrder[i];
-    mo2[i] = gr2.MemOrder[i];
+    dims1[i] = grid1->Ldims[i];
+    dims2[i] = grid2->Ldims[i];
+    mo1[i] = grid1->MemOrder[i];
+    mo2[i] = grid2->MemOrder[i];
   }
-  //  inembed = onembed = (int*) &grid1.Gdims[d];
-  if(type->dt1 < type->dt2) { //Real to complex
-    N=gr1.Gdims[d];
-    m=dims1[0]*dims1[1]*dims1[2]/N;
-    idist = N;
-    odist = N/2+1;
-    /*
+
+  if(trans_type->is_empty)
+    is_empty = true;
+  else {
+    //  inembed = onembed = (int*) &grid1.Gdims[d];
+    if(type->dt1 < type->dt2) { //Real to complex
+      N=gr1.Gdims[d];
+    //   m=dims1[0]*dims1[1]*dims1[2]/N;
+      idist = N;
+      odist = N/2+1;
+      /*
     dims2[0] = dims2[0]/2+1;
     mygrid->Ldims[d] = (mygrid->Ldims[d]+2)/2;
     mygrid->Gdims[d] = (mygrid->Gdims[d]+2)/2;
@@ -875,11 +884,11 @@ int dist(int a)
     mygrid->st[0][d] = (mygrid->st[0][d]+2)/2; 
     */
   }
-  else if(type->dt1 > type->dt2) { //Complex to real
-    N=gr2.Gdims[d];
-    m=dims2[0]*dims2[1]*dims2[2]/N;
-    odist = N;
-    idist = N/2+1;
+    else if(type->dt1 > type->dt2) { //Complex to real
+      N=gr2.Gdims[d];
+      //   m=dims2[0]*dims2[1]*dims2[2]/N;
+      odist = N;
+      idist = N/2+1;
     /*
     dims2[0] = dims2[0]*2-2;
     mygrid->Ldims[d] = mygrid->Ldims[d]*2-2;
@@ -888,123 +897,46 @@ int dist(int a)
     mygrid->st[0][d] = mygrid->st[0][d]*2-2;
     mygrid->en[0][d] = mygrid->en[0][d]*2-2;
     */
+    }
+    else { // No change in datatype
+      N=gr1.Gdims[d];
+      //    m=dims1[0]*dims1[1]*dims1[2]/N;
+      idist = odist = N;
+    }
+    
+    m = find_m(mo1,mo2,dims1,dims2,trans_dim);
+    
+    if(idist <= gr1.Gdims[d]) 
+      inembed = (int*) &(grid1->Gdims[d]);
+    else  {
+      printf("Error in transplan: dimension too small %d, N=%d\n",gr1.Gdims[d],N);
+      return;
+    }
+    if(odist <= gr2.Gdims[d]) 
+      onembed = (int*) &(grid2->Gdims[d]);
+    else {
+      printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
+      return;
+    }
+    
+    Pgrid = gr1.Pgrid;
+    if(!(*Pgrid == *gr2.Pgrid))
+      printf("Error in transplan: processor grids don't match\n");
+    find_plan(trans_type); 
   }
-  else { // No change in datatype
-    N=gr1.Gdims[d];
-    m=dims1[0]*dims1[1]*dims1[2]/N;
-    idist = odist = N;
-  }
-
-  m = find_m(mo1,mo2,dims1,dims2,trans_dim);
-
-  if(idist <= gr1.Gdims[d]) 
-    inembed = (int*) &(grid1->Gdims[d]);
-  else  {
-    printf("Error in transplan: dimension too small %d, N=%d\n",gr1.Gdims[d],N);
-    return;
-  }
-  if(odist <= gr2.Gdims[d]) 
-    onembed = (int*) &(grid2->Gdims[d]);
-  else {
-    printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
-    return;
-  }
-
-  Pgrid = gr1.Pgrid;
-  if(!(*Pgrid == *gr2.Pgrid))
-    printf("Error in transplan: processor grids don't match\n");
-
-  if(!trans_type->is_empty)
-    find_plan(trans_type);
-  else
-    is_empty = true;
-
 }  
 
-  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d) // bool inplace_) 
-{
-
-  plan = NULL;fft_flag = DEF_FFT_FLAGS;
-  if(gr1.Ldims[d] != gr1.Gdims[d] || gr2.Ldims[d] != gr2.Gdims[d] ) {
-    printf("Error in transplan: dimensions dont match %d %d %d\n",gr1.Ldims[d],gr2.Ldims[d],d);
-    return;
-  }
-
-  if(gr1.Pdims[d] != 1 || gr1.Pdims[d] != 1) {
-    printf("Error in transplan: transform dimension %d must be local.\n",d);
-    return;
-  }
-
+template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d) // bool inplace_) 
+{   
   trans_type = (trans_type1D<Type1,Type2> *) types1D[type_ID];
 
   if(!trans_type || !trans_type->is_set) {
     cout << "Error in trans_plan: 1D transform type no set" << endl;
     return;
   }
-
-  dt1 = trans_type->dt1;
-  dt2 = trans_type->dt2;
-  stage_prec = prec = trans_type->prec;
-  kind = TRANS_ONLY;
-  trans_dim = d;
-  //  inplace = inplace_;
-  grid1 = new DataGrid(gr1);
-  grid2 = new DataGrid(gr2);
-
-  istride = 1;ostride = 1; 
-  //  idist,odist;
-  isign = trans_type->isign;
-
-  for(int i=0;i<3;i++) {
-    dims1[i] = gr1.Ldims[i];
-    dims2[i] = gr2.Ldims[i];
-    mo1[i] = gr1.MemOrder[i];
-    mo2[i] = gr2.MemOrder[i];
-  }
-
-  if(trans_type->dt1 < trans_type->dt2) { //Real to complex
-    N=gr1.Gdims[d];
-    m=dims1[0]*dims1[1]*dims1[2]/N;
-    idist = N;
-    odist = N/2+1;
-  }
-  else if(trans_type->dt1 > trans_type->dt2) { //Complex to real
-    N=gr2.Gdims[d];
-    m=dims2[0]*dims2[1]*dims2[2]/N;
-    odist = N;
-    idist = N/2+1;
-  }
-  else { // No change in datatype
-    N=gr1.Gdims[d];
-    m=dims1[0]*dims1[1]*dims1[2]/N;
-    idist = odist = N;
-  }
-
-  m = find_m(mo1,mo2,dims1,dims2,trans_dim);
-
-  if(idist <= gr1.Gdims[d]) 
-    inembed = (int*) &(grid1->Gdims[d]);
-  else  {
-    printf("Error in transplan: dimension too small %d, N=%d\n",gr1.Gdims[d],N);
-    return;
-  }
-  if(odist <= gr2.Gdims[d]) 
-    onembed = (int*) &(grid2->Gdims[d]);
-  else {
-    printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
-    return;
-  }
-
-  Pgrid = gr1.Pgrid;
-  if(!(*Pgrid == *gr2.Pgrid))
-    printf("Error in transplan: processor grids don't match\n");
-
-  if(!trans_type->is_empty)
-    find_plan(trans_type); 
-  else
-    is_empty = true;
-
+  init_tr(gr1,gr2, trans_type,d);
 }
+
 
 #define TRANS_IN 0
 #define TRANS_OUT 1
@@ -1013,6 +945,17 @@ int dist(int a)
 template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,int *mo2,int *dims1,int *dims2, int trans_dim) {
 
   int i,m,mc[3],imo1[3],imo2[3],d1[3],d2[3], scheme;    //,rel_change(int [3],int [3],int [3]);
+  void swap0(int new_mo[3],int mo[3],int L);
+
+  if(mo1[trans_dim] == 0) 
+    scheme = TRANS_IN;
+  else if(mo2[trans_dim] == 0) 
+    scheme = TRANS_OUT;
+  else {  // Have to use a two-step scheme
+    swap0(mo1,mo1,trans_dim); // Find an intermediate ordering with leading dimension we need 
+    scheme = TRANS_IN;
+  }
+
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
   for(i=0;i<3;i++) {
@@ -1021,15 +964,6 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   }
 
   rel_change(imo1,imo2,mc);
-
-  if(mo1[trans_dim] == 0) 
-    scheme = TRANS_IN;
-  else if(mo2[trans_dim] == 0) 
-    scheme = TRANS_OUT;
-  else {
-    printf("Error in reorder_trans: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
-    return(-1);
-  }
 
   switch(mc[0]) {
   case 1:
