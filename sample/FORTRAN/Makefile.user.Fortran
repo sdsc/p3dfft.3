@@ -1,16 +1,19 @@
+# Sample makefile for user programs in Fortran
 
-GIT_DATE=2021-5-11
-GIT_VERSION=0
+# Fortran compiler
 FC = mpif90
+# Loader/linker
 LD = $(FC)
+# FFTW flags
 FFTW_LIB = -L$(FFTWHOME)/lib -lfftw3 -lfftw3f
-p3dfft_topdir = ../..
-FCFLAGS =
-#-I$(p3dfft_topdir)/include 
-LDFLAGS = -lm -L$(p3dfft_topdir)/build -lp3dfft.3 $(FFTW_LIB) wrap.o p3dfft++.o -lstdc++
-
+# Top level directory where P3DFFT++ is installed
+p3dfft_topdir = ../../../install
+# Fortran compiler flags
+FCFLAGS = -I$(p3dfft_topdir)/include
+# Loader flags
+LDFLAGS = -lm -L$(p3dfft_topdir)/lib -lp3dfft.3 $(FFTW_LIB)  -lstdc++
 test3D_r2c.o: test3D_r2c.f90
-	      $(LD) -c test3D_r2c.f90 $(FCFLAGS)
+	      $(FC) -c test3D_r2c.f90 $(FCFLAGS)
 
 all: test3D_r2c.o
 	$(LD) test3D_r2c.o $(LDFLAGS) -o test3D_r2c_f

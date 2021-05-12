@@ -93,28 +93,28 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(fsampledir)"
 PROGRAMS = $(fsample_PROGRAMS)
 am_test1D_cos_complex_f_OBJECTS = test1D_cos_complex.$(OBJEXT) \
-	wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
+#	wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
 test1D_cos_complex_f_OBJECTS = $(am_test1D_cos_complex_f_OBJECTS)
 test1D_cos_complex_f_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test1D_cos_complex_f_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test1D_cos_f_OBJECTS = test1D_cos.$(OBJEXT) wrap.$(OBJEXT) \
+am_test1D_cos_f_OBJECTS = test1D_cos.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 test1D_cos_f_OBJECTS = $(am_test1D_cos_f_OBJECTS)
 test1D_cos_f_LDADD = $(LDADD)
 test1D_cos_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_test1D_r2c_f_OBJECTS = test1D_r2c.$(OBJEXT) wrap.$(OBJEXT) \
+am_test1D_r2c_f_OBJECTS = test1D_r2c.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 test1D_r2c_f_OBJECTS = $(am_test1D_r2c_f_OBJECTS)
 test1D_r2c_f_LDADD = $(LDADD)
 test1D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_test3D_c2c_f_OBJECTS = test3D_c2c.$(OBJEXT) wrap.$(OBJEXT) \
+am_test3D_c2c_f_OBJECTS = test3D_c2c.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 test3D_c2c_f_OBJECTS = $(am_test3D_c2c_f_OBJECTS)
 test3D_c2c_f_LDADD = $(LDADD)
@@ -122,13 +122,13 @@ test3D_c2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_test3D_c2c_inplace_f_OBJECTS = test3D_c2c_inplace.$(OBJEXT) \
-	wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
+	# wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
 test3D_c2c_inplace_f_OBJECTS = $(am_test3D_c2c_inplace_f_OBJECTS)
 test3D_c2c_inplace_f_LDADD = $(LDADD)
 test3D_c2c_inplace_f_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test3D_r2c_f_OBJECTS = test3D_r2c.$(OBJEXT) wrap.$(OBJEXT) \
+am_test3D_r2c_f_OBJECTS = test3D_r2c.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 test3D_r2c_f_OBJECTS = $(am_test3D_r2c_f_OBJECTS)
 test3D_r2c_f_LDADD = $(LDADD)
@@ -136,20 +136,20 @@ test3D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_test3D_r2c_single_f_OBJECTS = test3D_r2c_single.$(OBJEXT) \
-	wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
+	#  wrap.$(OBJEXT) p3dfft++.$(OBJEXT)
 test3D_r2c_single_f_OBJECTS = $(am_test3D_r2c_single_f_OBJECTS)
 test3D_r2c_single_f_LDADD = $(LDADD)
 test3D_r2c_single_f_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_testIDIR_deriv2_f_OBJECTS = test_deriv2.$(OBJEXT) wrap.$(OBJEXT) \
+am_testIDIR_deriv2_f_OBJECTS = test_deriv2.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 testIDIR_deriv2_f_OBJECTS = $(am_testIDIR_deriv2_f_OBJECTS)
 testIDIR_deriv2_f_LDADD = $(LDADD)
 testIDIR_deriv2_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_testIDIR_deriv_f_OBJECTS = test_deriv.$(OBJEXT) wrap.$(OBJEXT) \
+am_testIDIR_deriv_f_OBJECTS = test_deriv.$(OBJEXT) # wrap.$(OBJEXT) \
 	p3dfft++.$(OBJEXT)
 testIDIR_deriv_f_OBJECTS = $(am_testIDIR_deriv_f_OBJECTS)
 testIDIR_deriv_f_LDADD = $(LDADD)
@@ -320,23 +320,23 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_FCFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC)
+AM_FCFLAGS = -I$(top_builddir)/include -I$(top_builddir)/build $(FFTW_INC) $(ESSL_INC)
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lstdc++
 AM_LDFLAGS = #-cxxlib
 fsampledir = $(datadir)/p3dfft++_samples/
-test1D_cos_f_SOURCES = test1D_cos.f90 wrap.f90 p3dfft++.f90
-test1D_cos_complex_f_SOURCES = test1D_cos_complex.f90 wrap.f90 p3dfft++.f90
-test1D_r2c_f_SOURCES = test1D_r2c.f90 wrap.f90 p3dfft++.f90
+test1D_cos_f_SOURCES = test1D_cos.f90 # wrap.f90 p3dfft++.f90
+test1D_cos_complex_f_SOURCES = test1D_cos_complex.f90 # wrap.f90 p3dfft++.f90
+test1D_r2c_f_SOURCES = test1D_r2c.f90 # wrap.f90 p3dfft++.f90
 
 #test2D_f_SOURCES = test2D.f90
 
 #test3D_f_SOURCES = test3D.f90 wrap.f90
-test3D_c2c_inplace_f_SOURCES = test3D_c2c_inplace.f90 wrap.f90 p3dfft++.f90
-test3D_r2c_f_SOURCES = test3D_r2c.f90 wrap.f90 p3dfft++.f90
-test3D_r2c_single_f_SOURCES = test3D_r2c_single.f90 wrap.f90 p3dfft++.f90
-test3D_c2c_f_SOURCES = test3D_c2c.f90 wrap.f90 p3dfft++.f90
-testIDIR_deriv_f_SOURCES = test_deriv.f90 wrap.f90 p3dfft++.f90
-testIDIR_deriv2_f_SOURCES = test_deriv2.f90 wrap.f90 p3dfft++.f90
+test3D_c2c_inplace_f_SOURCES = test3D_c2c_inplace.f90 # wrap.f90 p3dfft++.f90
+test3D_r2c_f_SOURCES = test3D_r2c.f90 # wrap.f90 p3dfft++.f90
+test3D_r2c_single_f_SOURCES = test3D_r2c_single.f90 # wrap.f90 p3dfft++.f90
+test3D_c2c_f_SOURCES = test3D_c2c.f90 # wrap.f90 p3dfft++.f90
+testIDIR_deriv_f_SOURCES = test_deriv.f90 # wrap.f90 p3dfft++.f90
+testIDIR_deriv2_f_SOURCES = test_deriv2.f90 # wrap.f90 p3dfft++.f90
 all: all-am
 
 .SUFFIXES:
@@ -666,31 +666,31 @@ uninstall-am: uninstall-fsamplePROGRAMS
 	uninstall-am uninstall-fsamplePROGRAMS
 
 
-p3dfft_plus_plus.mod: p3dfft++.o
+#p3dfft_plus_plus.mod: p3dfft++.o
 
-wrap.o: wrap.f90 p3dfft_plus_plus.mod
+#wrap.o: wrap.f90 p3dfft_plus_plus.mod
 
-test1D_cos.o: test1D_cos.f90 p3dfft_plus_plus.mod
+test1D_cos.o: test1D_cos.f90 # p3dfft_plus_plus.mod
 
-test1D_cos_complex.o: test1D_cos_complex.f90 p3dfft_plus_plus.mod
+test1D_cos_complex.o: test1D_cos_complex.f90 # p3dfft_plus_plus.mod
 
-test1D_r2c.o: test1D_r2c.f90 p3dfft_plus_plus.mod
+test1D_r2c.o: test1D_r2c.f90 # p3dfft_plus_plus.mod
 
 #test2D.o: test2D.f90 p3dfft++.o
 
 #test3D.o: test3D.f90 p3dfft++.o
 
-test3D_c2c_inplace.o: test3D_c2c_inplace.f90 p3dfft_plus_plus.mod
+test3D_c2c_inplace.o: test3D_c2c_inplace.f90 # p3dfft_plus_plus.mod
 
-test3D_r2c.o: test3D_r2c.f90 p3dfft_plus_plus.mod
+test3D_r2c.o: test3D_r2c.f90 # p3dfft_plus_plus.mod
 
-test3D_r2c_single.o: test3D_r2c_single.f90 p3dfft_plus_plus.mod
+test3D_r2c_single.o: test3D_r2c_single.f90 # p3dfft_plus_plus.mod
 
-test3D_c2c.o: test3D_c2c.f90 p3dfft_plus_plus.mod
+test3D_c2c.o: test3D_c2c.f90 # p3dfft_plus_plus.mod
 
-test_deriv.o: test_deriv.f90 p3dfft_plus_plus.mod
+test_deriv.o: test_deriv.f90 # p3dfft_plus_plus.mod
 
-test_deriv2.o: test_deriv2.f90 p3dfft_plus_plus.mod
+test_deriv2.o: test_deriv2.f90 # p3dfft_plus_plus.mod
 
 clean-local:
 	-test -z "*.mod" || rm -f *.mod
