@@ -1,9 +1,9 @@
 
 /*
-This program exemplifies using P3DFFT++ library for 3D real-to-complex FFT. 
+This program exemplifies using P3DFFT++ library for a 2D real-to-complex FFT on a 3D array. The second dimension in this example is not transformed. 
 
 This program initializes a 3D array with a 3D sine wave, then
-performs 3D forward Fourier transform, then backward transform,
+performs 2D forward Fourier transform, then backward transform,
 and checks that
 the results are correct, namely the same as in the start except
 for a normalization factor. It can be used both as a correctness
@@ -141,12 +141,12 @@ int main(int argc,char **argv)
   //Set up 2 transform types for 3D transforms
 
   type_ids1[0] = P3DFFT_R2CFFT_D;
-  type_ids1[1] = P3DFFT_CFFT_FORWARD_D;
   type_ids1[2] = P3DFFT_CFFT_FORWARD_D;
+  type_ids1[1] = P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX; //CFFT_FORWARD_D;
 
   type_ids2[0] = P3DFFT_C2RFFT_D;
-  type_ids2[1] = P3DFFT_CFFT_BACKWARD_D;
   type_ids2[2] = P3DFFT_CFFT_BACKWARD_D;
+  type_ids2[1] = P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX; //CFFT_BACKWARD_D;
 
   //Now initialize 3D transforms (forward and backward) with these types
 
@@ -168,6 +168,7 @@ int main(int argc,char **argv)
 
   Pgrid = p3dfft_init_proc_grid(pdims,MPI_COMM_WORLD);
 
+  printf("Pgrid = %d\n",Pgrid);
   // Initialize the initial grid 
                      // this is an X pencil, since Px =1
 
@@ -233,7 +234,7 @@ int main(int argc,char **argv)
   //  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
   Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+  //  Nglob *= gdims[2];
 
   // timing loop
 
@@ -246,7 +247,7 @@ int main(int argc,char **argv)
       printf("Results of forward transform: \n");
     print_res(OUT,gdims,ldims2,glob_start2);
     normalize(OUT,size2,gdims);
-    check_res_forward(OUT,ldims2,mem_order2[0],glob_start2,gdims,myid);
+    //    check_res_forward(OUT,ldims2,mem_order2[0],glob_start2,gdims,myid);
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT
     t += MPI_Wtime();
@@ -339,7 +340,7 @@ void  check_res_forward(double *OUT,int sdims[3],int dimx,int glob_start[3], int
 void normalize(double *A,long int size,int *gdims)
 {
   long int i;
-  double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
+  double f = 1.0/(((double) gdims[0])*((double) gdims[1]));
   
   for(i=0;i<size*2;i++)
     A[i] = A[i] * f;
@@ -407,8 +408,8 @@ double check_res(double *A,double *B,int *ldims)
       for(x=0;x < ldims[0];x++) {
 	if(fabs(*p1 - *p2) > mydiff) {
 	  mydiff = fabs(*p1-*p2);
-	  if(fabs(*p2) > 0.00001)
-	    printf("p2=%lg, at %d %d %d\n",*p2,x,y,z); 
+	  // if(fabs(*p2) > 0.0001)
+	  //  printf("p2=%lg at %d %d %d\n",*p2,x,y,z);
 	}
 	p1++;
 	p2++;

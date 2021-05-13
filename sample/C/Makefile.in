@@ -80,7 +80,7 @@ csample_PROGRAMS = test1D_cos_c$(EXEEXT) test1D_cos_complex_c$(EXEEXT) \
 	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
 	test3D_c2c_c$(EXEEXT) testIDIR_deriv_c$(EXEEXT) \
 	test3D_c2c_inplace_c$(EXEEXT)  \
-	test3D_r2c_memord_c$(EXEEXT) test3D_r2c_single_c$(EXEEXT) #testIDIR_deriv2_c$(EXEEXT)
+	test3D_r2c_memord_c$(EXEEXT) test3D_r2c_single_c$(EXEEXT) test2D+empty_c$(EXEEXT) #testIDIR_deriv2_c$(EXEEXT)
 subdir = sample/C
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -130,6 +130,12 @@ test3D_r2c_c_LDADD = $(LDADD)
 test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+am_test2D+empty_c_OBJECTS = test2D+empty.$(OBJEXT)
+test2D+empty_c_OBJECTS = $(am_test2D+empty_c_OBJECTS)
+test2D+empty_c_LDADD = $(LDADD)
+test2D+empty_c_DEPENDENCIES =  \
+	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_memord_c_OBJECTS = test3D_r2c_memord.$(OBJEXT)
 test3D_r2c_memord_c_OBJECTS = $(am_test3D_r2c_memord_c_OBJECTS)
 test3D_r2c_memord_c_LDADD = $(LDADD)
@@ -184,12 +190,12 @@ SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
 	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
 	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
 	$(test3D_r2c_memord_c_SOURCES) $(test3D_r2c_single_c_SOURCES) \
-	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
+	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)  $(test2D+empty_c_SOURCES)
 DIST_SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
 	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
 	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
 	$(test3D_r2c_memord_c_SOURCES) $(test3D_r2c_single_c_SOURCES) \
-	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
+	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)  $(test2D+empty_c_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -331,6 +337,7 @@ test3D_c2c_c_SOURCES = test3D_c2c.c
 testIDIR_deriv_c_SOURCES = test_deriv.c
 testIDIR_deriv2_c_SOURCES = test_deriv2.c
 test3D_r2c_memord_c_SOURCES = test3D_r2c_memord.c
+test2D+empty_c_SOURCES = test2D+empty.c
 all: all-am
 
 .SUFFIXES:
@@ -435,6 +442,10 @@ test3D_r2c_c$(EXEEXT): $(test3D_r2c_c_OBJECTS) $(test3D_r2c_c_DEPENDENCIES) $(EX
 test3D_r2c_memord_c$(EXEEXT): $(test3D_r2c_memord_c_OBJECTS) $(test3D_r2c_memord_c_DEPENDENCIES) $(EXTRA_test3D_r2c_memord_c_DEPENDENCIES) 
 	@rm -f test3D_r2c_memord_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_r2c_memord_c_OBJECTS) $(test3D_r2c_memord_c_LDADD) $(LIBS)
+
+test2D+empty_c$(EXEEXT): $(test2D+empty_c_OBJECTS) $(test2D+empty_c_DEPENDENCIES) $(EXTRA_test2D+empty_c_DEPENDENCIES) 
+	@rm -f test2D+empty_c$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test2D+empty_c_OBJECTS) $(test2D+empty_c_LDADD) $(LIBS)
 
 test3D_r2c_single_c$(EXEEXT): $(test3D_r2c_single_c_OBJECTS) $(test3D_r2c_single_c_DEPENDENCIES) $(EXTRA_test3D_r2c_single_c_DEPENDENCIES) 
 	@rm -f test3D_r2c_single_c$(EXEEXT)

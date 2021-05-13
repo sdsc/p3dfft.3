@@ -2676,11 +2676,11 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //in = (Type1 *) in_;
   //out = (Type2 *) out_;
 
-   if(trplan->trans_type->is_empty) {
+   /*   if(trplan->trans_type->is_empty) {
      mpiplan->exec(in,out);
      return;
    }
-
+   */
   int *tmpdims;
 
   tmpdims = trplan->grid2->Ldims;
@@ -2801,8 +2801,8 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   int d1 = mpiplan->d1;
   int d2 = mpiplan->d2;
   int *dims1 = mpiplan->dims1;
-  int *mo1 = mpiplan->mo1;
-  int *mo2 = mpiplan->mo2;
+  int *mo1 = trplan->mo1;
+  int *mo2 = trplan->mo2;
   int d[3],*tmpdims;
   int ds=sizeof(Type2)/4;
   float *p1,*p0,*pz,*p2,*buf;
@@ -2860,16 +2860,16 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 #endif
   
   for(i=0;i<3;i++)
-    d[i] = dims1[imo1[i]];
+    d[i] = dims1[imo2[i]];
 
 for(i=0;i < nt;i++) {
-    xs = istart[i][imo1[0]]*ds;
-    xe = iend[i][imo1[0]]*ds;
-    ys = istart[i][imo1[1]];
-    ye = iend[i][imo1[1]];
+    xs = istart[i][imo2[0]]*ds;
+    xe = iend[i][imo2[0]]*ds;
+    ys = istart[i][imo2[1]];
+    ye = iend[i][imo2[1]];
     p1 = (float *) sendbuf + *(SndStrt+i);
-    p0 = buf + ds * istart[i][imo1[0]];
-    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++) {
+    p0 = buf + ds * istart[i][imo2[0]];  // Assume MPIplan doesn't change mem. order
+    for(z=istart[i][imo2[2]];z < iend[i][imo2[2]];z++) {
       pz = p0 + ds*d[0]*d[1]*z;
       for(y=ys;y< ye;y++) {
 	p2 = pz +ds*d[0]*y;
