@@ -220,9 +220,9 @@ using namespace p3dfft;
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
-    if(myid == 0)
-    printf("Results of forward transform: \n");
-  print_res(OUT,gdims,sdims2,glob_start2,dim);
+  //    if(myid == 0)
+  //  printf("Results of forward transform: \n");
+  //print_res(OUT,gdims,sdims2,glob_start2,dim);
   normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,dim);
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
