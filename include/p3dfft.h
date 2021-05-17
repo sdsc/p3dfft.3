@@ -728,7 +728,7 @@ class DataGrid {
   return(Pdims[dim] == 1);
     
 };
-  DataGrid(int gdims_[3],int dim_conj_sym_,ProcGrid *pgrid,int dmap[3],int mem_order[3]);
+  DataGrid(int *gdims_,int dim_conj_sym_,ProcGrid *pgrid,int *dmap,int *mem_order);
   DataGrid(const DataGrid &rhs);
   DataGrid() {};
   ~DataGrid();
@@ -892,6 +892,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   ~transform3D();
 };
 
+ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2, int prec);
+ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec);
 //extern int ntrans;
 //extern int npl;
 //static Ntrans_types=0;
