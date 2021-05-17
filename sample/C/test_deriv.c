@@ -38,7 +38,7 @@ void normalize(double *,long int,int *);
 double check_res(double*,int[3],int[3],int[3],int);
 void  compute_deriv(double *,double *,int[3],int[3],int[3],int[3],int);
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   int N=64;
   int Nrep = 1;
