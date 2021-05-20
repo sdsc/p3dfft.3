@@ -1445,50 +1445,51 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
 	
       case 2: //1,2,0
-	if(d2[0]*d2[1] >0)	
-	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
-	else nb23 = 1;
-	if(nb23 < 1) nb23 = 1;
-	if(d2[0] >0)
-	  nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
-	else nb32 = 1;
-	if(nb32 < 1) nb32 = 1;
-	// d1[0] -> d2[2]
-	// d1[1] -> d2[0]
-	// d1[2] -> d2[1]
-	dims[0] = d2[2];
-	dims[1] = d2[0];
-	dims[2] = d2[1];
+	if(d1[0]*d1[1] >0)
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else
+	  nb31 = 1;
+	if(nb31 < 1) nb31 = 1;
+	nb13 = nb31;
 
-	tmp = new Type2[d2[0]*d2[1]*d2[2]];
+	// d1[0] -> d2[1]
+	// d1[1] -> d2[2]
+	// d1[2] -> d2[0]
+	tmp = new Type2[d2[2]*d2[1]*nb31];
+	dims[0] = d2[1];
+	dims[1] = d2[2];
+	dims[2] = nb13;
 
-	(*(trans_type->exec))(plan->libplan_out,in,tmp);
-	compute_deriv_loc(tmp,tmp,dims);
-	
-	for(k=0;k <d1[1];k+=nb32) {
-	  k2 = min(k+nb32,d1[1]);
-	  for(j=0;j < d1[2];j+=nb23) {
-	    j2 = min(j+nb23,d1[2]);
-	    for(kk=k; kk < k2; kk++){
-	      pin1 = tmp +kk*d2[2] +j*d2[0]*d2[2];
-	      pout1 =  out +kk +j*d2[0];
-	      for(jj=j; jj < j2; jj++) {
-		pin = pin1;
+	for(k=0;k <d1[2];k+=nb31) {
+	  k2 = min(k+nb31,d1[2]);
+	  (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
+	  compute_deriv_loc(tmp,tmp,dims);
+	  for(i=0;i < d2[1];i+=nb13) {
+	    i2 = min(i+nb13,d2[1]);
+	    pout2 =  out + i*d2[0];
+	    pin2 =  tmp + i;
+	    for(kk=k; kk < k2; kk++) {
+	      pin1 = pin2;
+	      pout1 = pout2+kk;
+	      for(j=0;j < d1[1];j++) {
+		pin = pin1  ;
 		pout = pout1;
-		for(i=0;i < d2[2];i++) {
-		  *pout =  *pin++;
-		  pout += (d2[0]*d2[1]);
+		for(ii=i; ii < i2; ii++) {
+		  *pout = *pin++;
+		  pout += d2[0];
 		}
-		pin1 += d2[2]*d2[0];
-		pout1+= d2[0];
+		pin1 += d2[1];
+		pout1+= d2[0]*d2[1];
 	      }
+	      pin2 += d2[1]*d2[2];
 	    }
 	  }
 	}
-	
 	delete [] tmp;
+	
 	break;
       }
+      
       break;
 
     case 2:
@@ -1539,51 +1540,50 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	delete [] tmp;
 	break;
       case 0: //2,0,1
-	if(d1[0]*d1[1] >0)
-	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	else
-	  nb31 = 1;
-	if(nb31 < 1) nb31 = 1;
-	nb13 = nb31;
+	if(d2[0]*d2[1] >0)	
+	  nb23 = CACHE_BL / (sizeof(Type1)*d2[0]*d2[1]);
+	else nb23 = 1;
+	if(nb23 < 1) nb23 = 1;
+	if(d2[0] >0)
+	  nb32 = CACHE_BL / (sizeof(Type1)*d2[0]*nb23);
+	else nb32 = 1;
+	if(nb32 < 1) nb32 = 1;
+	// d1[0] -> d2[2]
+	// d1[1] -> d2[0]
+	// d1[2] -> d2[1]
+	dims[0] = d2[2];
+	dims[1] = d2[0];
+	dims[2] = d2[1];
 
-	// d1[0] -> d2[1]
-	// d1[1] -> d2[2]
-	// d1[2] -> d2[0]
-	tmp = new Type2[d2[2]*d2[1]*nb31];
-	dims[0] = d2[1];
-	dims[1] = d2[2];
-	dims[2] = nb13;
+	tmp = new Type2[d2[0]*d2[1]*d2[2]];
 
-	for(k=0;k <d1[2];k+=nb31) {
-	  k2 = min(k+nb31,d1[2]);
-	  (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
-	  compute_deriv_loc(tmp,tmp,dims);
-	  for(i=0;i < d2[1];i+=nb13) {
-	    i2 = min(i+nb13,d2[1]);
-	    pout2 =  out + i*d2[0];
-	    pin2 =  tmp + i;
-	    for(kk=k; kk < k2; kk++) {
-	      pin1 = pin2;
-	      pout1 = pout2+kk;
-	      for(j=0;j < d1[1];j++) {
-		pin = pin1  ;
+	(*(trans_type->exec))(plan->libplan_out,in,tmp);
+	compute_deriv_loc(tmp,tmp,dims);
+	
+	for(k=0;k <d1[1];k+=nb32) {
+	  k2 = min(k+nb32,d1[1]);
+	  for(j=0;j < d1[2];j+=nb23) {
+	    j2 = min(j+nb23,d1[2]);
+	    for(kk=k; kk < k2; kk++){
+	      pin1 = tmp +kk*d2[2] +j*d2[0]*d2[2];
+	      pout1 =  out +kk +j*d2[0];
+	      for(jj=j; jj < j2; jj++) {
+		pin = pin1;
 		pout = pout1;
-		for(ii=i; ii < i2; ii++) {
-		  *pout = *pin++;
-		  pout += d2[0];
+		for(i=0;i < d2[2];i++) {
+		  *pout =  *pin++;
+		  pout += (d2[0]*d2[1]);
 		}
-		pin1 += d2[1];
-		pout1+= d2[0]*d2[1];
+		pin1 += d2[2]*d2[0];
+		pout1+= d2[0];
 	      }
-	      pin2 += d2[1]*d2[2];
 	    }
 	  }
 	}
-	delete [] tmp;
 	
+	delete [] tmp;
 	break;
       }
-      
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
@@ -1666,47 +1666,50 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 
       case 2: //1,2,0
 	if(d1[0]*d1[1] >0)	
-	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	else nb32 = 1;
-	if(nb32 < 1) nb32 = 1;
-	nb23 = nb32;
+	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb31 = 1;
+	if(nb31 < 1) nb31 = 1;
+	nb13 = nb31;
 
-	// d1[0] -> d2[2]
-	// d1[1] -> d2[0]
-	// d1[2] -> d2[1]
+	// d1[0] -> d2[1]
+	// d1[1] -> d2[2]
+	// d1[2] -> d2[0]
 	dims[0] = d2[0];
 	dims[1] = d2[1];
-	dims[2] = d2[2];
-	
-	tmp = new Type1[d1[1]*d1[2]*d1[0]];
-	
-	for(k=0;k <d1[1];k+=nb32) {
-	  k2 = min(k+nb32,d1[1]);
-	  for(j=0;j < d1[2];j+=nb23) {
-	    j2 = min(j+nb23,d1[2]);
-	    for(kk=k; kk < k2; kk++){
-	      pin1 = in + kk*d1[0] +j*d1[0]*d1[1];
-	      pout1 = tmp + kk +j*d1[1];
-	      for(jj=j; jj < j2; jj++) {
-		pin = pin1;
-		pout = pout1;
-		for(i=0;i < d1[0];i++) {
-		  *pout =  *pin++;
-		  pout += d1[1]*d1[2];
+	dims[2] = 1;
+
+	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
+
+	for(j=0;j < d1[1];j++) {
+	  pin1 =  in +j*d1[0];
+	  for(k=0;k <d1[2];k+=nb31) {
+	    k2 = min(k+nb31,d1[2]);
+	    
+	    for(i=0;i < d1[0];i+=nb13) {
+	      i2 = min(i+nb13,d1[0]);
+	      
+	      for(kk=k; kk < k2; kk++) {
+		
+		pin = pin1 + i + kk*d1[0]*d1[1];
+		pout = tmp + i*d1[2] +kk;
+		
+		for(ii=i; ii < i2; ii++) {
+		  *pout = *pin++;
+		  pout += d1[2];
 		}
-		pin1 += d1[0]*d1[1];
-		pout1 += d1[1];
 	      }
 	    }
 	  }
+
+	  pout2 = out + j*d2[0]*d2[1];
+	  (*(trans_type->exec))(plan->libplan_out,tmp,pout2);
+          compute_deriv_loc(pout2,pout2,dims);
 	}
 	
-	(*(trans_type->exec))(plan->libplan_out,tmp,out);
-	compute_deriv_loc(out,out,dims);
 	delete [] tmp;
-	
 	break;
       }
+      
       break;
     case 2:
       switch(mc[1]) {
@@ -1757,50 +1760,47 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans(Ty
 	break;
       case 0: //2,0,1
 	if(d1[0]*d1[1] >0)	
-	  nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
-	else nb31 = 1;
-	if(nb31 < 1) nb31 = 1;
-	nb13 = nb31;
+	  nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
+	else nb32 = 1;
+	if(nb32 < 1) nb32 = 1;
+	nb23 = nb32;
 
-	// d1[0] -> d2[1]
-	// d1[1] -> d2[2]
-	// d1[2] -> d2[0]
+	// d1[0] -> d2[2]
+	// d1[1] -> d2[0]
+	// d1[2] -> d2[1]
 	dims[0] = d2[0];
 	dims[1] = d2[1];
-	dims[2] = 1;
-
-	tmp = new Type1[d1[0]*d1[2]]; // tmp[k][i] = in[i][j][k]
-
-	for(j=0;j < d1[1];j++) {
-	  pin1 =  in +j*d1[0];
-	  for(k=0;k <d1[2];k+=nb31) {
-	    k2 = min(k+nb31,d1[2]);
-	    
-	    for(i=0;i < d1[0];i+=nb13) {
-	      i2 = min(i+nb13,d1[0]);
-	      
-	      for(kk=k; kk < k2; kk++) {
-		
-		pin = pin1 + i + kk*d1[0]*d1[1];
-		pout = tmp + i*d1[2] +kk;
-		
-		for(ii=i; ii < i2; ii++) {
-		  *pout = *pin++;
-		  pout += d1[2];
+	dims[2] = d2[2];
+	
+	tmp = new Type1[d1[1]*d1[2]*d1[0]];
+	
+	for(k=0;k <d1[1];k+=nb32) {
+	  k2 = min(k+nb32,d1[1]);
+	  for(j=0;j < d1[2];j+=nb23) {
+	    j2 = min(j+nb23,d1[2]);
+	    for(kk=k; kk < k2; kk++){
+	      pin1 = in + kk*d1[0] +j*d1[0]*d1[1];
+	      pout1 = tmp + kk +j*d1[1];
+	      for(jj=j; jj < j2; jj++) {
+		pin = pin1;
+		pout = pout1;
+		for(i=0;i < d1[0];i++) {
+		  *pout =  *pin++;
+		  pout += d1[1]*d1[2];
 		}
+		pin1 += d1[0]*d1[1];
+		pout1 += d1[1];
 	      }
 	    }
 	  }
-
-	  pout2 = out + j*d2[0]*d2[1];
-	  (*(trans_type->exec))(plan->libplan_out,tmp,pout2);
-          compute_deriv_loc(pout2,pout2,dims);
 	}
 	
+	(*(trans_type->exec))(plan->libplan_out,tmp,out);
+	compute_deriv_loc(out,out,dims);
 	delete [] tmp;
+	
 	break;
       }
-      
       break;
     case 0: //0,2,1
       if(mc[1] == 2) {
@@ -1925,7 +1925,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     }
     break;
 
-
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
@@ -1977,10 +1976,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	      pout = pout1;
 	      for(ii=i; ii < i2; ii++) {
 		*pout = *pin++;
-		//		if(pout - out == 16) {
-		//  int l=pin - in - 1;
-		//  printf("Ar[16]=%lg, pin=%d\n",*pout,l);
-		//	}
 		pout += d2[0]*d2[1];
 	      }
 	      pin1 += d1[0];

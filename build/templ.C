@@ -218,7 +218,7 @@ void inv_mo(int mo[3],int imo[3]);
 
 	tmpgrid1 = new DataGrid(gdims,grid1_.dim_conj_sym,Pgrid,dmap,monext);
 
-	curr_stage = dynamic_cast<stage*> (new MPIplan<Type2>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
 	curr_stage->kind = MPI_ONLY;
 	Stages = prev_stage = curr_stage;
 	delete tmpgrid0;
@@ -390,7 +390,7 @@ void inv_mo(int mo[3],int imo[3]);
 	reverse_steps = true;
 
   if(reverse_steps) 
-    tmpgrid0 = final_trans<Type2>(tmpgrid1,grid2_,curr_stage,prec);
+    curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec);
 
   bool iseq = true;
   for(i=0; i < 3; i++) 
@@ -433,7 +433,7 @@ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &gr
   // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
 }
 
-template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2,stage *curr,int prec)
+template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2,stage *curr,int prec)
   {
 #ifdef DEBUG
     cout << "Return steps" << endl;
@@ -441,19 +441,19 @@ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &gri
 
     int L1,d1,d2,nd,tmp,dmap[3],i,*mo,*gdims;
     ProcGrid *Pgrid;
-
-    L1 = grid1->L[0];
-    d1 = grid1->D[0];
-    nd = grid1->nd;
-    for(i=0;i<3;i++)
-      dmap[i] = grid1->Dmap[i];
-    mo = grid1->MemOrder;
-    Pgrid = grid1->Pgrid;
-    gdims = grid1->Gdims;
-
     DataGrid *tmpgrid0,*tmpgrid1;
-    tmpgrid1 = grid1;
     stage *prev;
+
+    tmpgrid1 = *grid1;
+    L1 = tmpgrid1->L[0];
+    d1 = tmpgrid1->D[0];
+    nd = tmpgrid1->nd;
+    for(i=0;i<3;i++)
+      dmap[i] = tmpgrid1->Dmap[i];
+    mo = tmpgrid1->MemOrder;
+    Pgrid = tmpgrid1->Pgrid;
+    gdims = tmpgrid1->Gdims;
+
 
     if(nd == 2) {
       d2 = tmpgrid1->D[1];
@@ -619,7 +619,8 @@ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &gri
 	}
 	
     delete tmpgrid1;
-    return tmpgrid0;
+    *grid1 = tmpgrid0;
+    return curr;
 }
 
 bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGrid *gr2,bool *reverse_steps)
