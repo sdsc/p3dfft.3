@@ -91,6 +91,7 @@ All Rights Reserved.
 
 
 #ifdef FFTW
+
 #include "fftw3.h"
 #if defined FFTW_FLAG_MEASURE
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
@@ -99,7 +100,32 @@ const int DEF_FFT_FLAGS=FFTW_ESTIMATE;
 #elif defined FFTW_FLAG_PATIENT
 const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #endif
+
+#elif defined CUDA
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cufft.h>
+#include <cufftXt.h>
+#include <helper_cuda.h>
+#include <helper_functions.h>
+#include <device_launch_parameters.h>
+#include <curand_mtgp32_kernel.h>
+#ifdef CUTENSOR
+#include <cutensor.h>
+#elif defined CUTT
+#include <cutt.h>
 #endif
+
+const int DEF_FFT_FLAGS=0;
+#define LocDevice 1
+#define LocHost 2
+
+#endif
+
+#define NONE 0
+#define SLICE 1
+#define FULL 2
 
 
 extern int P3DFFT_EMPTY_TYPE_SINGLE,P3DFFT_EMPTY_TYPE_DOUBLE,P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX,P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX;
@@ -142,6 +168,7 @@ namespace p3dfft {
 using namespace std;
 
 int arcmp(int *A,int *B,int N);
+ void divide_work(int *offset,int *mysize,int dims[3],int nslices);
 
 static int ls;
 
@@ -543,6 +570,16 @@ class stage {
   stage() {next = NULL;};
   void myexec(char *in,char *out,bool OW);
   void myexec_deriv(char *in,char *out, bool OW);
+
+  int InLoc=LocHost;
+  int OutLoc=LocHost;
+#ifdef CUDA
+  //  bool useCuda=false;
+  cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
+  int *offset1,*mysize1;
+  int *offset2,*mysize2;
+#endif
+
 };
 
 
@@ -589,6 +626,7 @@ template <class Type1,class Type2>   class transplan : public stage {
   int *inembed,*onembed;
   unsigned fft_flag;
   void compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]);
+  char *DevBuf,*DevBuf2;
 
   public :
 
@@ -598,19 +636,30 @@ template <class Type1,class Type2>   class transplan : public stage {
   bool is_set;
   trans_type1D<Type1,Type2> *trans_type;
   Plantype<Type1,Type2> *plan;
-  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
-  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d); //, bool inplace_); 
+  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d,int InLoc_,int OutLoc_); //, bool inplace_);
+  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_); //, bool inplace_); 
   void init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d); // bool inplace_) 
   transplan() {};
   ~transplan() {
     delete grid1,grid2; 
+    delete [] offset1,mysize1;
+    delete [] offset2,mysize2;
+
+#ifdef CUDA
+    cudaEventDestroy(EVENT_EXEC);
+    cudaEventDestroy(EVENT_H2D);
+    cudaEventDestroy(EVENT_D2H);
+    /*
+    if(useCuda && DevAlloc)
+    checkCudaErrors(cudaFree(DevBuf)); */
+#endif
   };
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void find_plan(trans_type1D<Type1,Type2> *type);
-  void exec(char *in,char *out,bool OW=false);
+  void exec_slice(char *in,char *out,, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false);
   void exec_deriv(char *in,char *out, bool OW=false);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
@@ -635,9 +684,9 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
 
-  trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
+  trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_,int InLoc_); //,bool inplace_);
   ~trans_MPIplan() {};
-  void exec(char *in,char *out, bool OW);
+  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW);
   void exec_deriv(char *in,char *out, bool OW);
 
   template <class TypeIn1,class TypeOut1> friend class transplan;
@@ -728,7 +777,7 @@ class DataGrid {
   return(Pdims[dim] == 1);
     
 };
-  DataGrid(int gdims_[3],int dim_conj_sym_,ProcGrid *pgrid,int dmap[3],int mem_order[3]);
+  DataGrid(int *gdims_,int dim_conj_sym_,ProcGrid *pgrid,int *dmap,int *mem_order);
   DataGrid(const DataGrid &rhs);
   DataGrid() {};
   ~DataGrid();
@@ -882,16 +931,22 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   ProcGrid *Pgrid;
   //  int trans_type[7];
   friend class stage;
+#ifdef CUDA
+  int InLoc,OutLoc;
+  size_t maxDevSize;
+#endif
 
  public:
 
   void exec(Type1 *in,Type2 *out, bool OW=false);
   void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false);
 
-  transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type);
+  transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type,const int InLoc_=0, const int OutLoc_=0);
   ~transform3D();
 };
 
+ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2, int prec, int loc=0);
+ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec);
 //extern int ntrans;
 //extern int npl;
 //static Ntrans_types=0;

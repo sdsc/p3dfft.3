@@ -87,7 +87,7 @@ void inv_mo(int mo[3],int imo[3]);
 
   // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
   // 
-  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const DataGrid& grid1_, const DataGrid& grid2_,const trans_type3D *type)
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const DataGrid& grid1_, const DataGrid& grid2_,const trans_type3D *type,const int InLoc_, const int OutLoc_)
 {
 
 
@@ -227,7 +227,17 @@ void inv_mo(int mo[3],int imo[3]);
 
     }
 
-  // Plan the stages of the algorithm
+    int loc = 0;
+    int loc2 =0;
+#ifdef CUDA
+    InLoc = InLoc_;
+    OutLoc = OutLoc_;
+    loc = InLoc;
+    // Find maximum memory size among all the stages
+    maxDevSize = (size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]	*tmpgrid0->ldims[2]*dt*prec;
+#endif
+
+  // Plan the three main (transform) stages of the algorithm
   for(int st=0;st < 3;st++) {
     
     for(i=0;i<3;i++) {
@@ -314,18 +324,27 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef DEBUG
 	printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), MemOrder=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],monext[0],monext[1],monext[2]);
 #endif
+
+#ifdef CUDA
+	maxDevSize = max(maxDevSize,(size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2]*dt_1*prec);
+        maxDevSize = max(maxDevSize,(size_t) intgrid->ldims[0]*intgrid->ldims[1]*intgrid->ldims[2]*dt_2*prec));
+#endif
+
       // Plan/set up 1D transform combined with MPI exchange for this stage
 	switch(use_type2) {
 	case 1:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
 	  break;
 	case 2:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
 	  break;
 	case 12:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
 	  break;
 	}
+#ifdef CUDA
+	loc = LocHost;
+#endif
 
       //      curr_stage = init_trans_MPIplan(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],prec);
 	curr_stage->kind = TRANSMPI;
@@ -336,6 +355,7 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef DEBUG
 	printf("Calling init_MPIsplan, d1=%d, d2=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), MemOrder=(%d %d %d)\n",d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],monext[0],monext[1],monext[2]);
 #endif
+
 	if(dt_1 == dt1)
 	  curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
 	else
@@ -351,24 +371,30 @@ void inv_mo(int mo[3],int imo[3]);
       printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), dmap=(%d %d %d), dim-conj_sym=%d, MemOrder=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],dmap[0],dmap[1],dmap[2],dim_conj_sym,monext[0],monext[1],monext[2]);
 #endif
 
+#ifdef CUDA
+      maxDevSize = max(maxDevSize,(size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2]*dt_1*prec);
+      maxDevSize = max(maxDevSize,(size_t) tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2]*dt_2*prec);
+
+      loc2 = (st == 2) ? OutLoc : loc;  /
+#endif
+
       // Plan/set up 1D transform, possibly combined with local transpose as needed
       switch(use_type2) {
       case 1:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
 	break;
       case 2:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	curr_stage = dynamic_cast<stage*> (new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
 	break;
       case 12:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],,loc,loc2));
 	break;
       }
 
+      loc = loc2;
       //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
-
-      curr_stage->kind = TRANS_ONLY;
-            
-      }
+      curr_stage->kind = TRANS_ONLY;            
+    }
     
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
@@ -401,7 +427,7 @@ void inv_mo(int mo[3],int imo[3]);
   
   if(!iseq) { //If not in the final memory ordering
     prev_stage = curr_stage;
-    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_);
+    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,OutLoc);
     curr_stage->kind = TRANS_ONLY;
     prev_stage->next = curr_stage;
   }
@@ -418,7 +444,7 @@ void inv_mo(int mo[3],int imo[3]);
   
 }
 
-template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2)
+template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,int loc)
 {
   gen_trans_type *t=empty_type<Type>();
   int trans_dim = grid2.L[0];
@@ -427,7 +453,7 @@ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &gr
 #ifdef DEBUG
   printf("Calling final init_transplan, trans_dim=%d\n",grid2.L[0]);
 #endif
-  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim)));
+  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc)));
       //    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
   //curr_stage = (stage *) tr;
   // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
@@ -870,8 +896,11 @@ int dist(int a)
 }
 
 
-  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
+template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d,int InLoc_,int OutLoc_) // bool inplace_) 
   {   init_tr(gr1,gr2, type,d);
+    InLoc = InLoc_;
+    OutLoc = OutLoc_;
+
   }
 
 template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
@@ -968,7 +997,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   }
 }  
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d) // bool inplace_) 
+template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_) // bool inplace_) 
 {   
   trans_type = (trans_type1D<Type1,Type2> *) types1D[type_ID];
 
@@ -977,6 +1006,8 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
     return;
   }
   init_tr(gr1,gr2, trans_type,d);
+  InLoc = InLoc_;
+  OutLoc = OutLoc_;
 }
 
 
@@ -1004,6 +1035,13 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
+
+#ifdef CUDA
+  if(scheme == TRANS_IN)
+    m = d1[1]*d1[2];
+  else
+    m = d2[1]*d2[2];
+#else
 
   rel_change(imo1,imo2,mc);
 
@@ -1046,15 +1084,27 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
       //m = d2[1]*d2[2];
     break;
   }
+#endif
   
   return(m);
 
 }
 
-  template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d) //bool inplace_)   
+template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d,int InLoc_) //bool inplace_)   
 {
   kind = TRANSMPI;
+  InLoc = InLoc_;
+#ifdef CUDA
+  // Make sure data is on host after transplan, no matter where we started
+  trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,InLoc,LocHost); 
+  offset1 = trplan->offset1;
+  offset2 = trplan->offset2;
+  mysize1 = trplan->mysize1;
+  mysize2 = trplan->mysize2;
+#else
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
+#endif
+
   if(trplan->plan == NULL && !trplan->is_empty)
     cout << "Error in trans_MPIplan: null plan" << endl;
 
@@ -1263,10 +1313,14 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   // Inplace
     Type1 *A;
     int size=max(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
+    int size1=(istride*N+idist*m);
+    int size2=(ostride*N+odist*m);
+
+#ifdef FFTW
+
 #ifdef DEBUG
     printf("in-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",istride,ostride,idist,odist);
 #endif
-#ifdef FFTW
     A = (Type1 *) fftw_malloc(size);
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
@@ -1283,18 +1337,12 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
-    //    fftw_free(B);
-#endif
-
     // Out of place
-    int size1=(istride*N+idist*m);
-    int size2=(ostride*N+odist*m);
     //    printf("size1=%d,size2=%d\n",size1,size2);    
 #ifdef DEBUG
     printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",grid1->Pgrid->taskid,istride,ostride,idist,odist);
 #endif
-
-#ifdef FFTW
+    //    fftw_free(B);
     A = (Type1 *) fftw_malloc(size1*sizeof(Type1));
     //    A = (Type1 *) fftw_malloc(size1);
     B = (Type2 *) fftw_malloc(size2*sizeof(Type2));
@@ -1341,9 +1389,53 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
 
     fftw_free(A);
     fftw_free(B);
-#else // non-FFTW
+
+#elif defined CUDA // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);
+    //    A = new Type1[size1];
+    //B = new Type2[size2];
+
+    cufftType cType;
+
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      printf("Error in planning 1D transform: CUDA does not support real-to-rea\
+l transforms\n");
+      plan->libplan_inout[0] = plan->libplan_out[0] = plan->libplan_out[0] = NULL;
+    }
+      else {
+      if(type->dt1 == 2 && type->dt2 == 2)  //Complex-to-complex
+        cType = (prec == 4 ? CUFFT_C2C : CUFFT_Z2Z);
+      else if(type->dt1 == 1 && type->dt2 == 2)  //R2C
+        cType = (prec == 4 ? CUFFT_R2C : CUFFT_D2Z);
+      else  if(type->dt1 == 2 && type->dt2 == 1)  //C2R
+        cType = (prec == 4 ? CUFFT_C2R : CUFFT_Z2D);
+
+      // Plan CUDA transform
+      for(i=0;i<nslices;i++) {
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[i]),1,&N,inembed\
+	,istride,idist,onembed,ostride,odist,cType,mysize[i]);
+      if(res != CUFFT_SUCCESS)
+	printf("Error in CUFFT C2C_d\n");
+      else {
+      plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
+      cufftSetStream(plan->libplan_inout[i],streams[i]);
+#ifdef DEBUG
+      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[i]);
+#endif
+    }
+    }
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inem\
+				      bed,istride,idist,onembed,ostride,odist,cType,m);
+      if(res != CUFFT_SUCCESS)
+        printf("Error in CUFFT C2C_d\n");
+      else
+      plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_in\
+	out[nslices];
+
+    }
+
+#else // non-FFTW
     A = new Type1[size1];
     B = new Type2[size2];
     if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
