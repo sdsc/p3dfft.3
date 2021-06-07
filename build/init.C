@@ -118,21 +118,29 @@ int EMPTY_TYPE_SINGLE,EMPTY_TYPE_DOUBLE,EMPTY_TYPE_SINGLE_COMPLEX,EMPTY_TYPE_DOU
 
 int padd;
 
-void setup()
+void setup(int nslices_)
+//#else
+//void setup()
+//#endif
 {
   const char *name;
   int isign;
   gen_trans_type *p;
 
   int types_count=0;
+  /*
+#ifdef CUDA
+  TILE_DIM=32;
+  SHMEM_SIZE=16384;
+#endif
+  */
 
 #ifdef DEBUG
   cout << "p3dfft_setup: adding Empty Type Single" << endl;
 #endif
   name = "Empty Type Single";
   p = new trans_type1D<float,float>(name,NULL,NULL,true);
-  //  p = new gen_trans_type(name,1,1,4,0);
-  //p->is_empty = true;
+  //  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -144,8 +152,7 @@ void setup()
 #endif
   name = "Empty Type Double";
   p = new trans_type1D<double,double>(name,NULL,NULL,true);
-  //  p = new gen_trans_type(name,1,1,8,0);
-  //p->is_empty = true;
+  //  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -157,8 +164,7 @@ void setup()
 #endif
   name = "Empty Type Single Complex";
   p = new trans_type1D<mycomplex,mycomplex>(name,NULL,NULL,true);
-  //  p = new gen_trans_type(name,2,2,4,0);
-  //p->is_empty = true;
+  //  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -170,8 +176,7 @@ void setup()
 #endif
   name = "Empty Type Double Complex";
   p = new trans_type1D<complex_double,complex_double>(name,NULL,NULL,true);
-  //  p = new gen_trans_type(name,2,2,8,0);
-  //p->is_empty = true;
+  //  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -214,9 +219,8 @@ void setup()
 #endif
 
   name = "Real-to-complex Fourier Transform, single precision";
-#ifdef FFTW
-  p = new trans_type1D<float,mycomplex>(name,(long (*)(...) ) plan_r2c_s);
-#endif
+
+  p = new trans_type1D<float,mycomplex>(name,(planResult (*)(...) ) plan_r2c_s,(execResult (*)(...)) exec_r2c_s);
   types1D.push_back(p);
   R2CFFT_S =  types_count;
   types_count++;
@@ -227,9 +231,9 @@ void setup()
 #endif
 
   name ="Real-to-complex Fourier Transform double precision";
-#ifdef FFTW
-  p = new trans_type1D<double,complex_double>(name,(long (*)(...) ) plan_r2c_d);
-#endif
+
+  p = new trans_type1D<double,complex_double>(name,(planResult (*)(...) ) plan_r2c_d,(execResult (*)(...)) exec_r2c_d);
+
   types1D.push_back(p);
   R2CFFT_D = types_count;
   types_count++;
@@ -238,9 +242,9 @@ void setup()
   cout << "p3dft_setup: adding C2R single type" << endl;
 #endif
   name = "Complex-to-real Fourier Transform, single precision";
-#ifdef FFTW
-  p = new trans_type1D<mycomplex,float>(name,(long (*)(...) ) plan_c2r_s);
-#endif
+
+  p = new trans_type1D<mycomplex,float>(name,(planResult (*)(...) ) plan_c2r_s,(execResult (*)(...)) exec_c2r_s);
+
   types1D.push_back(p);
   C2RFFT_S = types_count;
   types_count++;
@@ -250,9 +254,9 @@ void setup()
 #endif
 
   name = "Complex-to-real Fourier Transform, double precision";
-#ifdef FFTW
-  p = new trans_type1D<complex_double,double>(name,(long (*)(...) ) plan_c2r_d);
-#endif
+
+  p = new trans_type1D<complex_double,double>(name,(planResult (*)(...) ) plan_c2r_d,(execResult (*)(...)) exec_c2r_d);
+
   types1D.push_back(p);
   C2RFFT_D = types_count;
   types_count++;
@@ -262,10 +266,14 @@ void setup()
 #endif
 
   name = "Complex-to-complex Fourier Transform, forward transform, singple precision";
+
 #ifdef FFTW
   isign = FFTW_FORWARD;
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_c2c_s,(void (*)(...) )exec_c2c_s,isign);
+#else
+  isign = 0;
 #endif
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...) )exec_c2c_forward_s,isign);
+
   types1D.push_back(p);
   CFFT_FORWARD_S = types_count;
   types_count++;
@@ -275,10 +283,14 @@ void setup()
 #endif
 
   name = "Complex-to-complex Fourier Transform, forward transform, double precision";
+
 #ifdef FFTW
   isign = FFTW_FORWARD;
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_c2c_d,(void (*)(...)) exec_c2c_d,isign);
+#else
+  isign = 0;
 #endif
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_forward_d,isign);
+
 
   types1D.push_back(p);
   CFFT_FORWARD_D = types_count;
@@ -289,10 +301,14 @@ void setup()
 #endif
 
   name = "Complex-to-complex Fourier Transform, backward transform, single precision";
+
 #ifdef FFTW
   isign = FFTW_BACKWARD;
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_c2c_s,(void (*)(...)) exec_c2c_s,isign);
+#else
+  isign = 0;
 #endif
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...)) exec_c2c_backward_s,isign);
+
   types1D.push_back(p);
   CFFT_BACKWARD_S = types_count;
   types_count++;
@@ -302,10 +318,14 @@ void setup()
 #endif
 
   name = "Complex-to-complex Fourier Transform, backward transform, double precision";
+
 #ifdef FFTW
   isign = FFTW_BACKWARD;
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_c2c_d,(void (*)(...)) exec_c2c_d,isign);
+#else
+  isign = 0;
 #endif
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_backward_d,isign);
+
   types1D.push_back(p);
   CFFT_BACKWARD_D = types_count;
   types_count++;
@@ -313,7 +333,7 @@ void setup()
   /*
   name = "Real-valued Chebyshev Transform, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_cos_s,(void (*)(...)) scheb_r);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_cos_s,(void (*)(...)) scheb_r);
 #endif
   types1D.push_back(p);
   */
@@ -328,13 +348,16 @@ void setup()
   types1D.push_back(p);
   */
 
+#ifndef CUDA
+  // CUFFT does not support real-to-real transforms
+
 #ifdef DEBUG
   cout << "p3dft_setup: adding Cosine R2R DCT1 single type" << endl;
 #endif
 
   name = "Real-valued Cosine Transform DCT1, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dct1_s, (void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct1_s, (execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DCT1_REAL_S = types_count;
@@ -346,7 +369,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT1, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dct1_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct1_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DCT1_REAL_D = types_count;
@@ -358,7 +381,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT1, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex >(name,(long (*)(...) ) plan_dct1_complex_s, (void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct1_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DCT1_COMPLEX_S = types_count;
@@ -370,7 +393,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT1, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dct1_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DCT1_COMPLEX_D = types_count;
@@ -384,7 +407,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST1, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dst1_s,(void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst1_s,(execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DST1_REAL_S = types_count;
@@ -396,7 +419,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST1, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dst1_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst1_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DST1_REAL_D = types_count;
@@ -409,7 +432,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST1, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_dst1_complex_s,(void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst1_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DST1_COMPLEX_S = types_count;
@@ -421,7 +444,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST1, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dst1_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DST1_COMPLEX_D = types_count;
@@ -435,7 +458,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT2, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dct2_s, (void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct2_s, (execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DCT2_REAL_S = types_count;
@@ -447,7 +470,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT2, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dct2_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct2_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DCT2_REAL_D = types_count;
@@ -459,7 +482,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT2, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex >(name,(long (*)(...) ) plan_dct2_complex_s, (void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct2_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DCT2_COMPLEX_S = types_count;
@@ -471,7 +494,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT2, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dct2_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct2_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DCT2_COMPLEX_D = types_count;
@@ -485,7 +508,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST2, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dst2_s,(void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst2_s,(execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DST2_REAL_S = types_count;
@@ -497,7 +520,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST2, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dst2_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst2_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DST2_REAL_D = types_count;
@@ -510,7 +533,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST2, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_dst2_complex_s,(void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst2_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DST2_COMPLEX_S = types_count;
@@ -522,7 +545,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST2, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dst2_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst2_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DST2_COMPLEX_D = types_count;
@@ -536,7 +559,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT3, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dct3_s, (void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct3_s, (execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DCT3_REAL_S = types_count;
@@ -548,7 +571,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT3, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dct3_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct3_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DCT3_REAL_D = types_count;
@@ -560,7 +583,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT3, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex >(name,(long (*)(...) ) plan_dct3_complex_s, (void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct3_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DCT3_COMPLEX_S = types_count;
@@ -572,7 +595,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT3, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dct3_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct3_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DCT3_COMPLEX_D = types_count;
@@ -586,7 +609,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST3, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dst3_s,(void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst3_s,(execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DST3_REAL_S = types_count;
@@ -598,7 +621,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST3, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dst3_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst3_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DST3_REAL_D = types_count;
@@ -611,7 +634,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST3, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_dst3_complex_s,(void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst3_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DST3_COMPLEX_S = types_count;
@@ -623,7 +646,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST3, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dst3_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst3_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DST3_COMPLEX_D = types_count;
@@ -637,7 +660,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT4, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dct1_s, (void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct1_s, (execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DCT4_REAL_S = types_count;
@@ -649,7 +672,7 @@ void setup()
 
   name = "Real-valued Cosine Transform DCT4, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dct1_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct1_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DCT4_REAL_D = types_count;
@@ -661,7 +684,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT4, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex >(name,(long (*)(...) ) plan_dct1_complex_s, (void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct1_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DCT4_COMPLEX_S = types_count;
@@ -673,7 +696,7 @@ void setup()
 
   name = "Complex-valued Cosine Transform DCT4, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dct1_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DCT4_COMPLEX_D = types_count;
@@ -687,7 +710,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST4, single precision";
 #ifdef FFTW
-  p = new trans_type1D<float,float>(name,(long (*)(...) ) plan_dst4_s,(void (*)(...)) exec_r2r_s);
+  p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst4_s,(execResult (*)(...)) exec_r2r_s);
 #endif
   types1D.push_back(p);
   DST4_REAL_S = types_count;
@@ -699,7 +722,7 @@ void setup()
 
   name = "Real-valued Sine Transform DST4, double precision";
 #ifdef FFTW
-  p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_dst4_d,(void (*)(...)) exec_r2r_d);
+  p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst4_d,(execResult (*)(...)) exec_r2r_d);
 #endif
   types1D.push_back(p);
   DST4_REAL_D = types_count;
@@ -712,7 +735,7 @@ void setup()
 
   name = "Complex-valued Sine Transform DST4, single precision";
 #ifdef FFTW
-  p = new trans_type1D<mycomplex,mycomplex>(name,(long (*)(...) ) plan_dst4_complex_s,(void (*)(...)) exec_r2r_complex_s);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst4_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
 #endif
   types1D.push_back(p);
   DST4_COMPLEX_S = types_count;
@@ -724,36 +747,25 @@ void setup()
 
   name = "Complex-valued Sine Transform DST4, double precision";
 #ifdef FFTW
-  p = new trans_type1D<complex_double,complex_double>(name,(long (*)(...) ) plan_dst4_complex_d,(void (*)(...)) exec_r2r_complex_d);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst4_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
 #endif
   types1D.push_back(p);
   DST4_COMPLEX_D = types_count;
   types_count++;
-
-
-  /*
-  name = "Real-valued Chebyshev Transform, double precision";
-#ifdef FFTW
-				    p = new trans_type1D<double,double>(name,(long (*)(...) ) plan_cos_d,(void (*)(...) )dcheb_r);
 #endif
-  types1D.push_back(p);
-  */
-  /*
-  name = "Complex-valued Chebyshev Transform";
-  dt1 = 2;dt2 = 2;
-#ifdef FFTW
-  p = new trans_type1D(name,dt1,dt2,myscos_plan,
-       mydcos_plan,scheb_c,dcheb_c);
+
+  nslices = nslices_;
+#ifdef CUDA
+  streams = new cudaStream_t[nslices];
+  for (int i = 0; i < nslices; i++)
+    {
+      checkCudaErrors(cudaStreamCreate(&streams[i]));
+    }
 #endif
-  types1D.push_back(p);
-  */
-
-
 
 }
 
 #ifdef TIMERS
-
 void timer::init()
 {
 
@@ -761,6 +773,7 @@ void timer::init()
   reorder_out = 0.0;
   reorder_in = 0.0;
   trans_exec = 0.0;
+  trans_deriv = 0.0;
   packsend = 0.0;
   packsend_trans = 0.0;
   unpackrecv = 0.0;
@@ -792,6 +805,9 @@ void timer::print(MPI_Comm comm)
   MPI_Reduce(&trans_exec,&gtimers_avg.trans_exec,1,MPI_DOUBLE,MPI_SUM,0,comm);
   MPI_Reduce(&trans_exec,&gtimers_min.trans_exec,1,MPI_DOUBLE,MPI_MIN,0,comm);
   MPI_Reduce(&trans_exec,&gtimers_max.trans_exec,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&trans_deriv,&gtimers_avg.trans_deriv,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&trans_deriv,&gtimers_min.trans_deriv,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&trans_deriv,&gtimers_max.trans_deriv,1,MPI_DOUBLE,MPI_MAX,0,comm);
   MPI_Reduce(&packsend_trans,&gtimers_avg.packsend_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
   MPI_Reduce(&packsend_trans,&gtimers_min.packsend_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
   MPI_Reduce(&packsend_trans,&gtimers_max.packsend_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
@@ -804,36 +820,41 @@ void timer::print(MPI_Comm comm)
   MPI_Reduce(&alltoall,&gtimers_avg.alltoall,1,MPI_DOUBLE,MPI_SUM,0,comm);
   MPI_Reduce(&alltoall,&gtimers_min.alltoall,1,MPI_DOUBLE,MPI_MIN,0,comm);
   MPI_Reduce(&alltoall,&gtimers_max.alltoall,1,MPI_DOUBLE,MPI_MAX,0,comm);
+#ifdef CUDA
+  MPI_Reduce(&gpu_transfer,&gtimers_avg.gpu_transfer,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&gpu_transfer,&gtimers_min.gpu_transfer,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&gpu_transfer,&gtimers_max.gpu_transfer,1,MPI_DOUBLE,MPI_MAX,0,comm);
+#endif
 
   if(taskid == 0) {
     printf("TIMERS (avg/min/max): \nReorder_trans (%lf %lf %lf)\n",gtimers_avg.reorder_trans/nproc,gtimers_min.reorder_trans,gtimers_max.reorder_trans);
     printf("Reorder_out   (%lf %lf %lf)\n",gtimers_avg.reorder_out/nproc,gtimers_min.reorder_out,gtimers_max.reorder_out);
     printf("Reorder_in    (%lf %lf %lf)\n",gtimers_avg.reorder_in/nproc,gtimers_min.reorder_in,gtimers_max.reorder_in);
     printf("Trans_exec    (%lf %lf %lf)\n",gtimers_avg.trans_exec/nproc,gtimers_min.trans_exec,gtimers_max.trans_exec);
+    printf("Trans_deriv    (%lf %lf %lf)\n",gtimers_avg.trans_deriv/nproc,gtimers_min.trans_deriv,gtimers_max.trans_deriv);
     printf("Packsend      (%lf %lf %lf)\n",gtimers_avg.packsend/nproc,gtimers_min.packsend,gtimers_max.packsend);
     printf("Packsend_trans(%lf %lf %lf)\n",gtimers_avg.packsend_trans/nproc,gtimers_min.packsend_trans,gtimers_max.packsend_trans);
     printf("Unpackrecv    (%lf %lf %lf)\n",gtimers_avg.unpackrecv/nproc,gtimers_min.unpackrecv,gtimers_max.unpackrecv);
     printf("Alltoall      (%lf %lf %lf)\n",gtimers_avg.alltoall/nproc,gtimers_min.alltoall,gtimers_max.alltoall);
-
+#ifdef CUDA
+    printf("GPU Transfer      (%lf %lf %lf)\n",gtimers_avg.gpu_transfer/nproc,gtimers_min.gpu_transfer,gtimers_max.gpu_transfer);
+#endif
 
   }
 
 }
 
   extern  timer timers;
-
 #endif
 
-
-template <class Type> MPIplan<Type>::~MPIplan()
-{
-  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
-  delete grid1,grid2;
-}
 
 void cleanup()
 {
   
+  //  vector<grid>::iterator it1=stored_grids.begin();
+  //  stored_grids.erase(stored_grids.begin(),stored_grids.end());
+  //  for(vector<trans_type3D>::iterator it=types3D.begin();it != types3D.end();it++) {
+  //    types3D.erase(types3D.begin(),types3D.end());
   stored_proc_grids.clear();
   stored_data_grids.clear();
   types3D.clear();
@@ -886,17 +907,21 @@ void cleanup()
   //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
   vector<Plan *>::iterator it=Plans.begin();
   while(it != Plans.end()) {
+    for(int i=0;i<nslices;i++) {
 #ifdef FFTW
-    if((*it)->libplan_in != NULL) 
-      fftw_destroy_plan((fftw_plan) (*it)->libplan_in);
-    if((*it)->libplan_out != NULL) 
-      fftw_destroy_plan((fftw_plan) (*it)->libplan_out);
+      if((*it)->libplan_in[i] != NULL) 
+	fftw_destroy_plan((fftw_plan) (*it)->libplan_in[i]);
+      if((*it)->libplan_out[i] != NULL) 
+	fftw_destroy_plan((fftw_plan) (*it)->libplan_out[i]);
 #elif defined CUDA
-    if((*it)->libplan_in != NULL) 
-      cufftDestroy((cufftHandle) (*it)->libplan_in);
-    if((*it)->libplan_out != NULL) 
-      cufftDestroy((cufftHandle) (*it)->libplan_out);
+      if((*it)->libplan_in[i] != NULL) 
+	cufftDestroy((cufftHandle) (*it)->libplan_in[i]);
+      if((*it)->libplan_out[i] != NULL) 
+	cufftDestroy((cufftHandle) (*it)->libplan_out[i]);
 #endif
+    }
+    delete [] (*it)->libplan_in,(*it)->libplan_out,(*it)->libplan_inout;
+
 
     /*
     if((*it)->prec == 4) {
@@ -1101,101 +1126,196 @@ void cleanup()
   //  printf("Cleaning FFTW\n");
   fftw_cleanup();
 #endif    
+#ifdef CUDA
+  for(int i=0;i<nslices;i++)
+    cudaStreamDestroy(streams[i]);
+  delete [] streams;
+#endif
+
   //  printf("Done Cleaning\n");
-
-
 
 }
 
   
 /*
-long plan_r2c_s(const int *n,int howmany,float *in,const int *inembed,int istride,int idist,mycomplex *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
+planResult plan_r2c_s(const int *n,int howmany,float *in,const int *inembed,int istride,int idist,mycomplex *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
 {
 #ifdef FFTW
-  return((long) fftwf_plan_many_dft_r2c(1,n,howmany,in,inembed,istride,idist,(fftwf_complex *) out,onembed,ostride,odist,fft_flag));
+  return((planResult) fftwf_plan_many_dft_r2c(1,n,howmany,in,inembed,istride,idist,(fftwf_complex *) out,onembed,ostride,odist,fft_flag));
 #endif
 }
 
-long plan_r2c_d(const int *n,int howmany,double *in,const int *inembed,int istride,int idist,complex_double *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
+planResult plan_r2c_d(const int *n,int howmany,double *in,const int *inembed,int istride,int idist,complex_double *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
 {
 #ifdef FFTW
-  return((long) fftw_plan_many_dft_r2c(1,n,howmany,in,inembed,istride,idist,(fftw_complex *) out,onembed,ostride,odist,fft_flag));
+  return((planResult) fftw_plan_many_dft_r2c(1,n,howmany,in,inembed,istride,idist,(fftw_complex *) out,onembed,ostride,odist,fft_flag));
 #endif
 }
-long plan_c2r_s(const int *n,int howmany,mycomplex *in,const int *inembed,int istride,int idist,float *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
+planResult plan_c2r_s(const int *n,int howmany,mycomplex *in,const int *inembed,int istride,int idist,float *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
 {
 #ifdef FFTW
-  return((long) fftwf_plan_many_dft_c2r(1,n,howmany,(fftwf_complex *) in,inembed,istride,idist,out,onembed,ostride,odist,fft_flag));
-#endif
-}
-
-long plan_c2r_d(const int *n,int howmany,complex_double *in,const int *inembed,int istride,int idist,double *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
-{
-#ifdef FFTW
-  return((long) fftw_plan_many_dft_c2r(1,n,howmany,(fftw_complex *)in,inembed,istride,idist,out,onembed,ostride,odist,fft_flag));
-#endif
-}
-long plan_c2c_s(const int *n,int howmany,mycomplex *in,const int *inembed,int istride,int idist,mycomplex *out,const int *onembed,int ostride,int odist,int isign,unsigned fft_flag=DEF_FFT_FLAGS)
-{
-#ifdef FFTW
-  return((long) fftwf_plan_many_dft(1,n,howmany,(fftwf_complex *) in,inembed,istride,idist,(fftwf_complex *) out,onembed,ostride,odist,isign,fft_flag));
+  return((planResult) fftwf_plan_many_dft_c2r(1,n,howmany,(fftwf_complex *) in,inembed,istride,idist,out,onembed,ostride,odist,fft_flag));
 #endif
 }
 
-long plan_c2c_d(const int *n,int howmany,complex_double *in,const int *inembed,int istride,int idist,complex_double *out,const int *onembed,int ostride,int odist,int isign,unsigned fft_flag=DEF_FFT_FLAGS)
+planResult plan_c2r_d(const int *n,int howmany,complex_double *in,const int *inembed,int istride,int idist,double *out,const int *onembed,int ostride,int odist,unsigned fft_flag=DEF_FFT_FLAGS)
 {
 #ifdef FFTW
-  return((long) fftw_plan_many_dft(1,n,howmany,(fftw_complex *) in,inembed,istride,idist,(fftw_complex *) out,onembed,ostride,odist,isign,fft_flag));
+  return((planResult) fftw_plan_many_dft_c2r(1,n,howmany,(fftw_complex *)in,inembed,istride,idist,out,onembed,ostride,odist,fft_flag));
+#endif
+}
+planResult plan_c2c_s(const int *n,int howmany,mycomplex *in,const int *inembed,int istride,int idist,mycomplex *out,const int *onembed,int ostride,int odist,int isign,unsigned fft_flag=DEF_FFT_FLAGS)
+{
+#ifdef FFTW
+  return((planResult) fftwf_plan_many_dft(1,n,howmany,(fftwf_complex *) in,inembed,istride,idist,(fftwf_complex *) out,onembed,ostride,odist,isign,fft_flag));
+#endif
+}
+
+planResult plan_c2c_d(const int *n,int howmany,complex_double *in,const int *inembed,int istride,int idist,complex_double *out,const int *onembed,int ostride,int odist,int isign,unsigned fft_flag=DEF_FFT_FLAGS)
+{
+#ifdef FFTW
+  return((planResult) fftw_plan_many_dft(1,n,howmany,(fftw_complex *) in,inembed,istride,idist,(fftw_complex *) out,onembed,ostride,odist,isign,fft_flag));
 #endif
 }
 */
 
-void exec_r2c_s(long plan,float *in,mycomplex *out)
+
+#ifdef CUDA
+  planResult plan_r2c_s(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_R2C,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT R2C_s\n");
+  return(res);
+}
+  planResult plan_r2c_d(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_D2Z,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT R2C_d\n");
+  return(res);
+}
+
+  planResult plan_c2r_s(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_C2R,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT C2R_s\n");
+  return(res);
+}
+  planResult plan_c2r_d(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_Z2D,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT C2R_d\n");
+  return(res);
+}
+
+  planResult plan_c2c_s(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_C2C,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT c2c_s\n");
+  return(res);
+}
+  planResult plan_c2c_d(cufftHandle *plan, int *N, int batch,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  planResult res;
+  res = cufftPlanMany(plan,1,N,inembed,istride,idist,onembed,ostride,odist,CUFFT_Z2Z,batch);
+  if(res != CUFFT_SUCCESS)
+    printf("Error in CUFFT C2C_d\n");
+  return(res);
+}
+
+
+
+  execResult exec_r2c_s(planHandle plan,float *in,mycomplex *out)
+{
+  cufftExecR2C(plan,(cufftReal *) in,(cufftComplex *) out);
+}
+execResult exec_r2c_d(planHandle plan,double *in,complex_double *out)
+{
+  cufftExecD2Z(plan,(cufftDoubleReal *) in,(cufftDoubleComplex *) out);
+}
+execResult exec_c2r_s(planHandle plan,mycomplex *in,float *out)
+{
+  cufftExecC2R(plan,(cufftComplex *) in,(cufftReal *) out);
+}
+execResult exec_c2r_d(planHandle plan,complex_double *in,double *out)
+{
+  cufftExecZ2D(plan,(cufftDoubleComplex *) in,(cufftDoubleReal *) out);
+}
+execResult exec_c2c_forward_s(planHandle plan,mycomplex *in,mycomplex *out)
+{
+  cufftExecC2C(plan,(cufftComplex *) in,(cufftComplex *) out,CUFFT_FORWARD);
+}
+execResult exec_c2c_backward_s(planHandle plan,mycomplex *in,mycomplex *out)
+{
+  cufftExecC2C(plan,(cufftComplex *) in,(cufftComplex *) out,CUFFT_INVERSE);
+}
+execResult exec_c2c_forward_d(planHandle plan,complex_double *in,complex_double *out)
+{
+  cufftExecZ2Z(plan,(cufftDoubleComplex *) in,(cufftDoubleComplex *) out,CUFFT_FORWARD);
+}
+execResult exec_c2c_backward_d(planHandle plan,complex_double *in,complex_double *out)
+{
+  cufftExecZ2Z(plan,(cufftDoubleComplex *) in,(cufftDoubleComplex *) out,CUFFT_INVERSE);
+}
+#endif
+
+
+#ifdef FFTW
+void exec_r2c_s(planHandle plan,float *in,mycomplex *out)
 {
   fftwf_execute_dft_r2c((fftwf_plan) plan,in,(fftwf_complex *) out);
 }
-void exec_r2c_d(long plan,double *in,complex_double *out)
+void exec_r2c_d(planHandle plan,double *in,complex_double *out)
 {
   fftw_execute_dft_r2c((fftw_plan) plan,in,(fftw_complex *) out);
 }
-void exec_c2r_s(long plan,mycomplex *in,float *out)
+void exec_c2r_s(planHandle plan,mycomplex *in,float *out)
 {
   fftwf_execute_dft_c2r((fftwf_plan) plan,(fftwf_complex *) in,out);
 }
-void exec_c2r_d(long plan,complex_double *in,double *out)
+void exec_c2r_d(planHandle plan,complex_double *in,double *out)
 {
   fftw_execute_dft_c2r((fftw_plan) plan,(fftw_complex *) in, out);
 }
-void exec_c2c_s(long plan,mycomplex *in,mycomplex *out)
+void exec_c2c_s(planHandle plan,mycomplex *in,mycomplex *out)
 {
   fftwf_execute_dft((fftwf_plan) plan,(fftwf_complex *) in,(fftwf_complex *) out);
 }
-void exec_c2c_d(long plan,complex_double *in,complex_double *out)
+void exec_c2c_d(planHandle plan,complex_double *in,complex_double *out)
 {
   fftw_execute_dft((fftw_plan) plan,(fftw_complex *) in,(fftw_complex *) out);
 }
-void exec_r2r_s(long plan,float *in,float *out)
+void exec_r2r_s(planHandle plan,float *in,float *out)
 {
   fftwf_execute_r2r((fftwf_plan) plan,in,out);
 }
-void exec_r2r_d(long plan,double *in,double *out)
+void exec_r2r_d(planHandle plan,double *in,double *out)
 {
   fftw_execute_r2r((fftw_plan) plan,in,out);
 }
 
-void exec_r2r_complex_s(long plan,float *in,float *out)
+void exec_r2r_complex_s(planHandle plan,float *in,float *out)
 {
   fftwf_execute_r2r((fftwf_plan) plan,in,out);
   fftwf_execute_r2r((fftwf_plan) plan,in+1,out+1);
 }
-void exec_r2r_complex_d(long plan,double *in,double *out)
+void exec_r2r_complex_d(planHandle plan,double *in,double *out)
 {
   fftw_execute_r2r((fftw_plan) plan,in,out);
   fftw_execute_r2r((fftw_plan) plan,in+1,out+1);
 }
 
 
-long plan_dct1_s(int rank, const int *n,		   
+planResult plan_dct1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1203,12 +1323,12 @@ long plan_dct1_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT00;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct1_d(int rank, const int *n,		   
+planResult plan_dct1_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1216,12 +1336,12 @@ long plan_dct1_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT00;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst1_s(int rank, const int *n,		   
+planResult plan_dst1_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1229,12 +1349,12 @@ long plan_dst1_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT00;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst1_d(int rank, const int *n,		   
+planResult plan_dst1_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1242,12 +1362,12 @@ long plan_dst1_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT00;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct1_complex_s(int rank, const int *n,		   
+planResult plan_dct1_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1255,12 +1375,12 @@ long plan_dct1_complex_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT00;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dct1_complex_d(int rank, const int *n,		   
+planResult plan_dct1_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1268,12 +1388,12 @@ long plan_dct1_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT00;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst1_complex_s(int rank, const int *n,		   
+planResult plan_dst1_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1281,12 +1401,12 @@ long plan_dst1_complex_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT00;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst1_complex_d(int rank, const int *n,		   
+planResult plan_dst1_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1294,13 +1414,13 @@ long plan_dst1_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT00;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
 
-long plan_dct2_s(int rank, const int *n,		   
+planResult plan_dct2_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1308,12 +1428,12 @@ long plan_dct2_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT10;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct2_d(int rank, const int *n,		   
+planResult plan_dct2_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1321,12 +1441,12 @@ long plan_dct2_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT10;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst2_s(int rank, const int *n,		   
+planResult plan_dst2_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1334,12 +1454,12 @@ long plan_dst2_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT10;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst2_d(int rank, const int *n,		   
+planResult plan_dst2_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1347,12 +1467,12 @@ long plan_dst2_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT10;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct2_complex_s(int rank, const int *n,		   
+planResult plan_dct2_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1360,12 +1480,12 @@ long plan_dct2_complex_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT10;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dct2_complex_d(int rank, const int *n,		   
+planResult plan_dct2_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1373,12 +1493,12 @@ long plan_dct2_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT10;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst2_complex_s(int rank, const int *n,		   
+planResult plan_dst2_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1386,12 +1506,12 @@ long plan_dst2_complex_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT10;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst2_complex_d(int rank, const int *n,		   
+planResult plan_dst2_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1399,13 +1519,13 @@ long plan_dst2_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT10;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
 
-long plan_dct3_s(int rank, const int *n,		   
+planResult plan_dct3_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1413,12 +1533,12 @@ long plan_dct3_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT01;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct3_d(int rank, const int *n,		   
+planResult plan_dct3_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1426,12 +1546,12 @@ long plan_dct3_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT01;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst3_s(int rank, const int *n,		   
+planResult plan_dst3_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1439,12 +1559,12 @@ long plan_dst3_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT01;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst3_d(int rank, const int *n,		   
+planResult plan_dst3_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1452,12 +1572,12 @@ long plan_dst3_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT01;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct3_complex_s(int rank, const int *n,		   
+planResult plan_dct3_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1465,12 +1585,12 @@ long plan_dct3_complex_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT01;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dct3_complex_d(int rank, const int *n,		   
+planResult plan_dct3_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1478,12 +1598,12 @@ long plan_dct3_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT01;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst3_complex_s(int rank, const int *n,		   
+planResult plan_dst3_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1491,12 +1611,12 @@ long plan_dst3_complex_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT01;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst3_complex_d(int rank, const int *n,		   
+planResult plan_dst3_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1504,13 +1624,13 @@ long plan_dst3_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT01;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
 
-long plan_dct4_s(int rank, const int *n,		   
+planResult plan_dct4_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1518,12 +1638,12 @@ long plan_dct4_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT11;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed, \
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct4_d(int rank, const int *n,		   
+planResult plan_dct4_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1531,12 +1651,12 @@ long plan_dct4_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT11;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst4_s(int rank, const int *n,		   
+planResult plan_dst4_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1544,12 +1664,12 @@ long plan_dst4_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT11;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dst4_d(int rank, const int *n,		   
+planResult plan_dst4_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1557,12 +1677,12 @@ long plan_dst4_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT11;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride,idist,out,onembed,\
     ostride,odist,&type,fft_flag));
 }
 
 
-long plan_dct4_complex_s(int rank, const int *n,		   
+planResult plan_dct4_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1570,12 +1690,12 @@ long plan_dct4_complex_s(int rank, const int *n,
 		int ostride, int odist,unsigned fft_flag)
 {
    fftwf_r2r_kind type = FFTW_REDFT11;
-   return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
+   return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed, \
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dct4_complex_d(int rank, const int *n,		   
+planResult plan_dct4_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1583,12 +1703,12 @@ long plan_dct4_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_REDFT11;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst4_complex_s(int rank, const int *n,		   
+planResult plan_dst4_complex_s(int rank, const int *n,		   
                          int howmany,					   
                          float *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1596,12 +1716,12 @@ long plan_dst4_complex_s(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftwf_r2r_kind type = FFTW_RODFT11;
-  return((long) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftwf_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
 
 
-long plan_dst4_complex_d(int rank, const int *n,		   
+planResult plan_dst4_complex_d(int rank, const int *n,		   
                          int howmany,					   
                          double *in, const int *inembed,			   
                          int istride, int idist,			   
@@ -1609,33 +1729,102 @@ long plan_dst4_complex_d(int rank, const int *n,
 		  int ostride, int odist,unsigned fft_flag)
 {
   fftw_r2r_kind type = FFTW_RODFT11;
-  return((long) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
+  return((planResult) fftw_plan_many_r2r(1,n,howmany,in,inembed,istride*2,idist*2,out,onembed,\
     ostride*2,odist*2,&type,fft_flag));
 }
+#endif
 
 
 
-/*
-grid newgrid(const grid &gr,const trans_type1D &type,int d;)
+#ifdef TIMERS
+
+void timer::init()
 {
-  int *gdims,int *pgrid,int *proc_order;int *mem_order;
-  MPI_Comm mpicomm;
 
-  gdims = gr.gdims;
-  pgrid = gr.pgrid;
-  proc_order = gr.proc_order;
-  mem_order = gr.mem_order;
+  reorder_trans = 0.0;
+  reorder_out = 0.0;
+  reorder_in = 0.0;
+  trans_exec = 0.0;
+  packsend = 0.0;
+  packsend_trans = 0.0;
+  unpackrecv = 0.0;
+  alltoall = 0.0;
 
-  if(type.dt1 < type.dt2) // Real-to-complex
-    gdims[d] = gdims[2]/2+1;
-  else if(type.dt2 < type.dt1) // Complex-to-real
-    gdims[d] = (gdims[d]-1)*2;
+}
 
-  grid tmpgrid = new grid(gdims,pgrid,proc_order,mem_order,mpicomm);
-} 
-*/
+void timer::print(MPI_Comm comm)
+{
 
-  ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
+  timer gtimers_avg,gtimers_min,gtimers_max;
+  gtimers_avg.init();
+  gtimers_min.init();
+  gtimers_max.init();
+  int nproc,taskid;
+  MPI_Comm_rank(comm,&taskid);
+  MPI_Comm_size(comm,&nproc);
+
+  MPI_Reduce(&reorder_trans,&gtimers_avg.reorder_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_trans,&gtimers_min.reorder_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_trans,&gtimers_max.reorder_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
+
+  MPI_Reduce(&reorder_out,&gtimers_avg.reorder_out,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_out,&gtimers_min.reorder_out,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_out,&gtimers_max.reorder_out,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_avg.reorder_in,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_min.reorder_in,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&reorder_in,&gtimers_max.reorder_in,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_avg.trans_exec,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_min.trans_exec,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&trans_exec,&gtimers_max.trans_exec,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_avg.packsend_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_min.packsend_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&packsend_trans,&gtimers_max.packsend_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&packsend,&gtimers_avg.packsend,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&packsend,&gtimers_min.packsend,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&packsend,&gtimers_max.packsend,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_avg.unpackrecv,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_min.unpackrecv,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&unpackrecv,&gtimers_max.unpackrecv,1,MPI_DOUBLE,MPI_MAX,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_avg.alltoall,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_min.alltoall,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&alltoall,&gtimers_max.alltoall,1,MPI_DOUBLE,MPI_MAX,0,comm);
+#ifdef CUDA
+  MPI_Reduce(&gpu_transfer,&gtimers_avg.gpu_transfer,1,MPI_DOUBLE,MPI_SUM,0,comm);
+  MPI_Reduce(&gpu_transfer,&gtimers_min.gpu_transfer,1,MPI_DOUBLE,MPI_MIN,0,comm);
+  MPI_Reduce(&gpu_transfer,&gtimers_max.gpu_transfer,1,MPI_DOUBLE,MPI_MAX,0,comm);
+#endif
+
+  if(taskid == 0) {
+    printf("TIMERS (avg/min/max): \nReorder_trans (%lf %lf %lf)\n",gtimers_avg.reorder_trans/nproc,gtimers_min.reorder_trans,gtimers_max.reorder_trans);
+    printf("Reorder_out   (%lf %lf %lf)\n",gtimers_avg.reorder_out/nproc,gtimers_min.reorder_out,gtimers_max.reorder_out);
+    printf("Reorder_in    (%lf %lf %lf)\n",gtimers_avg.reorder_in/nproc,gtimers_min.reorder_in,gtimers_max.reorder_in);
+    printf("Trans_exec    (%lf %lf %lf)\n",gtimers_avg.trans_exec/nproc,gtimers_min.trans_exec,gtimers_max.trans_exec);
+    printf("Packsend      (%lf %lf %lf)\n",gtimers_avg.packsend/nproc,gtimers_min.packsend,gtimers_max.packsend);
+    printf("Packsend_trans(%lf %lf %lf)\n",gtimers_avg.packsend_trans/nproc,gtimers_min.packsend_trans,gtimers_max.packsend_trans);
+    printf("Unpackrecv    (%lf %lf %lf)\n",gtimers_avg.unpackrecv/nproc,gtimers_min.unpackrecv,gtimers_max.unpackrecv);
+    printf("Alltoall      (%lf %lf %lf)\n",gtimers_avg.alltoall/nproc,gtimers_min.alltoall,gtimers_max.alltoall);
+#ifdef CUDA
+    printf("GPU Transfer      (%lf %lf %lf)\n",gtimers_avg.gpu_transfer/nproc,gtimers_min.gpu_transfer,gtim\
+	   ers_max.gpu_transfer);
+#endif
+
+
+  }
+
+}
+
+  extern  timer timers;
+
+#endif
+
+
+template <class Type> MPIplan<Type>::~MPIplan()
+{
+  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+  delete grid1,grid2;
+}
+
+ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
 {
   int i,j,k;
 
@@ -1678,7 +1867,7 @@ grid newgrid(const grid &gr,const trans_type1D &type,int d;)
 
 }
 
-  ProcGrid::ProcGrid(const ProcGrid &rhs) 
+ProcGrid::ProcGrid(const ProcGrid &rhs) 
   {
     
     //  if(rhs.is_set) {
@@ -1868,167 +2057,8 @@ void DataGrid::InitPencil()
     Ldims[i] = sz[i][myproc];
     GlobStart[i] = st[i][myproc];
   }
-  //      en[proc-1][i] = data;
-  //sz[proc-1][i] = data -st[proc-1][i];
-      //      ldims[li] = sz[myid[li]][li];
-
-  // Assign sizes for local dimensions
-  /*
-  for(i=0;i<ploc;i++) {
-    k = L[i];
-    ldims[k] = Gdims[k];
-    glob_start[k] = 0;
-    for(j=0;j<nd;j++) 
-      for(p=0;p<P[j];p++) {
-	sz[j][p][k] = ldims[k];
-	en[j][p][k] = ldims[k];
-	st[j][p][k] = 0;
-      }
-  }
-  
-
-  // Next, figure out local sizes for all remaining dimensions (non-local and non-spanning) 
-  for(i=0;i<nd;i++) {
-    k = D[i];
-    for(j=0;j<3;j++)
-      if(j != k) { // non-spanning
-	//	l = D[j];
-	//	myproc = grid_id[l];
-	for(p=0;p<P[i];p++) {
-	  sz[i][p][j] = ldims[j];
-	  st[i][p][j] = 0;
-	  en[i][p][j] = ldims[j];
-	  //	  sz[i][p][l] = sz[j][myproc][l];
-	  //st[i][p][l] = st[j][myproc][l];
-	  //en[i][p][l] = en[j][myproc][l];
-	}
-      }	  
-  }
-  */
 }
 
-  /*
-void grid::InitPencil1D() 
-{
-  int i,j,pm,l,size,nl,nu,data,proc,li,nloc,d;
-  
-  d = D[0];
-
-  // Local dims
-  nloc = 0;
-  for(i=0; i < 3; i++) 
-    if(i != d) {
-	L[nloc] = i;
-	nloc++;
-	sz[0][i] = en[0][i] = ldims[i] = Gdims[i];
-	st[0][i] = 0;
-      }
-  if(nloc != 2)
-    printf("ERror in InitPencil1D: expected 2 local dimensions, got%d\n",nloc);
-
-  // split dimension
-  data = Gdims[d];
-  proc = P[0];
-  size = data/proc;
-  nu = data%proc;
-  nl = proc-nu;
-
-  st[0][d] = 0;
-  sz[0][d] = en[0][d] = size;
-  for(j=1; j < nl; j++) {
-    st[j][d] = st[j-1][d] +size;
-    sz[j][d] = size;
-    en[j][d] = en[j-1][d] +size;
-      }
-  size++;
-  for(;j < proc; j++) {
-    st[j][d] = st[j-1][d] + size;
-    sz[j][d] = size;
-    en[j][d] = en[j-1][d] +size;
-  }
-  en[proc-1][d] = data;
-  sz[proc-1][d] = data -st[proc-1][d];
-  ldims[d] = sz[taskid][d];
-
-}
-  */
-  
-/*
-variable::variable(const variable &rhs)
-{
-  ext = rhs.ext;
-  prec = rhs.prec;
-  datatype=rhs.datatype;
-  decomp = rhs.decomp;
-  data = rhs.data;
-  alloc=false;
-}
-variable::variable(const grid &rhs,int precision,int dt)
-{
-  prec = precision; datatype=dt;
-  ext = prec*dt;
-  decomp = &rhs;
-  int *ldims=decomp-> ldims;
-  int n = ldims[0]*ldims[1]*ldims[2]*ext;
-  data = new char[n]; 
-  alloc=true;
-}
-
-variable::variable~()
-{
-  if(alloc)
-    delete data;
-
-}
-*/
-
-// Function for defining a new 1D trans_type
-/*
-template <class Type1,class Type2> trans_type1D<Type1,Type2>::trans_type1D(const char name[],const Plan &plan) {
-
-  gen_trans_type(name,plan.isign,plan.fft_r2r_kind,plan.fft_flags); 
-
-  int prec2;
-  if(typeid(Type1) == type_float) {
-    prec = 4;
-    dt1 = 1;
-  }
-  else if(typeid(Type1) == type_double) {
-    prec = 8;
-    dt1 = 1;
-  }
-  else if(typeid(Type1) == type_complex) {
-    prec = 4;
-    dt1 = 2;
-  }
-  else if(typeid(Type1) == type_complex_double) {
-    prec = 8;
-    dt1 = 2;
-  }
-
-  if(typeid(Type2) == type_float) {
-    prec2 = 4;
-    dt2 = 1;
-  }
-  else if(typeid(Type2) == type_double) {
-    prec2 = 8;
-    dt2 = 1;
-  }
-  else if(typeid(Type2) == type_complex) {
-    prec2 = 4;
-    dt2 = 2;
-  }
-  else if(typeid(Type2) == type_complex_double) {
-    prec2 = 8;
-    dt2 = 2;
-  }
-  if(prec != prec2)
-    cout << "Error in trans_type1D: precisions don't match!" << endl;
-
-  exec = plan.exec;
-  doplan = plan.doplan;
-  }
-*/
 
 // Initialize a 3D transform type based on IDs of 1D transforms
 trans_type3D::trans_type3D(int types_IDs[3]) //,const char name_[]) 
@@ -2092,100 +2122,5 @@ trans_type3D::~trans_type3D()
   //delete [] name;
 }
 
-// Define a 1D transform type
-template <class Type1,class Type2>  trans_type1D<Type1,Type2>::trans_type1D(const char *name_,long (*doplan_)(...),void (*exec_)(...),int isign) : gen_trans_type(isign) {
-  int prec2;
-
-    name = new char[strlen(name_)+1];
-    strcpy(name,name_);
-
-#ifdef FFTW
-  if(typeid(Type1) ==typeid(float)) {
-    dt1 = 1;
-    prec = 4;
-    if(typeid(Type2) ==type_float) {
-	dt2 = 1;
-	prec2 = 4;
-	//	doplan = fftwf_plan_many_r2r;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...)) fftwf_execute_r2r;
-    }
-    else if(typeid(Type2) ==type_complex) {
-	dt2 = 2;
-	prec2 = 4;
-	//doplan = fftwf_plan_many_r2c;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...)) fftwf_execute_dft_r2c;
-      }
-  }
-  else if(typeid(Type1) ==type_double) {
-      dt1 = 1;
-      prec = 8;
-      if(typeid(Type2) ==type_double) {
-	dt2 = 1;
-	prec2 = 8;
-	//	doplan = fftw_plan_many_r2r;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftw_execute_r2r;
-      }
-      else if(typeid(Type2) ==type_complex_double) {
-	dt2 = 2;
-	prec2 = 8;
-	// doplan = fftw_plan_many_r2c;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftw_execute_dft_r2c;
-      }
-  }
-  else if(typeid(Type1) ==type_complex) {
-      dt1 = 2;
-      prec = 4;
-      if(typeid(Type2) ==type_float) {
-	dt2 = 1;
-	prec2 = 4;
-	//doplan = fftwf_plan_many_c2r;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftwf_execute_dft_c2r;
-      }
-      else if(typeid(Type2) ==type_complex) {
-	dt2 = 2;
-	prec2 = 4;
-	//doplan = fftwf_plan_many;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftwf_execute_dft;
-      }
-  }
-  else if(typeid(Type1) ==type_complex_double) {
-
-      dt1 = 2;
-      prec = 8;
-      if(typeid(Type2) ==type_double) {
-	dt2 = 1;
-	prec2 = 8;
-	//doplan = fftw_plan_many_c2r;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftw_execute_dft_c2r;
-      }
-      else if(typeid(Type2) ==type_complex_double) {
-	dt2 = 2;
-	prec2 = 8;
-	//doplan = fftw_plan_many;
-	if(exec_) exec = (void (*)(...)) exec_;
-	else exec = (void (*)(...))fftw_execute_dft;
-      }
-    }
-#endif    
-
-  doplan = doplan_;
-
-
-//    if(!doplan)
-//      cout << "Error in trans_type1D: no suitable doplan" << endl;  
-    if(doplan == NULL)
-      is_empty = true;
-    else if (!doplan)
-      cout << "Error in trans_type1D: no suitable doplan" << endl;
-    if(prec != prec2)
-      cout << "Error in trans_type1D: precisions don't match!" << endl;
-  }
 
 }

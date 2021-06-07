@@ -5,10 +5,12 @@
 #endif
 */
 
-//#include "p3dfft.h"
+#include "p3dfft.h"
 
 #ifdef CUDA
+#ifndef CUTENSOR 
 #include "reorder_kernel.cu"
+#endif
 #endif
 
 //namespace p3dfft {
@@ -251,15 +253,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_cublas(
 #endif
 
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslice,bool deriv, bool OW)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslice,bool deriv)
 {
-
-#if defined CUDA && !defined CUBLAS  
 
     Type2 *tmp;
 
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*mysize2[slice]);
-    (*(exec))(plan->libplan_out[slice],in+offset1[slice],tmp);
+#if defined CUDA && !defined CUBLAS  
+
+    if(is_empty)
+      tmp = (Type2 *) in + offset1[slice];
+    else {
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*mysize2[slice]);
+      (*(exec))(plan->libplan_out[slice],in+offset1[slice],tmp);
+    }
     if(deriv) {
       int sdims[3] = {d2[1],d2[0],mysize2[slice]/(d2[0]*d2[1])};
       //      compute_deriv_loc_cu<<<>>>(tmp,tmp,sdims);
@@ -270,33 +276,35 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(T
 #ifdef CUTENSOR
     ro_cutensor_in<Type2>(tmp,out+offset2[slice],imc,d2,slice,nslice,streams[slice]);
 #elif defined CUTT
-	ro_cutt_in<Type2>(tmp,out,imc,d2);
+	ro_cutt_in<Type2>(tmp,out+offset2[slice],imc,d2,slice,nslice,streams[slice]);
 #else // do our own CUDA transpose
     dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
-    ro102in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
-    rot102in_cu<<<gridDim,blockSize>>>(in,out,inplace,d1,d2,exec,plan);
+    ro102in_cu<Type2>(gridDim,blockSize,tmp,out+offset2[slice],inplace,d1,d2,slice,nslice,streams[slice]);
+//    rot102in_cu<<<gridDim,blockSize>>>(in,out,inplace,d1,d2,exec,plan,slice,nslice,streams[slice]);
 #endif
-
-    cudaFree(tmp);
+    if(!is_empty)
+      cudaFree(tmp);
 #else
-   {
-     Type2 *tmp,*pout,*pin;
+   
+     Type2 *pout,*pin;
 
      /*
      if(OW && dt2 <= dt1) 
        inplace=true;
-     else {
-              if((void *) in == (void *) out && dt2 > dt1) {
-	 tmp = new Type2[d2[0]*d2[1]*d2[2]];
-	 for(k=0;k <d1[2];k++) 
+       else {  */
+	 /* for(k=0;k <d1[2];k++) 
 	   (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp+k*d2[0]*d2[1]);
        }
        else
        */
-     tmp = new Type2[d2[0]*d2[1]];
+     if(!is_empty) 
+       if((void *) in == (void *) out && dt2 > dt1) 
+	 tmp = new Type2[d2[0]*d2[1]*d2[2]];
+       else
+	 tmp = new Type2[d2[0]*d2[1]];
      
-     for(k=0;k <d1[2];k++) {
+     for(k=offset1[slice]/(d1[0]*d1[1]);k < (offset1[slice]+mysize1[slice])/(d1[0]*d1[1]);k++) {
        /*
        if(inplace) {
 	 tmp = (Type2 *) in + k*d2[0]*d2[1];
@@ -304,33 +312,56 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(T
        }
        else */
 	 //	 if((void *) in != (void *) out || dt2 <= dt1)
-       (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
-       
-       pout = out+k*d2[0]*d2[1];
-#ifdef MKL_BLAS
-       blas_trans<Type2>(d2[1],d2[0],1.0,tmp,d2[1],pout,d2[0]);
-#else
-       pout = out +k*d2[0]*d2[1];
-       for(j=0;j < d2[1];j++) {
-	 pin = tmp + j;
-	 for(i=0;i < d2[0];i++) {
-	   *pout++ = *pin;
-	   pin += d2[1];
-	 }	
+	 if(is_empty) 
+	   tmp = (Type2 *) in + offset1[slice] + k*d2[0]*d2[1]; 
+	 else 
+	   if((void *) in == (void *) out && dt2 > dt1)  {
+	     (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp+k*d2[0]*d2[1]);
+	     continue;
+	   }
+	   else 
+	     (*(trans_type->exec))(plan->libplan_out,in+k*d1[0]*d1[1],tmp);
 	 
-       }
+	 pout = out+k*d2[0]*d2[1];
+	 
+#ifdef MKL_BLAS
+	 blas_trans<Type2>(d2[1],d2[0],1.0,tmp,d2[1],pout,d2[0]);
+#else
+	 pout = out +k*d2[0]*d2[1];
+	 for(j=0;j < d2[1];j++) {
+	   pin = tmp + j;
+	   for(i=0;i < d2[0];i++) {
+	     *pout++ = *pin;
+	     pin += d2[1];
+	   }	
+	   
+	 }
 #endif
-      //      if(!trans_type->is_empty)
      }
-     
-     //     if(!inplace)
-     delete [] tmp;
-
-     break;     
-   }
+     if((void *) in == (void *) out && dt2 > dt1)  
+       for(k=offset2[slice]/(d2[0]*d2[1]);k < (offset2[slice]+mysize2[slice])/(d2[0]*d2[1]);k++) {
+	 pout = out+k*d2[0]*d2[1];
+	 
+#ifdef MKL_BLAS
+	 blas_trans<Type2>(d2[1],d2[0],1.0,tmp,d2[1],pout,d2[0]);
+#else
+	 pout = out +k*d2[0]*d2[1];
+	 for(j=0;j < d2[1];j++) {
+	   pin = tmp + j;
+	   for(i=0;i < d2[0];i++) {
+	     *pout++ = *pin;
+	     pin += d2[1];
+	   }	
+	   
+	 }
 #endif
-   
-}
+       }
+
+      if(!is_empty)
+	delete [] tmp;
+#endif
+}	 
+	 
 
 template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv)
 {
@@ -339,10 +370,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *
 #ifdef CUDA  
 
   Type2 *tmp;
-  cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
   int imc[3] = {2,0,1};
 
-  (*(exec))(plan->libplan_out[nslices],in,tmp);
+  if(!is_empty) {
+     cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
+     (*(exec))(plan->libplan_out[nslices],in,tmp);
+  }
+  else 
+    tmp = (Type2 *) in;
   //  if(deriv)
   //  compute_deriv_loc_cu<<<>>>(tmp,tmp,d2);
   
@@ -357,6 +392,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *
     ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
     ro120in_cu(gridDim,blockSize,tmp,out,d2);
 #endif
+
+  if(!is_empty) 
+    cudaFree(tmp);
 
 #ifdef DEBUG
   int size=d2[0]*d2[1]*d2[2];
@@ -411,7 +449,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *
 	  //  (*(trans_type->exec))(plan->libplan_in,in+k*d1[0]*d1[1],tmp);
 	  // }
 	  //else
-	  (*(trans_type->exec))(plan->libplan_out[nslices],pIN+k*d1[0]*d1[1],tmp);
+	  if(!is_empty)
+	    (*(trans_type->exec))(plan->libplan_out[nslices],pIN+k*d1[0]*d1[1],tmp);
+	  else
+	    memcpy(tmp,pIN+k*d1[0]*d1[1],d2[2]*d2[1]*(k2-k)*sizeof(Type2));
 	  if(deriv)
 	    compute_deriv_loc(tmp,tmp,sdims);
 
@@ -436,11 +477,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *
 	    }
 	  }
 	}
-//	if(!inplace)
-	  delete [] tmp;
 
     }
 #endif
+    if(!is_empty)
+      delete [] tmp;
 }
 
 
@@ -450,8 +491,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in(Type1 *
 #ifdef CUDA  
 
   Type2 *tmp;
-  cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
-  (*(exec))(plan->libplan_out[nslices],in,tmp);
+  if(!is_empty) {
+    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
+    (*(exec))(plan->libplan_out[nslices],in,tmp);
+  }
+  else
+    tmp = (Type2 *) in;
   //  if(deriv)
   //  compute_deriv_loc_cu<<<>>>(tmp,tmp,d2);
 
@@ -467,14 +512,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in(Type1 *
     ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
     ro210in_cu(gridDim,blockSize,tmp,out,d2);
 #endif
-
-    cudaFree(tmp);
-  
+    if(!is_empty)
+      cudaFree(tmp);
+ 
 #else 
-    {
 
   Type2 *tmp,*pout,*pin,*pin1,*pin2,*pout1;
-  std::unique_ptr<Type2> myptr2;
   int i,ii,i2,j,k,kk,k2,nb31,nb13;
 
 
@@ -488,12 +531,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in(Type1 *
   else
     nb13 = 1;
   if(nb13 < 1) nb13 = 1;
+ 
   
-  myptr2 =  std::unique_ptr<Type2> (new Type2[d2[0]*d2[1]*d2[2]]);
-  tmp = myptr2.get();
+  tmp = new Type2[d2[0]*d2[1]*d2[2]];
 	
       //	tmp = new Type2[d2[2]*d2[1]*d2[0]];
-  (*(exec))(plan->libplan_out[nslices],in,tmp);
+  if(!is_empty)
+    (*(exec))(plan->libplan_out[nslices],in,tmp);
+  else
+    memcpy(tmp,in,d2[2]*d2[1]*d2[0]*sizeof(Type2));
   if(deriv) {
     int sdims[3] = {d2[2],d2[1],d2[0]};
     compute_deriv_loc(tmp,tmp,sdims);
@@ -520,7 +566,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in(Type1 *
     }
   }
 
-    }
+  delete [] tmp;
 #endif
 }
 
@@ -529,8 +575,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in(Type1 *
 
 #ifdef CUDA  
   Type2 *tmp;
-  cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
-  (*(exec))(plan->libplan_out[nslices],in,tmp);
+  if(!is_empty) {
+    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*d2[0]*d2[1]*d2[2]);
+    (*(exec))(plan->libplan_out[nslices],in,tmp);
+  }
+  else
+    tmp = (Type2 *) in;
   //  if(deriv)
   //  compute_deriv_loc_cu<<<>>>(tmp,tmp,d2);
 
@@ -546,14 +596,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in(Type1 *
     ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
     ro201in_cu(gridDim,blockSize,tmp,out,d2);
 #endif
-
-    cudaFree(tmp);
+    if(!is_empty)
+      cudaFree(tmp);
 
 #else
-      {
-      
       Type2 *tmp,*pout,*pin,*pin1,*pin2,*pout1;
-  std::unique_ptr<Type2> myptr2;
   int i,j,jj,j2,k,kk,k2,nb32,nb23;
 
 
@@ -568,11 +615,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in(Type1 *
     nb32 = 1;
   if(nb32 < 1) nb32 = 1;
   
-  myptr2 =  std::unique_ptr<Type2> (new Type2[d2[0]*d2[1]*d2[2]]);
-  tmp = myptr2.get();
+  tmp = new Type2[d2[0]*d2[1]*d2[2]];
   
 	//	tmp = new Type2[d2[0]*d2[1]*d2[2]];
-  (*(exec))(plan->libplan_out[nslices],in,tmp);
+  if(!is_empty)
+    (*(exec))(plan->libplan_out[nslices],in,tmp);
+  else
+    memcpy(tmp,in,d2[2]*d2[1]*d2[0]*sizeof(Type2));
+
   if(deriv) {
     int sdims[3] = {d2[2],d2[0],d2[1]};
     compute_deriv_loc(tmp,tmp,sdims);
@@ -599,7 +649,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in(Type1 *
     }
   }
 
-    }
+  delete [] tmp;
 #endif
 }
 
@@ -625,7 +675,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
   //  if(useCuda) {
 
   Type2 *tmp;
-  cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*mysize1[slice]);
+  if(!is_empty) {
+    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type2)*mysize1[slice]);
+    (*(exec))(plan->libplan_out[slice],in+offset1[slice],tmp);
+  }
+  else
+    tmp = (Type2 *) in+offset1[slice];
   /*
   if (cudaDeviceSynchronize() != cudaSuccess){
     fprintf(stderr, "Cuda error: Failed to synchronize\n");
@@ -634,7 +689,6 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
   */
   int imc[3] = {0,2,1};
 
-  (*(exec))(plan->libplan_out[slice],in+offset1[slice],tmp);
   //  if(deriv) {
   //  int sdims[3] = {d2[0],d1[1],mysize1[slice]/(d1[1]*d2[0])};
   //  compute_deriv_loc_cu<<<>>>(tmp,tmp,sdims);
@@ -662,15 +716,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
     //  rot021in_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
 
-    cudaFree(tmp);
-    cudaDeviceSynchronize();
+    if(!is_empty) 
+      cudaFree(tmp);
+
     //  }
     //else
 #else
   {
   Type1 *pin_t1;
   Type2 *tmp,*pout,*pin,*pin1,*pin2,*pout1,*pout2;
-  std::unique_ptr<Type2> myptr2;
   int i,j,k,nb32,nb23,kk,k2,jj,j2;
 
 
@@ -684,12 +738,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
   else nb23 = 1;
   if(nb23 < 1) nb23 = 1;
   
+  int kst = offset1[slice]/(d1[0]*d1[1]);
+  int ken = kst + mysize1[slice]/(d1[0]*d1[1]);
+
   if((void *) in != (void *) out) {
     if(deriv) {
       int sdims[3] = {d2[2],1,1};
     
-      for(k=0;k <d1[2];k+=nb32) {
-	k2 = min(k+nb32,d1[2]);
+      for(k=kst;k < ken;k+=nb32) {
+	k2 = min(k+nb32,ken);
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
@@ -704,8 +761,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
     }
 
     else
-      for(k=0;k <d1[2];k+=nb32) {
-	k2 = min(k+nb32,d1[2]);
+      for(k=kst;k < ken;k+=nb32) {
+	k2 = min(k+nb32,ken);
 	for(j=0;j < d1[1];j+=nb23) {
 	  j2 = min(j+nb23,d1[1]);
 	  for(kk=k; kk < k2; kk++) {
@@ -729,8 +786,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
       compute_deriv_loc(tmp,tmp,sdims);
     }
 
-    for(k=0;k <d2[1];k+=nb32) {
-      k2 = min(k+nb32,d2[1]);
+    for(k=kst;k < ken;k+=nb32) {
+      k2 = min(k+nb32,ken);
       for(j=0;j < d2[2];j+=nb23) {
 	j2 = min(j+nb23,d2[2]);
 	for(kk=k; kk < k2; kk++) {
@@ -756,7 +813,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
 #ifdef CUDA  
 
     Type1 *tmp;
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*mysize1[slice]);
+    if(!is_empty)
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*mysize1[slice]);
+    else
+      tmp = (Type1 *) out;
     int imc[3] = {1,0,2};
 #ifdef CUTENSOR
     ro_cutensor_out<Type1>(in+offset1[slice],tmp,imc,d1,slice,nslice,streams[slice]);
@@ -768,8 +828,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
     ro102out_cu(gridDim,blockSize,in,tmp,d1);
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
-    
-    (*(exec))(plan->libplan_out[slice],tmp,out+offset2[slice]);
+    if(!is_empty)
+      (*(exec))(plan->libplan_out[slice],tmp,out+offset2[slice]);
     if(deriv) {
       int l=d2[2] % nslices;
       int mysz;
@@ -780,10 +840,9 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
       int sdims[3]={d2[0],d2[1],mysz};
       //      compute_deriv_loc_cu<<<>>>(out+offset2[slice],out+offset2[slice],sdims);
     }
-    
-    cudaFree(tmp);
+    if(!is_empty)
+      cudaFree(tmp);
 #else
-    {
 
   Type1 *tmp,*pin,*pout,*pout1;
   Type2 *pout2;
@@ -796,12 +855,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
     sdims[1] = d2[1];
     sdims[2] = 1;
   }
+  int kst = offset1[slice]/(d1[0]*d1[1]);
+  int ken = kst + mysize1[slice]/(d1[0]*d1[1]);
   if((void *) in == (void *) out && dt2 > dt1) {
 
-    myptr1 =  std::unique_ptr<Type1> (new Type1[d1[0]*d1[1]*d1[2]]);
-    tmp = myptr1.get();
+    tmp = new Type1[d1[0]*d1[1]*d1[2]];
     //	tmp = new Type1[d1[0]*d1[1]*d1[2]];
-    for(k=0;k <d1[2];k++) {
+    for(k=kst;k < ken;k++) {
       pin = in + k*d1[0]*d1[1];
 #ifdef MKL_BLAS
       blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
@@ -820,15 +880,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
       if(deriv)
 	compute_deriv_loc(pout2,pout2,sdims);
     }
-    
+    delete [] tmp;    
   }
   
   else {
+ 
+    if(!is_empty) 
+      tmp = new Type1[d1[0]*d1[1]];
+    else
+      tmp = (Type1 *) out;
 
-    myptr1 =  std::unique_ptr<Type1> (new Type1[d1[0]*d1[1]]);
-    tmp = myptr1.get();
-    //	tmp = new Type1[d1[0]*d1[1]];
-    for(k=0;k <d1[2];k++) {
+    for(k=kst;k <d ken;k++) {
       pin = in + k*d1[0]*d1[1];
 #ifdef MKL_BLAS
       blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmp,d1[1]);
@@ -842,14 +904,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021in_slice(T
       }
 #endif
       pout2 = out + k*d2[0]*d2[1];
-      (*(exec))(plan->libplan_out,tmp,pout2);
+      if(!is_empty)
+	(*(exec))(plan->libplan_out,tmp,pout2);
       if(deriv)
 	compute_deriv_loc(pout2,pout2,sdims);
     }
     
   }
 
-    }
+  if(!is_empty)
+    delete [] tmp;
+    
 #endif
 }
  
@@ -859,7 +924,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out(Type1 
 
 #ifdef CUDA  
     Type1 *tmp;
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    if(!is_empty)
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    else
+      tmp = (Type1 *) out;
     int imc[3] = {2,0,1}; //{1,2,0};
 
 
@@ -873,11 +941,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out(Type1 
   //  ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
     ro120out_cu(gridDim,blockSize,in,tmp,d1);
 #endif
-    (*(exec))(plan->libplan_out[nslices],tmp,out);
+
+    if(!is_empty) {    
+      (*(exec))(plan->libplan_out[nslices],tmp,out);
     //     if(deriv)
     //  compute_deriv_loc_cu<<<>>>(out,out,d2);
    //    cudaDeviceSynchronize();
-    cudaFree(tmp);
+      cudaFree(tmp);
+    }
     
 #else
     {
@@ -924,14 +995,16 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out(Type1 
 	  for(j=0;j < d1[1];j++) {
 	    pout1 = tmp + j*d1[2]*d1[0];
 	    pout2 = out + j*d2[0]*d2[1];
-	    (*(trans_type->exec))(plan->libplan_out[nslices],(Type1 *) pout1,pout2);
+	    if(!is_empty)	    
+	      (*(trans_type->exec))(plan->libplan_out[nslices],(Type1 *) pout1,pout2);
 	    compute_deriv_loc(pout2,pout2,sdims);
 	  }
 	  else
 	    for(j=0;j < d1[1];j++) {
 	      pout1 = tmp + j*d1[2]*d1[0];
 	      pout2 = out + j*d2[0]*d2[1];
-	      (*(trans_type->exec))(plan->libplan_out[nslices],(Type1 *) pout1,pout2);
+	      if(!is_empty)
+		(*(trans_type->exec))(plan->libplan_out[nslices],(Type1 *) pout1,pout2);
 	    }
 	}
 	else {
@@ -966,7 +1039,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out(Type1 
 	  }
 
 	  pout2 = out + j*d2[0]*d2[1];
-	  (*(trans_type->exec))(plan->libplan_out[nslices],tmp,pout2);
+	  if(!is_empty)
+	    (*(trans_type->exec))(plan->libplan_out[nslices],tmp,pout2);
+	  else
+	    memcpy(pout2,tmp+d2[0]*d2[1],d2[0]*d2[1]);
 	  if(deriv)
 	    compute_deriv_loc(pout2,pout2,sdims);
 	}
@@ -987,7 +1063,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out(Type1 
 
 #ifdef CUDA  
     Type1 *tmp;
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    if(!is_empty)
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    else
+      tmp = (Type1 *) out;
     int imc[3] = {2,1,0};
 #ifdef CUTENSOR
     ro_cutensor_out<Type1>(in,tmp,imc,d1,0,1,0);
@@ -999,16 +1078,16 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out(Type1 
     ro210out_cu(gridDim,blockSize,in,tmp,d1);
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
-    (*(exec))(plan->libplan_out[nslices],tmp,out);
-    cudaFree(tmp);
+    if(!is_empty) {
+      (*(exec))(plan->libplan_out[nslices],tmp,out);
+      cudaFree(tmp);
+    }
     
 #else
-  {
  // no Cuda
 
   Type1 *tmp,*pin,*pin1,*pout,*pout1,*pout2;
   int i,j,k,ii,i2,kk,k2,nb13,nb31;
-  std::unique_ptr<Type1> myptr1;
 
 
   if(d1[0]*d1[1] >0)
@@ -1020,9 +1099,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out(Type1 
   else nb13 = 1;
   if(nb13 < 1) nb13 = 1;
 	
-  myptr1 =  std::unique_ptr<Type1> (new Type1[d1[0]*d1[1]*d1[2]]);
-  tmp = myptr1.get();
-	//	tmp = new Type1[d1[1]*d1[2]*d1[0]];
+  tmp = new Type1[d1[0]*d1[1]*d1[2]];
 	
   for(k=0;k <d1[2];k+=nb31) {
     k2 = min(k+nb31,d1[2]);
@@ -1048,10 +1125,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out(Type1 
 #ifdef DEBUG
   printf("(2,1,0): Transform of length %d, batch size %d, in array sized %d\n",N,m,d1[2]*d1[0]*d1[1]);
 #endif
-  (*(exec))(plan->libplan_out[nslices],tmp,out);
+  if(!is_empty)
+    (*(exec))(plan->libplan_out[nslices],tmp,out);
+  else
+    memcpy(out,tmp,d2[0]*d2[1]*d2[2]);
   if(deriv)
     compute_deriv_loc(out,out,d2);
-  }
+  delete [] tmp;
+  
 #endif
 }
 	
@@ -1061,7 +1142,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out(Type1 
 
 #ifdef CUDA  
     Type1 *tmp;
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    if(!is_empty)
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*d1[0]*d1[1]*d1[2]);
+    else
+      tmp = (Type1 *) out;
+
     int imc[3] = {1,2,0};
 #ifdef CUTENSOR
     ro_cutensor_out<Type1>(in,tmp,imc,d1,0,1,0);
@@ -1073,11 +1158,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out(Type1 
     ro210out_cu(gridDim,blockSize,in,tmp,d1);
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
-    (*(exec))(plan->libplan_out[nslices],tmp,out);
-    cudaFree(tmp);
+    if(!is_empty) {
+      (*(exec))(plan->libplan_out[nslices],tmp,out);
+      cudaFree(tmp);
+    }
    
 #else
-    {
+
 // no Cuda
 
   Type1 *tmp,*pin,*pin1,*pout,*pout1,*pout2;
@@ -1090,9 +1177,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out(Type1 
   if(nb32 < 1) nb32 = 1;
   nb23 = nb32;
   
-  myptr1 =  std::unique_ptr<Type1> (new Type1[d1[0]*d1[1]*d1[2]]);
-  tmp = myptr1.get();
-  //	tmp = new Type1[d1[1]*d1[2]*d1[0]];
+  tmp = new Type1[d1[0]*d1[1]*d1[2]];
 	
   for(k=0;k <d1[1];k+=nb32) {
     k2 = min(k+nb32,d1[1]);
@@ -1115,11 +1200,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out(Type1 
     }
   }
 
-  (*(exec))(plan->libplan_out[nslices],tmp,out);
+  if(!is_empty)
+    (*(exec))(plan->libplan_out[nslices],tmp,out);
+  else
+    memcpy(out,tmp,d2[0]*d2[1]*d2[2]);
   if(deriv)
     compute_deriv_loc(out,out,d2);
-	//	delete [] tmp;
-    }
+  delete [] tmp;
+
 #endif
 }
 
@@ -1130,7 +1218,10 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021out_slice(
 #ifdef CUDA  
 
     Type1 *tmp;
-    cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*mysize1[slice]);
+    if(!is_empty)
+      cudaMalloc(reinterpret_cast<void **> (&tmp),sizeof(Type1)*mysize1[slice]);
+    else
+      tmp = (Type1 *) out + offset2[slice];
     int imc[3] = {0,2,1};
 
 int myoffset = d1[0] * find_disp(d1[2],slice,nslice);
@@ -1146,43 +1237,45 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
 
-    int d[3];
-    d[0] = 1;
-    d[1] = 1;
-    d[2] = d2[2];
-    int offset[nslices],mysize[nslices];
-    divide_work(d,offset,mysize,nslices);
-    if(deriv) {
-      int sdims[3];
-      sdims[2] = 1;
-      sdims[1] = d2[1];
-      sdims[0] = d2[0];
+    if(!is_empty) {
 
-      for(int k=0;k<mysize[slice];k++) {
-	int k1 = k + offset[slice];
-	for(int j=0;j>d2[1];j++) {
-	  (*(exec))(plan->libplan_out[slice],tmp+d1[0]*(j+d2[1]*k),out+d2[0]*(j+d2[1]*k1));
-	  //	  compute_deriv_loc_cu<<<>>>(out+d2[0]*(j+d2[1]*k1),out+d2[0]*(j+d2[1]*k1),sdims);
+      int d[3];
+      d[0] = 1;
+      d[1] = 1;
+      d[2] = d2[2];
+      int offset[nslices],mysize[nslices];
+      divide_work(d,offset,mysize,nslices);
+      if(deriv) {
+	int sdims[3];
+	sdims[2] = 1;
+	sdims[1] = d2[1];
+	sdims[0] = d2[0];
+	
+	for(int k=0;k<mysize[slice];k++) {
+	  int k1 = k + offset[slice];
+	  for(int j=0;j>d2[1];j++) {
+	    (*(exec))(plan->libplan_out[slice],tmp+d1[0]*(j+d2[1]*k),out+d2[0]*(j+d2[1]*k1));
+	    //	  compute_deriv_loc_cu<<<>>>(out+d2[0]*(j+d2[1]*k1),out+d2[0]*(j+d2[1]*k1),sdims);
+	  }
 	}
       }
+      else
+	for(int k=0;k<mysize[slice];k++) {
+	  int k1 = k + offset[slice];
+	  for(int j=0;j>d2[1];j++) 
+	    (*(exec))(plan->libplan_out[slice],tmp+d1[0]*(j+d2[1]*k),out+d2[0]*(j+d2[1]*k1));
+	}
+      
+      cudaFree(tmp);
     }
-    else
-      for(int k=0;k<mysize[slice];k++) {
-	int k1 = k + offset[slice];
-	for(int j=0;j>d2[1];j++) 
-	  (*(exec))(plan->libplan_out[slice],tmp+d1[0]*(j+d2[1]*k),out+d2[0]*(j+d2[1]*k1));
-      }
-    
-    cudaFree(tmp);
-    cudaDeviceSynchronize();
+    //    cudaDeviceSynchronize();
 #else
-    {
+    
  // no Cuda
 
   Type1 *tmp,*pin,*pin1,*pout,*pout1,*pin2,*pin3,*pout3,*pout4;
   Type2 *pout2,*ptran2;
   int i,j,k,jj,j2,kk,k2,nb23,nb32;
-  std::unique_ptr<Type1> myptr1;
 
   if(d1[0]*d1[1] >0)
     nb32 = cache_bl / (sizeof(Type1)*d1[0]*d1[1]);
@@ -1199,8 +1292,7 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
 
   if((void *) in == (void *) out) {
     
-    myptr1 =  std::unique_ptr<Type1> (new Type1[d1[0]*d1[1]*d1[2]]);
-    tmp = myptr1.get();
+    tmp =  new Type1[d1[0]*d1[1]*d1[2]];
 	//	tmp = new Type1[d1[0]*d1[1]*d1[2]]; // tmp[k][i] = in[i][j][k]
 	
     for(k=0;k <d1[2];k+=nb32) {
@@ -1222,23 +1314,24 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
       }
     }
 	
-    if(deriv) {
-       int sdims[3] = {d2[0],1,1};
-       for(k=0;k<d2[2];k++)
-	 for(j=0;j<d2[1];j++) {
+    if(!is_empty) 
+      if(deriv) {
+	int sdims[3] = {d2[0],1,1};
+	for(k=0;k<d2[2];k++)
+	  for(j=0;j<d2[1];j++) {
 	    pin2 = tmp+d1[0]*(j+k*d2[1]);
 	    pout2 = out + d2[0]*(j+k*d2[1]);
 	    (*(exec))(plan->libplan_out,pin2,pout2);
 	    compute_deriv_loc(pout2,pout2,sdims);
-	}
-    }
-    else
-      for(k=0;k<d2[2];k++)
-	for(j=0;j<d2[1];j++) {
-	  pin2 = tmp+d1[0]*(j+k*d2[1]);
-	  pout2 = out + d2[0]*(j+k*d2[1]);
-	  (*(exec))(plan->libplan_out,pin2,pout2);
-	}
+	  }
+      }
+      else
+	for(k=0;k<d2[2];k++)
+	  for(j=0;j<d2[1];j++) {
+	    pin2 = tmp+d1[0]*(j+k*d2[1]);
+	    pout2 = out + d2[0]*(j+k*d2[1]);
+	    (*(exec))(plan->libplan_out,pin2,pout2);
+	  }
     
   }
   else {
@@ -1254,7 +1347,10 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
 	        pin2 = in + kk*d1[0]*d1[1] +j*d1[0];
 		ptran2 = out +kk*d2[0] +j*d2[0]*d2[1];
 		for(jj=j; jj < j2; jj++) {
-	          (*(exec))(plan->libplan_out,pin2,ptran2);
+		  if(!is_empty) 
+		    (*(exec))(plan->libplan_out,pin2,ptran2);
+		  else
+		    memcpy(ptran2,pin2,d1[0]*sizeof(Type1));
 		  compute_deriv_loc(ptran2,ptran2,sdims);
 		  pin2 += d1[0];
 		  ptran2 += d2[0]*d2[1];
@@ -1272,9 +1368,12 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
 	        pin2 = in + kk*d1[0]*d1[1] +j*d1[0];
 		ptran2 = out +kk*d2[0] +j*d2[0]*d2[1];
 		for(jj=j; jj < j2; jj++) {
-	           (*(exec))(plan->libplan_out,pin2,ptran2);
-		   pin2 += d1[0];
-		   ptran2 += d2[0]*d2[1];
+		  if(!is_empty) 
+		    (*(exec))(plan->libplan_out,pin2,ptran2);
+		  else
+		    memcpy(ptran2,pin2,d1[0]*sizeof(Type1));
+		  pin2 += d1[0];
+		  ptran2 += d2[0]*d2[1];
 	        }
 	     }
            }
@@ -1285,3 +1384,384 @@ ro_cutensor_out<Type1>(in+offset1[slice],tmp+myoffset,imc,d1,slice,nslice,stream
 #endif
 }
 
+  // Reorder (local transpose) out-of-place
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// dims2[mo2[i]] = dims1[mo1[i]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int *dims_init)
+{
+  int imc[3],i,j,k,ii,jj,kk,i2,j2,k2;
+  void rel_change(int *,int *,int *);
+  Type2 *pin,*pout,*pin1,*pout1;
+  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31,nb23,nb32;
+  //  int ds=sizeof(Type2) /4;
+
+  // Inverse storage mapping
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  // Find local storage dimensions
+  for(i=0;i<3;i++) {
+    d1[i] = dims_init[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  // Find relative change in the memory mapping from input to output
+  rel_change(imo1,imo2,imc);
+
+#ifdef CUDA
+  ro_cutensor_in<Type2>(in,out,imc, d2, 0,1,0);
+#else
+
+  pin =  in;
+  switch(mc[0]) {
+  case 1:
+    switch(mc[1]) {
+    case 0: //1,0,2
+      for(k=0;k <d1[2];k++) {
+	pout1 = out + k*d1[0]*d1[1];
+	for(j=0;j < d1[1];j++) {
+	  pout = pout1 + j;
+	  for(i=0;i < d1[0];i++) {
+	    *(pout)  = *(pin++);
+	    pout += d2[0];
+	  }
+	}
+      }
+      break;
+
+    case 2: //1,2,0
+
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
+      if(nb32 < 1) nb32 = 1;
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
+      if(nb23 < 1) nb23 = 1;
+      
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
+	  for(kk=k; kk < k2; kk++){
+	    pin1 = in +kk*d1[0]*d1[1];
+	    pout1 = out +kk;
+	    for(jj=j; jj < j2; jj++) {
+	      pin = pin1 +jj*d1[0];
+	      pout = pout1 +jj*d2[0]*d2[1];
+	      for(i=0;i < d1[0];i++) {
+		*pout = *pin++;
+		pout += d2[0];
+	      }
+	    }
+	  }
+	}
+      }
+      
+      break;
+    }
+    break;
+
+  case 2:
+    switch(mc[1]) {
+    case 1: //2,1,0
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
+      if(nb31 < 1) nb31 = 1;
+      nb13 = nb31;
+
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in + kk*d1[0]*d1[1] +i;
+	    pout1 = out + kk + i * d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(ii=i; ii < i2; ii++) {
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
+	      }
+	      pin1 += d1[0];
+	      pout1 += d2[0];
+	    }
+	  }
+	}
+      }
+      
+      break;
+    case 0: //2,0,1
+
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
+      if(nb31 < 1) nb31 = 1;
+      nb13 = nb31;
+
+      for(k=0;k <d1[2];k+=nb31) {
+	k2 = min(k+nb31,d1[2]);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in +kk*d1[0]*d1[1] +i;
+	    pout1 =  out + kk*d2[0] +i*d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(ii=i; ii < i2; ii++) {
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
+	      }
+	      pin1 += d1[0];
+	      pout1+= 1;
+	    }
+	  }
+	}
+      }
+      
+      break;
+    }
+  
+    break;
+
+  case 0: //0,2,1
+    if(mc[1] == 2) {
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
+      if(nb32 < 1) nb32 = 1;
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
+      if(nb23 < 1) nb23 = 1;
+      
+      for(k=0;k <d1[2];k+=nb32) {
+	k2 = min(k+nb32,d1[2]);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in + kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
+	    for(jj=j; jj < j2; jj++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(i=0;i < d1[0];i++) 
+		*pout++ = *pin++;
+	      pin += d1[0];
+	      pout += d2[0]*d2[1];
+	    }
+	  }
+	}
+      }      
+    }
+    else
+      for(k=0;k<d1[2];k++)
+	for(j=0;j < d1[1];j++)
+	  for(i=0;i < d1[0];i++)
+	    *out++ = *in++;
+    break;
+  }
+
+#endif
+}
+
+
+  // Reorder (local transpose) out-of-place
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// dims2[mo2[i]] = dims1[mo1[i]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int *dims_init,int slice, int nslices)
+{
+  int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
+  void rel_change(int *,int *,int *);
+  Type2 *pin,*pout,*pin1,*pout1;
+  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31,nb23,nb32;
+  //  int ds=sizeof(Type2) /4;
+
+  // Inverse storage mapping
+  inv_mo(mo1,imo1);
+  inv_mo(mo2,imo2);
+  // Find local storage dimensions
+  for(i=0;i<3;i++) {
+    d1[i] = dims_init[imo1[i]];
+    d2[i] = dims2[imo2[i]];
+  }
+
+  // Find relative change in the memory mapping from input to output
+  rel_change(imo1,imo2,mc);
+
+#ifdef CUDA
+  if(cmpmo(mc,102) || cmpmo(mc,201))
+    ro_cutensor_in<Type2>(in,out,mc, d2, slice,nslices,streams[slice]);
+  else if(slice == nslices-1)
+    ro_cutensor_in<Type2>(in,out,mc, d2, 0,1,0);
+#else
+  
+  pin =  in;
+  switch(mc[0]) {
+  case 1:
+    switch(mc[1]) {
+    case 0: //1,0,2
+      int kst = offset1[slice]/(d1[0]*d1[1]);
+      int kend = kst + mysize1[slice]/(d1[0]*d1[1]); 
+      for(k=kst;k < ken;k++) {
+	pout1 = out + k*d1[0]*d1[1];
+	for(j=0;j < d1[1];j++) {
+	  pout = pout1 + j;
+	  for(i=0;i < d1[0];i++) {
+	    *(pout)  = *(pin++);
+	    pout += d2[0];
+	  }
+	}
+      }
+      break;
+
+    case 2: //1,2,0
+
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
+      if(nb32 < 1) nb32 = 1;
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
+      if(nb23 < 1) nb23 = 1;
+      
+      int kst = offset1[slice]/(d1[0]*d1[1]);
+      int kend = kst + mysize1[slice]/(d1[0]*d1[1]); 
+
+      for(k=kst;k < ken;k+=nb32) {
+	k2 = min(k+nb32,ken);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
+	  for(kk=k; kk < k2; kk++){
+	    pin1 = in +kk*d1[0]*d1[1];
+	    pout1 = out +kk;
+	    for(jj=j; jj < j2; jj++) {
+	      pin = pin1 +jj*d1[0];
+	      pout = pout1 +jj*d2[0]*d2[1];
+	      for(i=0;i < d1[0];i++) {
+		*pout = *pin++;
+		pout += d2[0];
+	      }
+	    }
+	  }
+	}
+      }
+      
+      break;
+    }
+    break;
+
+  case 2:
+    switch(mc[1]) {
+    case 1: //2,1,0
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
+      if(nb31 < 1) nb31 = 1;
+      nb13 = nb31;
+
+      int kst = offset1[slice]/(d1[0]*d1[1]);
+      int kend = kst + mysize1[slice]/(d1[0]*d1[1]); 
+
+      for(k=kst;k < ken;k+=nb31) {
+	k2 = min(k+nb31,ken);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in + kk*d1[0]*d1[1] +i;
+	    pout1 = out + kk + i * d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(ii=i; ii < i2; ii++) {
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
+	      }
+	      pin1 += d1[0];
+	      pout1 += d2[0];
+	    }
+	  }
+	}
+      }
+      
+      break;
+    case 0: //2,0,1
+
+      if(d1[0]*d1[1] >0)	
+	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb31 = 1;
+      if(nb31 < 1) nb31 = 1;
+      nb13 = nb31;
+
+      for(k=kst;k < ken;k+=nb31) {
+	k2 = min(k+nb31,ken);
+	for(i=0;i < d1[0];i+=nb13) {
+	  i2 = min(i+nb13,d1[0]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in +kk*d1[0]*d1[1] +i;
+	    pout1 =  out + kk*d2[0] +i*d2[0]*d2[1];
+	    for(j=0;j < d1[1];j++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(ii=i; ii < i2; ii++) {
+		*pout = *pin++;
+		pout += d2[0]*d2[1];
+	      }
+	      pin1 += d1[0];
+	      pout1+= 1;
+	    }
+	  }
+	}
+      }
+      
+      break;
+    }
+  
+    break;
+
+  case 0: //0,2,1
+    if(mc[1] == 2) {
+      if(d1[0]*d1[1] >0)	
+	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
+      else nb32 = 1;
+      if(nb32 < 1) nb32 = 1;
+      if(d2[0]*d2[1] >0)	
+	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
+      else nb23 = 1;
+      if(nb23 < 1) nb23 = 1;
+      
+      for(k=kst;k < ken;k+=nb32) {
+	k2 = min(k+nb32,ken);
+	for(j=0;j < d1[1];j+=nb23) {
+	  j2 = min(j+nb23,d1[1]);
+	  for(kk=k; kk < k2; kk++) {
+	    pin1 = in + kk*d1[0]*d1[1] +j*d1[0];
+	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
+	    for(jj=j; jj < j2; jj++) {
+	      pin = pin1;
+	      pout = pout1;
+	      for(i=0;i < d1[0];i++) 
+		*pout++ = *pin++;
+	      pin += d1[0];
+	      pout += d2[0]*d2[1];
+	    }
+	  }
+	}
+      }      
+    }
+    else
+      for(k=kst;k<ken;k++)
+	for(j=0;j < d1[1];j++)
+	  for(i=0;i < d1[0];i++)
+	    *out++ = *in++;
+    break;
+  }
+
+#endif
+}

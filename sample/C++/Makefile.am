@@ -1,6 +1,16 @@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lstdc++
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lstdc++
+
+if ENABLE_CUDA
+CXX_LINKER = nvcc
+AM_CXXFLAGS += -DCUDA
+AM_LDFLAGS = --std=c++11 -ccbin $(CXX_save)
+else
+CXX_LINKER = $(CXX)
+endif
+
+CXXLD = $(CXX_LINKER)
 
 cppsampledir = $(datadir)/p3dfft++_samples/
 

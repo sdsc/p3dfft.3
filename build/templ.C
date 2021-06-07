@@ -143,6 +143,10 @@ void inv_mo(int mo[3],int imo[3]);
     MPI_Abort(grid1_.Pgrid->mpi_comm_glob,0);
   }
 
+  offset=new int[nslices];
+  mysize=new int[nslices];
+  divide_work(offset,mysize,(int *) grid1_.Ldims,nslices);
+
   nd = grid1_.nd;
   grid1 = new DataGrid(grid1_);
   grid2 = new DataGrid(grid2_);
@@ -234,7 +238,7 @@ void inv_mo(int mo[3],int imo[3]);
     OutLoc = OutLoc_;
     loc = InLoc;
     // Find maximum memory size among all the stages
-    maxDevSize = (size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]	*tmpgrid0->ldims[2]*dt*prec;
+    maxDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
 #endif
 
   // Plan the three main (transform) stages of the algorithm
@@ -326,8 +330,8 @@ void inv_mo(int mo[3],int imo[3]);
 #endif
 
 #ifdef CUDA
-	maxDevSize = max(maxDevSize,(size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2]*dt_1*prec);
-        maxDevSize = max(maxDevSize,(size_t) intgrid->ldims[0]*intgrid->ldims[1]*intgrid->ldims[2]*dt_2*prec));
+	maxDevSize = max(maxDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+        maxDevSize = max(maxDevSize,(size_t) intgrid->Ldims[0]*intgrid->Ldims[1]*intgrid->Ldims[2]*dt_2*prec);
 #endif
 
       // Plan/set up 1D transform combined with MPI exchange for this stage
@@ -372,10 +376,10 @@ void inv_mo(int mo[3],int imo[3]);
 #endif
 
 #ifdef CUDA
-      maxDevSize = max(maxDevSize,(size_t) tmpgrid0->ldims[0]*tmpgrid0->ldims[1]*tmpgrid0->ldims[2]*dt_1*prec);
-      maxDevSize = max(maxDevSize,(size_t) tmpgrid1->ldims[0]*tmpgrid1->ldims[1]*tmpgrid1->ldims[2]*dt_2*prec);
+      maxDevSize = max(maxDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+      maxDevSize = max(maxDevSize,(size_t) tmpgrid1->Ldims[0]*tmpgrid1->Ldims[1]*tmpgrid1->Ldims[2]*dt_2*prec);
 
-      loc2 = (st == 2) ? OutLoc : loc;  /
+      loc2 = (st == 2) ? OutLoc : loc;  
 #endif
 
       // Plan/set up 1D transform, possibly combined with local transpose as needed
@@ -387,7 +391,7 @@ void inv_mo(int mo[3],int imo[3]);
 	curr_stage = dynamic_cast<stage*> (new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
 	break;
       case 12:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],,loc,loc2));
+	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
 	break;
       }
 
@@ -427,7 +431,7 @@ void inv_mo(int mo[3],int imo[3]);
   
   if(!iseq) { //If not in the final memory ordering
     prev_stage = curr_stage;
-    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,OutLoc);
+    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,LocHost,OutLoc);
     curr_stage->kind = TRANS_ONLY;
     prev_stage->next = curr_stage;
   }
@@ -444,7 +448,7 @@ void inv_mo(int mo[3],int imo[3]);
   
 }
 
-template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,int loc)
+template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,int loc1,int loc2)
 {
   gen_trans_type *t=empty_type<Type>();
   int trans_dim = grid2.L[0];
@@ -453,7 +457,7 @@ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &gr
 #ifdef DEBUG
   printf("Calling final init_transplan, trans_dim=%d\n",grid2.L[0]);
 #endif
-  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc)));
+  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc1,loc2)));
       //    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
   //curr_stage = (stage *) tr;
   // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
@@ -937,6 +941,13 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
     mo2[i] = grid2->MemOrder[i];
   }
 
+  offset1 = new int[nslices];
+  mysize1 = new int[nslices];
+  offset2 = new int[nslices];
+  mysize2 = new int[nslices];
+  divide_work(offset1,mysize1,dims1,nslices);
+  divide_work(offset2,mysize2,dims2,nslices);
+
   if(trans_type->is_empty)
     is_empty = true;
   else {
@@ -1010,6 +1021,20 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
   OutLoc = OutLoc_;
 }
 
+void divide_work(int *offset,int *mysize,int dims[3],int nslices)
+{
+  int i;
+  long int size=dims[0]*dims[1]*dims[2];
+  long int chunk = size/nslices;
+  int l=chunk % nslices;
+  offset[0] = 0;
+  for(i=0;i<nslices-1;i++) {
+    mysize[i] = (i < l) ? chunk+1 : chunk;
+    offset[i+1] = offset[i] + mysize[i];
+  }
+  mysize[i] = chunk;
+
+}
 
 #define TRANS_IN 0
 #define TRANS_OUT 1
@@ -1204,7 +1229,7 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   SndStrt[0] = 0;
   RcvStrt[0] = 0;
 
-  int sz=sizeof(Type)/4;
+  int sz=sizeof(Type);
   
   //int rank;
   for(int j=0; j< p-1;j++) {
@@ -1233,6 +1258,11 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
 
 }
 
+template <class Type> MPIplan<Type>::~MPIplan()
+{
+  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+  delete grid1,grid2;
+}
 
 
   template <class Type1,class Type2> inline void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
@@ -1316,33 +1346,52 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
     int size1=(istride*N+idist*m);
     int size2=(ostride*N+odist*m);
 
-#ifdef FFTW
+    plan->libplan_in = new planHandle[nslices+1];
+    plan->libplan_inout = new planHandle[nslices+1];
+    plan->libplan_out = new planHandle[nslices+1];
 
-#ifdef DEBUG
-    printf("in-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",istride,ostride,idist,odist);
-#endif
+    int mysize[nslices];
+    int l=m % nslices;
+    int s=m / nslices;
+    for(i=0;i<l;i++)
+      mysize[i] = s+1;
+    for(;i<nslices;i++)
+      mysize[i] = s;
+
+#ifdef FFTW
     A = (Type1 *) fftw_malloc(size);
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      for(i=0;i<nslices;i++)
+        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     }
-    else //R2C or C2R
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-
-    if(plan->libplan_in == NULL) 
+    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
+      //      if(isign == 0)
+      //        cout << "Error in find_plan: isign is not set" << endl;
+      for(i=0;i<nslices;i++)
+        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+    }
+    else { //R2C or C2R
+      for(i=0;i<nslices;i++)
+        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+    }
+    if(plan->libplan_in[0] == NULL)
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
-    // Out of place
-    //    printf("size1=%d,size2=%d\n",size1,size2);    
-#ifdef DEBUG
-    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",grid1->Pgrid->taskid,istride,ostride,idist,odist);
-#endif
     //    fftw_free(B);
+
+    // Out of place
+    int size1=(istride*N+idist*m);
+    int size2=(ostride*N+odist*m);
+    //    printf("size1=%d,size2=%d\n",size1,size2);
+#ifdef DEBUG
+    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",grid1->taskid,istride,ostride,idist,odist);
+#endif
+
     A = (Type1 *) fftw_malloc(size1*sizeof(Type1));
     //    A = (Type1 *) fftw_malloc(size1);
     B = (Type2 *) fftw_malloc(size2*sizeof(Type2));
@@ -1350,46 +1399,46 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
     //B = new Type2[size2];
 
 #ifdef DEBUG
-    cout << "Allocated A and B. Types:" << type-> dt1 << " and " << type->dt2 << endl;
+    cout << "Allocated A and B. Types:" << type-> dt1 << " and " << type->dt2<< endl;
 #endif
-    //    A = (Type1 *) fftw_malloc(sizeof(Type1)*size1);
-    //B = (Type2 *) fftw_malloc(sizeof(Type2)*size2);
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      for(i=0;i<nslices;i++)
+        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+    }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      for(int i=0;i < size1;i++) {
-	A[i] = 0.0;
-	B[i] = 1.0;
-      }       
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
+      //      if(isign == 0)
+      //        cout << "Error in find_plan: isign is not set" << endl;
 #ifdef DEBUG
       printf("Calling doplan\n");
 #endif
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      for(i=0;i<nslices;i++)
+        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
 
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out);
+      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[0]);
 #endif
     }
     else { //R2C or C2R
 #ifdef DEBUG
       cout << "Calling doplan" << endl;
 #endif
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++)
+        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out);
+      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[0]);
 #endif
     }
     //    delete [] A; // fftw_free
     //delete [] B;
 
-    if(plan->libplan_out == NULL) 
+    if(plan->libplan_out[0] == NULL)
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
     fftw_free(B);
-
 #elif defined CUDA // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);
@@ -1399,11 +1448,10 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
     cufftType cType;
 
     if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
-      printf("Error in planning 1D transform: CUDA does not support real-to-rea\
-l transforms\n");
+      printf("Error in planning 1D transform: CUDA does not support real-to-real transforms\n");
       plan->libplan_inout[0] = plan->libplan_out[0] = plan->libplan_out[0] = NULL;
     }
-      else {
+    else {
       if(type->dt1 == 2 && type->dt2 == 2)  //Complex-to-complex
         cType = (prec == 4 ? CUFFT_C2C : CUFFT_Z2Z);
       else if(type->dt1 == 1 && type->dt2 == 2)  //R2C
@@ -1413,42 +1461,32 @@ l transforms\n");
 
       // Plan CUDA transform
       for(i=0;i<nslices;i++) {
-      cufftResult res = cufftPlanMany(&(plan->libplan_inout[i]),1,&N,inembed\
-	,istride,idist,onembed,ostride,odist,cType,mysize[i]);
-      if(res != CUFFT_SUCCESS)
-	printf("Error in CUFFT C2C_d\n");
-      else {
-      plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
-      cufftSetStream(plan->libplan_inout[i],streams[i]);
+	cufftResult res = cufftPlanMany(&(plan->libplan_inout[i]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,mysize[i]);
+	if(res != CUFFT_SUCCESS)
+	  printf("Error in CUFFT C2C_d\n");
+	else {
+          plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
+          cufftSetStream(plan->libplan_inout[i],streams[i]);
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[i]);
+          printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out[i]);
 #endif
-    }
-    }
-      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inem\
-				      bed,istride,idist,onembed,ostride,odist,cType,m);
+        }
+      }
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,m);
       if(res != CUFFT_SUCCESS)
         printf("Error in CUFFT C2C_d\n");
       else
-      plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_in\
-	out[nslices];
+      plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_inout[nslices];
 
     }
 
-#else // non-FFTW
-    A = new Type1[size1];
-    B = new Type2[size2];
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
-    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
-    }
+    /*
     else //R2C or C2R
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,id\
+ist,B,NULL,ostride,odist,fft_flag);
     free(A);
     free(B);
+    */
 #endif
   
   return;

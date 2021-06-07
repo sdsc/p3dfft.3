@@ -118,7 +118,7 @@ int main(int argc,char **argv)
       printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
-  setup();
+  setup(1);
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_S,CFFT_FORWARD_S,CFFT_FORWARD_S};
   int type_ids2[3] = {C2RFFT_S,CFFT_BACKWARD_S,CFFT_BACKWARD_S};
@@ -203,11 +203,18 @@ int main(int argc,char **argv)
   //  cout << "allocating OUT" << endl;
   complex<float> *OUT=new complex<float>[size2];
   
+
+#ifdef CUDA
+  // Set up 3D transforms, including stages and plans, for forward trans.
+  transform3D<float,complex<float> > trans_f(Xpencil,Zpencil,&type_rcc,LocHost,LocHost);
+  // Set up 3D transforms, including stages and plans, for backward trans.
+  transform3D<complex<float>,float> trans_b(Zpencil,Xpencil,&type_ccr,LocHost,LocHost);
+#else
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<float,complex<float> > trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex<float>,float> trans_b(Zpencil,Xpencil,&type_ccr);
-
+#endif
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
   trans_f.exec(IN,OUT,false);

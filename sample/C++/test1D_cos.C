@@ -140,7 +140,7 @@ using namespace p3dfft;
 
   // Set up work structures for P3DFFT
 
-  setup();
+  setup(1);
 
   //Set up transform types for 1D cosine transform
 
@@ -176,12 +176,18 @@ using namespace p3dfft;
   // For final grid, intended for complex-valued array, there will be conjugate symmetry in the dimension of the transform (dim) since it is a R2C transform
   DataGrid grid2(gdims,-1,&pgrid,dmap,mem_order2);
 
+#ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  transplan<double,double> trans_f(grid1,grid2,type_ids1,dim);
-
+  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim,LocHost,LocHost);
   //Now set up the backward transform
+  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim,LocHost,LocHost);
+#else
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
+  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
+  //Now set up the backward transform
+  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim);
+#endif
 
-  transplan<double,double> trans_b(grid2,grid1,type_ids2,dim);
 
   //Determine local array dimensions. 
 
@@ -245,7 +251,7 @@ using namespace p3dfft;
 
   // Clean up all P3DFFT++ data
 
-  p3dfft_cleanup();
+  cleanup();
 
   }
   MPI_Finalize();

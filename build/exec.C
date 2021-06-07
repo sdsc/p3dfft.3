@@ -88,7 +88,7 @@ namespace p3dfft {
   cudaStream_t *streams;
 #endif
 
-#include "reorder.cpp"
+#include "reorder.C"
 
 #ifdef TIMERS
   timer timers;
@@ -123,6 +123,7 @@ void printbuf(char *,int[3],int,int);
 #ifdef DEBUG
   int taskid;
   MPI_Comm_rank(grid1->Pgrid->mpi_comm_glob,&taskid);
+  int *mo2;
 #endif
 
   next = 1; curr = 0;
@@ -133,9 +134,9 @@ void printbuf(char *,int[3],int,int);
   int cnt=0;
   int prev_t = 1;
 
-  int *dims1 = grid1->ldims;
-  size_t size0 = grid1->ldims[0]*grid1->ldims[1]*grid1->ldims[2]*dt1;
-  size_t size_out = grid2->ldims[0]*grid2->ldims[1]*grid2->ldims[2]*dt2;
+  int *dims1 = grid1->Ldims;
+  size_t size0 = grid1->Ldims[0]*grid1->Ldims[1]*grid1->Ldims[2]*dt1;
+  size_t size_out = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*dt2;
   
 
 #ifdef CUDA
@@ -145,7 +146,7 @@ void printbuf(char *,int[3],int,int);
   int currdev = -1;
   int ndev = 0;
   char *DevBuf[2];
-  int size1 = grid1->ldims[0] * grid1->ldims[1] * grid1->ldims[2];
+  int size1 = grid1->Ldims[0] * grid1->Ldims[1] * grid1->Ldims[2];
   bool DevAlloc = false;
   bool DevAlloc2 = false;
   void *devbuf = NULL;
@@ -153,11 +154,12 @@ void printbuf(char *,int[3],int,int);
   event_t *event_hold=NULL;
 
   //  checkCudaErrors(cudaMalloc((&(DevBuf[0])),size1*sizeof(Type1)));
-  if(size_out >= madxDevSize && OutLoc == LocDevice)
+  if(size_out >= maxDevSize && OutLoc == LocDevice)
     DevBuf[0] = (char *) out;
   else
     checkCudaErrors(cudaMalloc((&(DevBuf[0])),maxDevSize));
 
+  /*
   if(InLoc == LocHost && Stages->kind != MPI_ONLY) {
   // if(!types[0]->isEmpty) ...
     for(i=0;i<nslices;i++) {
@@ -172,10 +174,10 @@ void printbuf(char *,int[3],int,int);
     nextdev = 1;
     DevAlloc = true;
   }
-  else {
-    buf[curr] = buf_in;
-  }
-  
+  else { */
+
+  buf[curr] = buf_in;
+    
   prevLoc = InLoc;
 
 #endif
@@ -209,15 +211,15 @@ void printbuf(char *,int[3],int,int);
     }
     else if(curr_stage->OutLoc == LocHost) {
       // Not last stage; output = host
-      if (curr_stage->InLoc != LocHost)
-	if(OW && size2*dt_2 <= size0 && InLoc == LocHost) 
+      //      if (curr_stage->InLoc != LocHost)
+	if(OW && size2*dt_2 <= size0 && InLoc == LocHost && OW) 
 	  // Can use input buffer and avoid allocating a temp. buffer
 	  buf[next] = (char *) in;
 	else if(size2*dt_2 <= size_out && OutLoc == LocHost)
 	  // Can use output buffer and avoid allocating a temp. buffer
 	  buf[next] = (char *) out;
 	else { 
-// Need to allocate a temp. buffer on host
+	  // Need to allocate a temp. buffer on host
 #ifdef DEBUG
 	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 #endif
@@ -226,12 +228,13 @@ void printbuf(char *,int[3],int,int);
 	  nvar++;
 	  nextvar = 1-nextvar;
 	}
+	/*
       else // inloc == lochost
 	if(size2*dt_2 <= size1*dt_1 && (OW || (void *) buf[curr] != (void *) buf_in))
 	  // Reuse the current buffer
 	  buf[next] = buf[curr];
 	else {
-// Need to allocate a temp. buffer
+	  // Need to allocate a temp. buffer
 #ifdef DEBUG
 	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 #endif
@@ -240,14 +243,14 @@ void printbuf(char *,int[3],int,int);
 	  nvar++;
 	  nextvar = 1-nextvar;
 	}
-
+	*/
     }
     else  // not last stage; outloc = device
-      buf[next] = DevBuf;
-    }
-
+      buf[next] = DevBuf[currdev];
+  
+    
 #else //non-CUDA
-
+    
     if(!curr_stage->next) { 
       buf[next] = buf_out; // Last stage always writes to out destination
     }
@@ -275,14 +278,14 @@ void printbuf(char *,int[3],int,int);
 	buf[next] = buf[curr];
 
 #endif
-    
+      
     if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
       
       transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
 
 #ifdef CUDA     
-      if(st->InLoc == LocHost && !tr->type->isEmpty()) {
+      if(st->InLoc == LocHost && !tr->trans_type->is_empty) {
         if(currdev < 0) {
           currdev = 1 - nextdev;
           //      nextdev = 1;
@@ -297,7 +300,7 @@ void printbuf(char *,int[3],int,int);
 	buf[curr] = DevBuf[currdev];
       }
 
-      /*      
+        /*      
       nextdev = 1 - currdev;
       checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2 * st->stage_prec*dt_2));
       DevAlloc2 = true;
@@ -311,33 +314,42 @@ void printbuf(char *,int[3],int,int);
       if(dt_1 == dt_2)
         if(prev_t == 1) {
           transplan<Type1,Type1> *tr = (transplan<Type1,Type1> *) st;
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
 #ifdef CUDA
           if(st->InLoc == LocHost)
             tr->DevBuf = DevBuf[currdev];
-          if(st->OutLoc == LocHost)
-            tr->DevBuf2 = DevBuf[nextdev];
+	  //          if(st->OutLoc == LocHost)
+	  // tr->DevBuf2 = DevBuf[nextdev];
 #endif
           for(i=0;i<nslices;i++)
             tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
 	}
 	else {
 	  transplan<Type2,Type2> *tr = (transplan<Type2,Type2> *) st;
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
 #ifdef CUDA
 	  if(st->InLoc == LocHost)
 	    tr->DevBuf = DevBuf[currdev];
-	  if(st->OutLoc == LocHost)
-	    tr->DevBuf2 = DevBuf[nextdev];
+	  // if(st->OutLoc == LocHost)
+	  //  tr->DevBuf2 = DevBuf[nextdev];
 #endif
 	  for(i=0;i<nslices;i++)
 	    tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
 	}
       else {
         transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
 #ifdef CUDA
 	if(st->InLoc == LocHost)
 	  tr->DevBuf = DevBuf[currdev];
-	if(st->OutLoc == LocHost)
-	  tr->DevBuf2 = DevBuf[nextdev];
+	//	if(st->OutLoc == LocHost)
+	//  tr->DevBuf2 = DevBuf[nextdev];
 #endif
         for(i=0;i<nslices;i++)
           tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
@@ -345,23 +357,21 @@ void printbuf(char *,int[3],int,int);
         prev_t = 2;
       }
       
-#ifdef DEBUG
-      int imo[3];
-      char str[80];
-      for(i=0;i<3;i++)
-	imo[tr->mo2[i]] = i; 
-      sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
-      write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
-#endif
-    }
+    }    
     else if(curr_stage->kind == MPI_ONLY) { // Only MPI plan (exchange, no transform)
       if(prev_t == 1) {
 	MPIplan<Type1> *tr = (MPIplan<Type1> *) curr_stage; 
-	curr_stage->myexec(buf[curr],buf[next],true);
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
+	tr->exec(buf[curr],buf[next]);
       }
       else {
 	MPIplan<Type2> *tr = (MPIplan<Type2> *) curr_stage; 
-	curr_stage->myexec(buf[curr],buf[next],true);
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
+	tr->exec(buf[curr],buf[next]);
       }
     }
     else { // MPI and transform combined
@@ -369,27 +379,36 @@ void printbuf(char *,int[3],int,int);
       if(dt_1 == dt_2)
         if(prev_t == 1) {
           trans_MPIplan<Type1,Type1> *tr = (trans_MPIplan<Type1,Type1> *) (transplan<Type1,Type1> *) curr_stage;
+#ifdef DEBUG
+	  mo2 = tr->trplan->mo2;
+#endif
           tr->exec(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char * ) in);
         }
 	else {
 	  trans_MPIplan<Type2,Type2> *tr = (trans_MPIplan<Type2,Type2> *) (transplan<Type2,Type2> *) curr_stage;
+#ifdef DEBUG
+	  mo2 = tr->trplan->mo2;
+#endif
 	  tr->exec(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in);
 	}
       else {
         trans_MPIplan<Type1,Type2> *tr = (trans_MPIplan<Type1,Type2> *) (transplan<Type1,Type2> *) curr_stage;
+#ifdef DEBUG
+	  mo2 = tr->trplan->mo2;
+#endif
         tr->exec(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in);
 	prev_t = 2;
       }
     }
+
 #ifdef DEBUG
-      int imo[3];
-      char str[80];
-      for(i=0;i<3;i++)
-	imo[tr->trplan->mo2[i]] = i; 
-      sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
-      write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
+    int imo[3];
+    char str[80];
+    for(i=0;i<3;i++)
+      imo[mo2[i]] = i; 
+    sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
+    write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
 #endif
-    }
 	
     if(nvar > 1) { // Keep track and delete buffers that are no longer used
 #ifdef CUDA
@@ -399,7 +418,7 @@ void printbuf(char *,int[3],int,int);
 #endif
       nvar--;
     }
-
+    
     next = 1-next;
     curr = 1-curr;
 #ifdef CUDA
@@ -428,7 +447,7 @@ void printbuf(char *,int[3],int,int);
 
 #ifdef CUDA
   if(prevLoc != OutLoc) {
-    size_t size = grid2->ldims[0]*grid2->ldims[1]*grid2->ldims[2]*sizeof(Type2);
+    size_t size = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*sizeof(Type2);
     checkCudaErrors(cudaEventSynchronize(*event_hold));
     if(OutLoc == LocHost) {
       checkCudaErrors(cudaMemcpy(out+st->offset2[i],buf[curr], size, cudaMemcpyDeviceToHost));
@@ -438,8 +457,8 @@ void printbuf(char *,int[3],int,int);
 
     checkCudaErrors(cudaFree(buf[curr]));
   }
-#endif
 
+#endif
 
   if(nvar > 0)
 #ifdef CUDA
@@ -454,6 +473,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 
 }
+
 
 
   // Execute local spectral derivative
@@ -527,226 +547,28 @@ void printbuf(char *,int[3],int,int);
   exec_deriv(in,out,-1, OW);
 }
 
-  void stage::myexec(char *in,char *out, bool OW)
+  // Execute 1D transform, combined with local transpose as needed
+// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
+// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
+
+// Execute transform (combined with local transpose if needed), on a slice of data asynchronously via streams
+// Expect the calling function to set up and initilize device buffer (asynchronously)
+  template <class Type1,class Type2> void transplan<Type1,Type2>::exec(char *in_,char *out_, int dim_deriv,int nslices,bool OW)
 {
-  switch(kind) {
-  case TRANS_ONLY: 
-    if(dt1 == REAL)
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  transplan<float,float> *st=(transplan<float,float> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  transplan<double,double> *st=(transplan<double,double> *) this;
-	  st->exec(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  transplan<float,mycomplex> *st=(transplan<float,mycomplex> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  transplan<double,complex_double> *st=(transplan<double,complex_double> *) this;
-	  st->exec(in,out,OW);
-	}
-    else
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  transplan<mycomplex,float> *st=(transplan<mycomplex,float> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  transplan<complex_double,double> *st=(transplan<complex_double,double> *) this;
-	  st->exec(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  transplan<mycomplex,mycomplex> *st=(transplan<mycomplex,mycomplex> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  transplan<complex_double,complex_double> *st=(transplan<complex_double,complex_double> *) this;
-	  st->exec(in,out,OW);
-	}
-    
-    break;
-    
-  case MPI_ONLY:
-    if(dt1 == REAL)
-      if(stage_prec == 4) {
-	MPIplan<float> *st=(MPIplan<float> *) this;
-	st->exec(in,out);
-      }
-      else {
-	MPIplan<double> *st=(MPIplan<double> *) this;
-	st->exec(in,out);
-      }
-    else
-      if(stage_prec == 4) {
-	MPIplan<mycomplex> *st=(MPIplan<mycomplex> *) this;
-	st->exec(in,out);
-      }
-      else {
-	MPIplan<complex_double> *st=(MPIplan<complex_double> *) this;
-	st->exec(in,out);
-      }
-    
-    break;
-  case TRANSMPI:
-    if(dt1 == REAL)
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  trans_MPIplan<float,float> *st=(trans_MPIplan<float,float> *) (transplan<float,float> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<double,double> *st=(trans_MPIplan<double,double> *) (transplan<double,double> *) this;
-	  st->exec(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  trans_MPIplan<float,mycomplex> *st=(trans_MPIplan<float,mycomplex> *) (transplan<float,mycomplex> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<double,complex_double> *st=(trans_MPIplan<double,complex_double> *) (transplan<double,complex_double> *) this;
-	  st->exec(in,out,OW);
-	}
-    else
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  trans_MPIplan<mycomplex,float> *st=(trans_MPIplan<mycomplex,float> *) (transplan<mycomplex,float> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<complex_double,double> *st=(trans_MPIplan<complex_double,double> *) (transplan<complex_double,double> *) this;
-	  st->exec(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  trans_MPIplan<mycomplex,mycomplex> *st=(trans_MPIplan<mycomplex,mycomplex> *)  (transplan<mycomplex,mycomplex> *) this;
-	  st->exec(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<complex_double,complex_double> *st=(trans_MPIplan<complex_double,complex_double> *) (transplan<complex_double,complex_double> *) this;
-	  st->exec(in,out,OW);
-	}
-    break;
-  }
+  int i;
+
+#ifdef CUDA
+  event_t event;
+  for(i=0;i<nslices;i++) 
+    exec_slice(in_,out_,dim_deriv,i,nslices,&event,OW);
+  
+  cudaDeviceSynchronize();
+#else
+  for(i=0;i<nslices;i++) 
+    exec_slice(in_,out_,dim_deriv,slice,nslices,NULL,OW);  
+#endif
 
 }
-
-  void stage::myexec_deriv(char *in,char *out, bool OW)
-{
-  switch(kind) {
-  case TRANS_ONLY: 
-    if(dt1 == REAL)
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  transplan<float,float> *st=(transplan<float,float> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  transplan<double,double> *st=(transplan<double,double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  transplan<float,mycomplex> *st=(transplan<float,mycomplex> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  transplan<double,complex_double> *st=(transplan<double,complex_double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-    else
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  transplan<mycomplex,float> *st=(transplan<mycomplex,float> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  transplan<complex_double,double> *st=(transplan<complex_double,double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  transplan<mycomplex,mycomplex> *st=(transplan<mycomplex,mycomplex> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  transplan<complex_double,complex_double> *st=(transplan<complex_double,complex_double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-    
-    break;
-    
-  case MPI_ONLY:
-    if(dt1 == REAL)
-      if(stage_prec == 4) {
-	MPIplan<float> *st=(MPIplan<float> *) this;
-	st->exec(in,out);
-      }
-      else {
-	MPIplan<double> *st=(MPIplan<double> *) this;
-	st->exec(in,out);
-      }
-    else
-      if(stage_prec == 4) {
-	MPIplan<mycomplex> *st=(MPIplan<mycomplex> *) this;
-	st->exec(in,out);
-      }
-      else {
-	MPIplan<complex_double> *st=(MPIplan<complex_double> *) this;
-	st->exec(in,out);
-      }
-    
-    break;
-  case TRANSMPI:
-    if(dt1 == REAL)
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  trans_MPIplan<float,float> *st=(trans_MPIplan<float,float> *) (transplan<float,float> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<double,double> *st=(trans_MPIplan<double,double> *) (transplan<double,double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  trans_MPIplan<float,mycomplex> *st=(trans_MPIplan<float,mycomplex> *) (transplan<float,mycomplex> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<double,complex_double> *st=(trans_MPIplan<double,complex_double> *) (transplan<double,complex_double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-    else
-      if(dt2 == REAL)
-	if(stage_prec == 4) {
-	  trans_MPIplan<mycomplex,float> *st=(trans_MPIplan<mycomplex,float> *) (transplan<mycomplex,float> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<complex_double,double> *st=(trans_MPIplan<complex_double,double> *) (transplan<complex_double,double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-      else
-	if(stage_prec == 4) {
-	  trans_MPIplan<mycomplex,mycomplex> *st=(trans_MPIplan<mycomplex,mycomplex> *)  (transplan<mycomplex,mycomplex> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-	else {
-	  trans_MPIplan<complex_double,complex_double> *st=(trans_MPIplan<complex_double,complex_double> *) (transplan<complex_double,complex_double> *) this;
-	  st->exec_deriv(in,out,OW);
-	}
-    break;
-  }
-
-}
-
 
   // Execute 1D transform, combined with local transpose as needed
 // Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
@@ -756,7 +578,7 @@ void printbuf(char *,int[3],int,int);
 // Expect the calling function to set up and initilize device buffer (asynchronously)
   template <class Type1,class Type2> void transplan<Type1,Type2>::exec_slice(char *in_,char *out_, int dim_deriv,int slice,int nslices,event_t *event_hold, bool OW)
 {
-  int L,N,m,mocurr[3],mc[3];
+  int L,N,m,mocurr[3],mc[3],cmpl;
   Type1 *in;
   Type2 *out;
   Type2 *buf=NULL;
@@ -772,36 +594,24 @@ void printbuf(char *,int[3],int,int);
       int d1[3];
       for(int i=0;i<3;i++)
 	d1[mo1[i]] = dims1[i];
+#ifdef TIMERS
       timers.reorder_out -= MPI_Wtime();
+#endif
       ro_cutensor_out((Type2 *) in,out,mc,d1,slice,nslices,streams[slice]);
+#ifdef TIMERS
       timers.reorder_out += MPI_Wtime();
+#endif
       return;
     }
-    else if(InLoc == LocHost && OutLoc == LocHost)
+    //    else if(InLoc == LocHost && OutLoc == LocHost)
 #endif
 #endif
-    if(!arcmp(mo1,mo2,3)) {
-      if((void *) in != (void *) out)
-	memcpy(out,in,prec*dt1*dims1[0]*dims1[1]*dims1[2]);
-    }
-    else
-      if((void *) in == (void *) out) {
-	timers.reorder_in -= MPI_Wtime();
-	reorder_in_slice(in,mo1,mo2,dims1,slice,nslices);
-	timers.reorder_in += MPI_Wtime();
-      }
-      else {
-	timers.reorder_out -= MPI_Wtime();
-	reorder_out_slice((Type2 *)in,out,mo1,mo2,dims1,slice,nslices);
-	timers.reorder_out += MPI_Wtime();
-      }
-    return;
   }
 
 #ifdef CUDA
   //  if(useCuda) {
   bool DevAlloc = false;
-  cudaStream *strem;
+  cudaStream_t *stream;
 
   if(InLoc == LocHost) {  // Need to transfer data from host to device
     if(DevBuf == NULL) { // Highly unlikely: expect the higher level function to allocate this buffer and initiate transfers
@@ -815,14 +625,25 @@ void printbuf(char *,int[3],int,int);
 	DevAlloc = true;
       }
       stream = &(streams[slice]);
-      checkCudaErrors(cudaMemcpyAsync(DevBuf+offset[i]*sizeof(Type1),in_ + offset[i]*sizeof(Type1),mysize[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
+      checkCudaErrors(cudaMemcpyAsync(DevBuf+offset1[slice]*sizeof(Type1),in_ + offset1[slice]*sizeof(Type1),mysize1[slice]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
       checkCudaErrors(cudaEventRecord(EVENT_H2D,*stream));
     }
   
     in = (Type1 *) DevBuf;
   }
-  if(OutLoc == LocHost)  // If no device space is given as input, allocate device space
+  if(OutLoc == LocHost)  { // If no device space is given as input, allocate device space
+    if(DevBuf == NULL) {
+      size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
+      size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
+      if(size2 <= size1)
+	DevBuf = (char *) in;
+      else {
+	checkCudaErrors(cudaMalloc((&(DevBuf)),size2));
+	DevAlloc = true;
+      }
+    }
     out = (Type2 *) DevBuf;
+  }
 #endif
 
 #ifdef DEBUG
@@ -856,7 +677,7 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
       if(dim_deriv == L) {
         int sdims[3]; // Find storage dimensions
         for(int i=0;i<3;i++)
-          sdims[mo1[i]] = grid2->ldims[i];
+          sdims[mo1[i]] = grid2->Ldims[i];
         sdims[2] = mysize2[slice];
 #ifdef CUDA
         //      compute_deriv_loc_cu<<<>>>(out+offset2[slice],out+offset2[slice],sdims);
@@ -946,87 +767,9 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
     if(DevAlloc)
       checkCudaErrors(cudaFree(DevBuf));
 #endif
-}
-
-// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
-// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
-// Transform in 1D and take spectral derivative in the dimension of transform
-template <class Type1,class Type2> void transplan<Type1,Type2>::exec_deriv(char *in_,char *out_, bool OW)
-{
-  int L,N,m,mocurr[3],mc[3];
-  Type1 *in;
-  Type2 *out;
-  Type2 *buf=NULL;
-  bool alloc=false;
-  void swap0(int newmo[3],int mo[3],int L);
-
-  in = (Type1 *) in_;
-  out = (Type2 *) out_;
-
-  L = trans_dim;
-
-  if(dt2 != 2)
-    printf("Error in exec_deriv: expected complex output type\n");
-
-#ifdef DEBUG
-  int taskid;
-  MPI_Comm_rank(grid1->Pgrid->mpi_comm_glob,&taskid);
-  printf("%d: In transplan::exec, mo1=%d %d %d, mo2=%d %d %d\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
-#endif
-
-  if(mo1[L] == 0 || mo2[L] == 0) {
-
-    if(!arcmp(mo1,mo2,3)) {  // If there is no change in memory ordering
-#ifdef TIMERS
-      double t1=MPI_Wtime();
-#endif
-
-      if((void *) in == (void *) out) 
-  // Do 1D transform directly on input, into 'out'
-	(*(trans_type->exec))(plan->libplan_in,in,out); 
-      else
-	(*(trans_type->exec))(plan->libplan_out,in,out); 
-      int sdims[3]; // Find storage dimensions
-      for(int i=0;i<3;i++)
-	sdims[mo1[i]] = grid2->Ldims[i];
-      //      bool r2c = (grid2->dim_conj_sym >= 0);
-      // Now compute local derivative
-      compute_deriv_loc(out,out,sdims);
-#ifdef TIMERS
-      timers.trans_deriv += MPI_Wtime() -t1;
-#endif
-    }
-    else { // Combine reordering with 1D transform and derivative
-#ifdef TIMERS
-      double t1=MPI_Wtime();
-#endif
-      reorder_deriv(in,out,mo1,mo2,dims1,OW);   
-#ifdef TIMERS
-      timers.reorder_deriv += MPI_Wtime() -t1;
-#endif
-    }	
-  }
-
-  else { //If first dimension is not the one to be transformed, need to reorder first, combined with transform
-    swap0(mocurr,mo1,L);
-  //    Try to organize so out of place transpose is used, if possible
-    //    if(mocurr[0] != mo2[0] || mocurr[1] != mo2[1] || mocurr[2] != mo2[2]) {
-    buf = new Type2[dims2[0]*dims2[1]*dims2[2]];
-#ifdef TIMERS
-      double t1=MPI_Wtime();
-#endif
-      reorder_deriv(in,buf,mo1,mocurr,dims1,OW);   
-#ifdef TIMERS
-      timers.reorder_deriv += MPI_Wtime() -t1;
-      t1=MPI_Wtime();
-#endif
-    reorder_out(buf,out,mocurr,mo2,dims2);
-#ifdef TIMERS
-      timers.reorder_out += MPI_Wtime() -t1;
-#endif
-    delete [] buf;
   }
 }
+
 
 #ifdef DEBUG
   void printbuf(char *buf,int dims[3],int dt,int taskid)
@@ -1061,9 +804,13 @@ int arcmp(int *A,int *B,int N)
   // Reorder (local transpose), followed by 1D transform
 // Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
 // Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
- template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1,int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW)
+//#ifdef CUDA
+ template <class Type1,class Type2> int transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW)
+   //#else
+ // template <class Type1,class Type2> int transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW)
+ //#endif
 {
-  int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
+int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
   void rel_change(int *,int *,int *);
 
   int imo1[3],imo2[3],d1[3],d2[3];
@@ -1095,9 +842,10 @@ int arcmp(int *A,int *B,int N)
     scheme = TRANS_IN;
   else if(mo2[trans_dim] == 0)
     scheme = TRANS_OUT;
+  else if(is_empty) 
+    scheme = TRANS_OUT;
   else {
-    printf("Error in reorder_trans: expected dimension %d to be the leading dim\
-ension for input or output\n",trans_dim);
+    printf("Error in reorder_trans: expected dimension %d to be the leading dimension for input or output\n",trans_dim);
     return (-1);
   }
 
@@ -1121,19 +869,18 @@ ension for input or output\n",trans_dim);
   bool inplace=false;
 
   if(scheme == TRANS_IN) { // Scheme is transform before reordering
-
-   switch(mc[0]) {
-    case 1:
-      switch(mc[1]) {
+  
+  switch(mc[0]) {
+ case 1:
+     switch(mc[1]) {
       case 0: //1,0,2
-	
+  
         if(OW && dt2 <= dt1)
-          inplace=true;
-        rot102in_slice(in,out,inplace,d1,d2,trans_type->exec,plan,slice,nslices\
-		       ,deriv);
+	  inplace=true;
+        rot102in_slice(in,out,inplace,d1,d2,trans_type->exec,plan,slice,nslices,deriv);
         cmpl = SLICE;
-
-	break;
+  
+        break;
       	
       case 2: //1,2,0
 
@@ -1142,7 +889,7 @@ ension for input or output\n",trans_dim);
         cmpl = FULL;
         if(event_hold != NULL)
           checkCudaErrors(cudaEventSynchronize(*event_hold));
-        rot120in(in,out,d1,d2,trans_type->exec,plan,CACHE_BL,deriv,OW);
+        rot120in(in,out,d1,d2,trans_type->exec,plan,CACHE_BL,deriv);
 	
 	break;
       }
@@ -1174,26 +921,27 @@ ension for input or output\n",trans_dim);
 	break;
       }
       break;
-    case 0: //0,2,1
-      if(mc[1] == 2) {
-
-        rot021in_slice(in,out,d1,d2,trans_type->exec,plan,CACHE_BL,slice,nlices,deriv);
+ case 0: //0,2,1
+    if(mc[1] == 2) {
+  
+        rot021in_slice(in,out,d1,d2,trans_type->exec,plan,CACHE_BL,slice,nslices,deriv);
         cmpl = SLICE;
 
-      break;
-   }
-    
+        break;
+      }
+  
+    }
   }
   else { // Scheme is transform after reordering
 
     if(cmpmo(mc,102)) {
-
+  
       rot102out_slice(in,out,d1,d2,trans_type->exec,plan,dt1,dt2,slice,nslices,deriv);
       cmpl = SLICE;
 
 #ifdef DEBUG
       char str[80];
-      sprintf(str,"reorder102.out.%d",grid1->taskid);
+      sprintf(str,"reorder102.out.%d",grid1->Pgrid->taskid);
 #ifdef CUDA
       size_t size1 = d2[0]*d2[1]*d2[2];
       Type2 *tmp=new Type2[size1];
@@ -1236,6 +984,7 @@ ension for input or output\n",trans_dim);
       cmpl = SLICE;
     }
   }
+
 #ifdef DEBUG
   sprintf(str,"reorder_trans.out%d",cnt_reorder_trans++);
 #ifdef CUDA
@@ -1278,185 +1027,6 @@ ension for input or output\n",trans_dim);
  }
  */ 
 
-  // Reorder (local transpose) out-of-place
-// Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
-// dims2[mo2[i]] = dims1[mo1[i]]
-// Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
-template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int *dims_init)
-{
-  int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
-  void rel_change(int *,int *,int *);
-  Type2 *pin,*pout,*pin1,*pout1;
-  int imo1[3],imo2[3],d1[3],d2[3],nb13,nb31,nb23,nb32;
-  //  int ds=sizeof(Type2) /4;
-
-  // Inverse storage mapping
-  inv_mo(mo1,imo1);
-  inv_mo(mo2,imo2);
-  // Find local storage dimensions
-  for(i=0;i<3;i++) {
-    d1[i] = dims_init[imo1[i]];
-    d2[i] = dims2[imo2[i]];
-  }
-
-  // Find relative change in the memory mapping from input to output
-  rel_change(imo1,imo2,mc);
-  pin =  in;
-  switch(mc[0]) {
-  case 1:
-    switch(mc[1]) {
-    case 0: //1,0,2
-      for(k=0;k <d1[2];k++) {
-	pout1 = out + k*d1[0]*d1[1];
-	for(j=0;j < d1[1];j++) {
-	  pout = pout1 + j;
-	  for(i=0;i < d1[0];i++) {
-	    *(pout)  = *(pin++);
-	    pout += d2[0];
-	  }
-	}
-      }
-      break;
-
-    case 2: //1,2,0
-
-      if(d1[0]*d1[1] >0)	
-	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      else nb32 = 1;
-      if(nb32 < 1) nb32 = 1;
-      if(d2[0]*d2[1] >0)	
-	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
-      else nb23 = 1;
-      if(nb23 < 1) nb23 = 1;
-      
-      for(k=0;k <d1[2];k+=nb32) {
-	k2 = min(k+nb32,d1[2]);
-	for(j=0;j < d1[1];j+=nb23) {
-	  j2 = min(j+nb23,d1[1]);
-	  for(kk=k; kk < k2; kk++){
-	    pin1 = in +kk*d1[0]*d1[1];
-	    pout1 = out +kk;
-	    for(jj=j; jj < j2; jj++) {
-	      pin = pin1 +jj*d1[0];
-	      pout = pout1 +jj*d2[0]*d2[1];
-	      for(i=0;i < d1[0];i++) {
-		*pout = *pin++;
-		pout += d2[0];
-	      }
-	    }
-	  }
-	}
-      }
-      
-      break;
-    }
-    break;
-
-  case 2:
-    switch(mc[1]) {
-    case 1: //2,1,0
-      if(d1[0]*d1[1] >0)	
-	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      else nb31 = 1;
-      if(nb31 < 1) nb31 = 1;
-      nb13 = nb31;
-
-      for(k=0;k <d1[2];k+=nb31) {
-	k2 = min(k+nb31,d1[2]);
-	for(i=0;i < d1[0];i+=nb13) {
-	  i2 = min(i+nb13,d1[0]);
-	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in + kk*d1[0]*d1[1] +i;
-	    pout1 = out + kk + i * d2[0]*d2[1];
-	    for(j=0;j < d1[1];j++) {
-	      pin = pin1;
-	      pout = pout1;
-	      for(ii=i; ii < i2; ii++) {
-		*pout = *pin++;
-		pout += d2[0]*d2[1];
-	      }
-	      pin1 += d1[0];
-	      pout1 += d2[0];
-	    }
-	  }
-	}
-      }
-      
-      break;
-    case 0: //2,0,1
-
-      if(d1[0]*d1[1] >0)	
-	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      else nb31 = 1;
-      if(nb31 < 1) nb31 = 1;
-      nb13 = nb31;
-
-      for(k=0;k <d1[2];k+=nb31) {
-	k2 = min(k+nb31,d1[2]);
-	for(i=0;i < d1[0];i+=nb13) {
-	  i2 = min(i+nb13,d1[0]);
-	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in +kk*d1[0]*d1[1] +i;
-	    pout1 =  out + kk*d2[0] +i*d2[0]*d2[1];
-	    for(j=0;j < d1[1];j++) {
-	      pin = pin1;
-	      pout = pout1;
-	      for(ii=i; ii < i2; ii++) {
-		*pout = *pin++;
-		pout += d2[0]*d2[1];
-	      }
-	      pin1 += d1[0];
-	      pout1+= 1;
-	    }
-	  }
-	}
-      }
-      
-      break;
-    }
-  
-    break;
-
-  case 0: //0,2,1
-    if(mc[1] == 2) {
-      if(d1[0]*d1[1] >0)	
-	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
-      else nb32 = 1;
-      if(nb32 < 1) nb32 = 1;
-      if(d2[0]*d2[1] >0)	
-	nb23 = CACHE_BL / (sizeof(Type2)*d2[0]*d2[1]);
-      else nb23 = 1;
-      if(nb23 < 1) nb23 = 1;
-      
-      for(k=0;k <d1[2];k+=nb32) {
-	k2 = min(k+nb32,d1[2]);
-	for(j=0;j < d1[1];j+=nb23) {
-	  j2 = min(j+nb23,d1[1]);
-	  for(kk=k; kk < k2; kk++) {
-	    pin1 = in + kk*d1[0]*d1[1] +j*d1[0];
-	    pout1 = out +kk*d2[0] +j*d2[0]*d2[1];
-	    for(jj=j; jj < j2; jj++) {
-	      pin = pin1;
-	      pout = pout1;
-	      for(i=0;i < d1[0];i++) 
-		*pout++ = *pin++;
-	      pin += d1[0];
-	      pout += d2[0]*d2[1];
-	    }
-	  }
-	}
-      }      
-    }
-    else
-      for(k=0;k<d1[2];k++)
-	for(j=0;j < d1[1];j++)
-	  for(i=0;i < d1[0];i++)
-	    *out++ = *in++;
-    break;
-  }
-
-
-}
 
   // Reorder (local transpose) in-place (out=in)
 // Input: in[d1[imo1[0]]][d1[imo1[1]]][d1[imo1[2]]]
@@ -1728,7 +1298,7 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
   in = (Type *) in_;
   out = (Type *) out_;
   Type *sendbuf = new Type[dims1[0]*dims1[1]*dims1[2]*4];
-  void MPI_Alltoallv4(float *sendbuf,int *sndcnts,int *sndstrt,float *recvbuf,int *rcvcnts,int *rcvstar,MPI_Comm mpicomm,int n);
+  //  void MPI_Alltoallv4(char *sendbuf,int *sndcnts,int *sndstrt,char *recvbuf,int *rcvcnts,int *rcvstar,MPI_Comm mpicomm,int n);
 
 #ifdef TIMERS
   double t1=MPI_Wtime();
@@ -1741,7 +1311,7 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_REAL,recvbuf,RcvCnts,RcvStrt,MPI_REAL,Pgrid->mpicomm[comm_id]);
+  MPI_Alltoallv(sendbuf,SndCnts,SndStrt,MPI_BYTE,recvbuf,RcvCnts,RcvStrt,MPI_BYTE,Pgrid->mpicomm[comm_id]);
   //  MPI_Alltoallv4((float *)sendbuf,SndCnts,SndStrt,(float *) recvbuf,RcvCnts,RcvStrt,grid1.mpicomm[mpicomm_ind],numtasks);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
@@ -1767,17 +1337,16 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 
 }
 
-  void MPI_Alltoallv4(float *sendbuf,int *sndcnts,int *sndstrt,float *recvbuf,int *rcvcnts,int *rcvstrt,MPI_Comm mpicomm,int n)
+  void MPI_Alltoallv4(char *sendbuf,int *sndcnts,int *sndstrt,char *recvbuf,int *rcvcnts,int *rcvstrt,MPI_Comm mpicomm,int n)
   {
-    float *p;
     int i;
     MPI_Status status[n];
     MPI_Request req[n];
 
     for(i=0;i<n;i++)
-      MPI_Irecv(recvbuf+rcvstrt[i],rcvcnts[i],MPI_REAL,i,MPI_ANY_TAG,mpicomm,req+i);
+      MPI_Irecv(recvbuf+rcvstrt[i],rcvcnts[i],MPI_BYTE,i,MPI_ANY_TAG,mpicomm,req+i);
     for(i=0;i<n;i++)
-      MPI_Send(sendbuf+sndstrt[i],sndcnts[i],MPI_REAL,i,0,mpicomm);
+      MPI_Send(sendbuf+sndstrt[i],sndcnts[i],MPI_BYTE,i,0,mpicomm);
 
     MPI_Waitall(n,req,status);
   }
@@ -1785,11 +1354,11 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_) {
 template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 {
   int i,x,y,z;
-  float *p1,*p0;
+  Type *p1,*p0;
 
   int j,istart[numtasks][3],iend[numtasks][3],d[3];
   int imo1[3],imo2[3];
-  int ds=sizeof(Type)/4;
+  //  int ds=sizeof(Type)/4;
 
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
@@ -1809,11 +1378,11 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
     d[i] = dims1[imo1[i]];
   
   for(i=0;i < numtasks;i++) {
-    p1 = (float *) sendbuf + *(SndStrt+i);
+    p1 = sendbuf + *(SndStrt+i)/sizeof(Type);
     for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
       for(y=istart[i][imo1[1]];y< iend[i][imo1[1]];y++) {
-	p0 = (float *) src+ds*(d[0]*(z*d[1]+y) +istart[i][imo1[0]]);
-	for(x=ds*istart[i][imo1[0]];x < ds*iend[i][imo1[0]];x++)
+	p0 = src+d[0]*(z*d[1]+y) +istart[i][imo1[0]];
+	for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
 	  *p1++ = *p0++;;
       }
   }
@@ -1823,8 +1392,8 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbuf)
 {
   int i,ii,x,y,z,k,x2,y2,z2;
-  int ds=sizeof(Type)/4;
-  float *p1,*p0,*pin,*pin1,*pout,*pout1;
+  //  int ds=sizeof(Type)/4;
+  Type *p1,*p0,*pin,*pin1,*pout,*pout1;
 
   int j,istart[numtasks][3],iend[numtasks][3],isize[numtasks][3],d[3];
   int xstart,xend,ystart,yend,zstart,zend;
@@ -1862,13 +1431,12 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   if(mo1[0] == mo2[0] && mo1[1] == mo2[1] && mo1[2] == mo2[2]) 
 
     for(i=0;i < numtasks;i++) {
-      p1 = (float *) recvbuf + *(RcvStrt+i);
+      p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
       for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++)
 	for(y=istart[i][imo1[1]];y < iend[i][imo1[1]];y++) {
-	  p0 = (float *) dest + ds*(d[0]*(z*d[1]+y) + istart[i][imo1[0]]);
+	  p0 = dest + d[0]*(z*d[1]+y) + istart[i][imo1[0]];
 	  for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
-	    for(j=0;j<ds;j++)
-	      *p0++ = *p1++;
+	    *p0++ = *p1++;
 	}
     }
   else {
@@ -1882,18 +1450,17 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       switch(mc[1]) {
       case 0: //1,0,2
 	for(i=0;i < numtasks;i++) {
-	  p1 = (float *) recvbuf + *(RcvStrt+i);
-	  p0 = (float *) dest + ds*(istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]])); 
+	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
 	  for(z=0;z < zsize;z++) 
 	    for(y=0;y < ysize;y++) {
-	      pout = p0 + ds*(d[0]*d[1]*z +y);
+	      pout = p0 + d[0]*d[1]*z +y;
 	      for(x=0;x < xsize;x++) {
-		for(j=0;j<ds;j++)
-		  *pout++ = *p1++;
-		pout += ds*(d[0]-1);
+		*pout = *p1++;
+		pout += d[0];
 	      }
 	    }
 	}
@@ -1911,8 +1478,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	if(nb13 < 1) nb13 = 1;
 
 	for(i=0;i < numtasks;i++) {
-	  p1 = (float *) recvbuf + *(RcvStrt+i);
-	  p0 = (float *) dest + ds*(istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]])); 
+	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -1924,19 +1491,18 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	      x2 = min(xsize,x+nb13);
 	      
 	      for(k=z;k<z2;k++) {
-		pin1 = p1 + ds*(xsize*ysize*k+ x);
-		pout1 = p0 + ds*d[0]*(k +x*d[1]);
+		pin1 = p1 + xsize*ysize*k+ x;
+		pout1 = p0 + d[0]*(k +x*d[1]);
 		for(y=0;y < ysize;y++) {
 		  pin = pin1;
 		  pout = pout1;
 		  //		  printf("%d: y,z=%d %d, x from %d to %d\n",taskid,y,k,x,x2);
 		  for(ii=x;ii<x2;ii++) {
-		    for(j=0;j<ds;j++)
-		      *pout++ = *pin++;
-		    pout += ds*(d[0]*d[1]-1);
+		    *pout++ = *pin++;
+		    pout += d[0]*d[1];
 		  }
-		  pin1 += ds*xsize;
-		  pout1+= ds;
+		  pin1 += xsize;
+		  pout1++;
 		}
 	      }
 	    }
@@ -1960,8 +1526,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	if(nb13 < 1) nb13 = 1;
 	
 	for(i=0;i < numtasks;i++) {
-	  p1 = (float *) recvbuf + *(RcvStrt+i);
-	  p0 = (float *) dest + ds*(istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]])); 
+	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -1972,17 +1538,16 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	      x2 = min(xsize,x+nb13);
 	      
 	      for(k=z;k<z2;k++) {
-		pin1 = p1 + ds*(xsize*ysize*k + x);
-		pout1 = p0 + ds*(k + x*d[0]*d[1]);
+		pin1 = p1 + xsize*ysize*k + x;
+		pout1 = p0 + k + x*d[0]*d[1];
 		for(y=0;y < ysize;y++) {
 		  pin = pin1;
-		  pout = pout1 + ds*y*d[0];
+		  pout = pout1 + y*d[0];
 		  for(ii=x;ii<x2;ii++) {
-		    for(j=0;j<ds;j++)
-		      *pout++ = *pin++;
-		    pout += ds*(d[0]*d[1]-1);
+		    *pout++ = *pin++;
+		    pout += d[0]*d[1];
 		  }
-		  pin1 += ds*xsize;
+		  pin1 += xsize;
 		}
 	      }
 	    }
@@ -2001,8 +1566,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
-	  p1 = (float *) recvbuf + *(RcvStrt+i);
-	  p0 = (float *) dest + ds*(istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]])); 
+	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  /*
 	  xstart = istart[i][imo1[0]];
 	  xend = iend[i][imo1[0]];
@@ -2019,17 +1584,16 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	    for(y=0;y < ysize;y+=nb23) {
 	      y2 = min(ysize,y+nb23);
 	      for(k=z;k<z2;k++) {
-		pin = p1 + ds*xsize*(k*ysize + y);
-		pout1 = p0 + ds*(k + y*d[0]*d[1]);
+		pin = p1 + xsize*(k*ysize + y);
+		pout1 = p0 + k + y*d[0]*d[1];
 		for(j=y;j<y2;j++) {
 		  // pin = pin1;
 		  pout = pout1;
 		  for(x=0;x < xsize;x++) {
-		    for(j=0;j<ds;j++)
-		      *pout++ = *pin++;
-		    pout += ds*(d[0]-1);
+		    *pout++ = *pin++;
+		    pout += d[0];
 		  }
-		  pout1+=ds*d[0]*d[1];
+		  pout1+=d[0]*d[1];
 		  //pin1 += xsize;
 		}
 	      }
@@ -2052,8 +1616,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	if(nb23 < 1) nb23 = 1;
 	
 	for(i=0;i < numtasks;i++) {
-	  p1 = (float *) recvbuf + *(RcvStrt+i);
-	  p0 = (float *) dest + ds*(istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]])); 
+	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -2070,15 +1634,15 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	    for(y=0;y < ysize;y+=nb23) {
 	      y2 = min(ysize,y+nb23);
 	      for(k=z;k<z2;k++) {
-		pin = p1 + ds*xsize*(k*ysize+ y);
-		pout1 = p0 + ds*d[0]*(k + y*d[1]);
+		pin = p1 + xsize*(k*ysize+ y);
+		pout1 = p0 + d[0]*(k + y*d[1]);
 		for(j=y;j<y2;j++) {
 		  //pin = pin1;
 		  pout = pout1;
-		  for(x=0;x < xsize*ds;x++) {
+		  for(x=0;x < xsize;x++) {
 		    *pout++ = *pin++;
 		  }
-		  pout1 += ds*d[0]*d[1];
+		  pout1 += d[0]*d[1];
 		  //pin1 += xsize;
 		}
 	      }
@@ -2122,7 +1686,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   t1=MPI_Wtime();
 #endif
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_BYTE,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2169,7 +1733,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_REAL,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_REAL,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
+  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_BYTE,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
 #ifdef TIMERS
       timers.alltoall += MPI_Wtime() -t1;
 #endif
@@ -2229,7 +1793,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   //int ds=sizeof(Type2)/4;
   Type2 *p1,*p0,*pz,*p2,*buf;
   int imo1[3],imo2[3],xs,xe,ys,ye;
-  boll buf_alloc;
+  bool buf_alloc=false;
 
   nt = mpiplan->numtasks;
   int *SndStrt = mpiplan->SndStrt;
@@ -2250,10 +1814,10 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
     istart[j][d2] = mpiplan->grid2->st[d2][j]; iend[j][d2] = mpiplan->grid2->en[d2][j];
   }    
 
-  tmpdims = trplan->grid1->ldims;
+  tmpdims = trplan->grid1->Ldims;
   size_t size0=tmpdims[0]*tmpdims[1]*tmpdims[2];
 
-  tmpdims = trplan->grid2->ldims;
+  tmpdims = trplan->grid2->Ldims;
   size_t size1 = tmpdims[0]*tmpdims[1]*tmpdims[2];
 
 #ifdef CUDA
@@ -2287,7 +1851,7 @@ tLoc\n");
   cudaStream_t *stream;
 
   if(InLoc == LocHost) {
-    checkCudaErrors(cudaMalloc(&(trplan->DevBuf),size0*sizeof(Type1)));
+    checkCudaErrors(cudaMalloc(&(trplan->DevBuf),max(size0*sizeof(Type1),size0*sizeof(Type2))));
     for(i=0;i<nslices;i++) {
       stream = &(streams[i]);
       checkCudaErrors(cudaMemcpyAsync(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
@@ -2295,7 +1859,7 @@ tLoc\n");
     }
     event_hold = &(EVENT_H2D);
   }
-  checkCudaErrors(cudaMalloc(&(trplan->DevBuf2),tmpdims[0]*tmpdims[1]*tmpdims[2]*sizeof(Type2)));
+  //  checkCudaErrors(cudaMalloc(&(trplan->DevBuf2),size1*sizeof(Type2)));
   //  checkCudaErrors(cudaMemcpyAsync(buf,trplan->DevBuf2, 65536,cudaMemcpyDeviceToHost,streams[0]));
 #endif
 
@@ -2309,7 +1873,7 @@ tLoc\n");
 
 #ifdef CUDA
   checkCudaErrors(cudaEventSynchronize(trplan->EVENT_D2H));
-  checkCudaErrors(cudaFree(trplan->DevBuf2));
+  //  checkCudaErrors(cudaFree(trplan->DevBuf2));
   if(InLoc == LocHost)
     checkCudaErrors(cudaFree(trplan->DevBuf));
 #endif
@@ -2333,7 +1897,7 @@ for(i=0;i < nt;i++) {
     xe = iend[i][imo2[0]];
     ys = istart[i][imo2[1]];
     ye = iend[i][imo2[1]];
-    p1 = (float *) sendbuf + *(SndStrt+i);
+    p1 = sendbuf + *(SndStrt+i)/sizeof(Type2);
     p0 = buf + istart[i][imo2[0]];  // Assume MPIplan doesn't change mem. order
     for(z=istart[i][imo2[2]];z < iend[i][imo2[2]];z++) {
       pz = p0 + d[0]*d[1]*z;
@@ -2353,83 +1917,6 @@ for(i=0;i < nt;i++) {
 #endif
 }
 
- template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf_deriv(Type2 *sendbuf,char *src, bool OW)
-{
-  int i,nt,x,y,z,l;
-
-  int d1 = mpiplan->d1;
-  int d2 = mpiplan->d2;
-  int *dims1 = mpiplan->dims1;
-  int *mo1 = mpiplan->mo1;
-  int *mo2 = mpiplan->mo2;
-  int d[3],*tmpdims;
-  int ds=sizeof(Type2)/4;
-  float *p1,*p0,*pz,*p2,*buf;
-  int imo1[3],imo2[3],xs,xe,ys,ye;
-
-  nt = mpiplan->numtasks;
-  int *SndStrt = mpiplan->SndStrt;
-  int j,istart[nt][3],iend[nt][3];
-  //  int comm_id = mpiplan-> comm_id;
-
-  inv_mo(mo1,imo1);
-
-  for(i=0;i<nt;i++) 
-    for(j=0;j<3;j++) {
-      istart[i][j] = 0;
-      iend[i][j] = dims1[j];
-      //      istart[i][j] = mpiplan->grid1->st[comm_id][i][j]; 
-      //iend[i][j] = mpiplan->grid1->en[comm_id][i][j];
-  }
-  for(j=0;j<nt;j++) {
-    istart[j][d2] = mpiplan->grid2->st[d2][j]; iend[j][d2] = mpiplan->grid2->en[d2][j];
-  }    
-
-  tmpdims = trplan->grid2->Ldims;
-
-  if(OW && trplan->dt2 <= trplan->dt1) 
-    buf = (float *) src;
-  else
-    buf = new float[ds*tmpdims[0]*tmpdims[1]*tmpdims[2]];
-
-#ifdef DEBUG
-  char str[80];
-  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
-  //  inv_mo(mo2,imo2);
-  // Optimize in the future
-  write_buf<Type2>((Type2 *)src,str,dims1,imo1);
-#endif
-
-  trplan->exec_deriv(src,(char *) buf,OW);
-
-#ifdef DEBUG
-  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
-  write_buf<Type2>((Type2 *) buf,str,tmpdims,imo1);
-#endif
-  
-  for(i=0;i<3;i++)
-    d[i] = dims1[imo1[i]];
-
-for(i=0;i < nt;i++) {
-    xs = istart[i][imo1[0]]*ds;
-    xe = iend[i][imo1[0]]*ds;
-    ys = istart[i][imo1[1]];
-    ye = iend[i][imo1[1]];
-    p1 = (float *) sendbuf + *(SndStrt+i);
-    p0 = buf + ds * istart[i][imo1[0]];
-    for(z=istart[i][imo1[2]];z < iend[i][imo1[2]];z++) {
-      pz = p0 + ds*d[0]*d[1]*z;
-      for(y=ys;y< ye;y++) {
-	p2 = pz +ds*d[0]*y;
-	for(x=xs;x < xe;x++)
-	  *p1++ = *p2++;;
-      }
-    }
-}
-
- if((void *) buf != (void *) src) 
-    delete [] buf;
-}
 
 void inv_mo(int mo[3],int imo[3])
 {
@@ -2477,5 +1964,6 @@ template class transplan<float,mycomplex>;
 template class transplan<double,complex_double>;
 template class transplan<mycomplex,mycomplex>;
 template class transplan<complex_double,complex_double>;
+
 
 }

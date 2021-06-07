@@ -639,6 +639,8 @@ MKL_LIB
 MKL_INC
 ESSL_LIB
 ESSL_INC
+CUDA_INC
+CUDA_LIB
 FFTW_INC
 EGREP
 GREP
@@ -652,6 +654,15 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+ENABLE_CUTT_FALSE
+ENABLE_CUTT_TRUE
+ENABLE_CUTENSOR_FALSE
+ENABLE_CUTENSOR_TRUE
+ENABLE_CUBLAS_FALSE
+ENABLE_CUBLAS_TRUE
+ENABLE_CUDA_FALSE
+ENABLE_CUDA_TRUE
+CXX_save
 GIT_VERSION
 GIT_DATE
 MAINT
@@ -734,12 +745,20 @@ enable_cray
 enable_gnu
 enable_timers
 enable_fftw
+enable_cuda
+enable_cublas
+enable_cutensor
+enable_cutt
 enable_essl
 enable_mkl
 with_fftw
 enable_fftwmeasure
 enable_fftwestimate
 enable_fftwpatient
+with_cuda
+with_cutensor
+with_cutensor_lib
+with_cutt
 with_essl
 with_mkl
 '
@@ -1383,6 +1402,10 @@ Optional Features:
   --enable-gnu            compile P3DFFT using GNU compiler
   --enable-timers         for using timers (DEBUGGING PURPOSES ONLY)
   --enable-fftw           for using the FFTW library
+  --enable-cuda           for using the CUDA library
+  --enable-cublas         for using the cuBLAS library
+  --enable-cutensor       for using the cuTensor library
+  --enable-cutt           for using the cuTT library
   --enable-essl           for using the ESSL library
   --enable-mkl            for using the MKL library
   --enable-fftwmeasure    measure planner flag for FFTW library
@@ -1393,6 +1416,10 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-fftw             path to location of FFTW directory
+  --with-cuda             path to location of CUDA library
+  --with-cutensor         path to location of cuTensor library
+  --with-cutensor-lib     path to location of cuTensor lib directory
+  --with-cutt             path to location of cuTT library
   --with-essl             path to location of ESSL library
   --with-mkl              path to location of MKL library
 
@@ -2931,7 +2958,6 @@ GIT_DATE="$git_date"
 GIT_VERSION="$git_version"
 
 
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use IBM compiler" >&5
 $as_echo_n "checking whether to use IBM compiler... " >&6; }
 # Check whether --enable-ibm was given.
@@ -3051,6 +3077,9 @@ if test "$FC" = ''; then
 	FC="mpif90"
 fi
 
+CXX_save="$CXX_save"
+
+fourlib=""
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use TIMERS" >&5
 $as_echo_n "checking whether to use TIMERS... " >&6; }
@@ -3068,7 +3097,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $timersval" >&5
 $as_echo "$timersval" >&6; }
 
-fourlib=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use FFTW library" >&5
 $as_echo_n "checking whether to use FFTW library... " >&6; }
 # Check whether --enable-fftw was given.
@@ -3088,6 +3116,157 @@ $as_echo "#define FFTW 1" >>confdefs.h
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
 $as_echo "$fftwval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use CUDA library" >&5
+$as_echo_n "checking whether to use CUDA library... " >&6; }
+# Check whether --enable-cuda was given.
+if test "${enable_cuda+set}" = set; then :
+  enableval=$enable_cuda; cudaval=$enableval
+else
+  cudaval=no
+fi
+
+if test "$cudaval" = "yes"; then
+	if test "$fourlib" = ""; then fourlib="cuda"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+
+$as_echo "#define CUDA 1" >>confdefs.h
+
+	 if true; then
+  ENABLE_CUDA_TRUE=
+  ENABLE_CUDA_FALSE='#'
+else
+  ENABLE_CUDA_TRUE='#'
+  ENABLE_CUDA_FALSE=
+fi
+
+else
+	 if false; then
+  ENABLE_CUDA_TRUE=
+  ENABLE_CUDA_FALSE='#'
+else
+  ENABLE_CUDA_TRUE='#'
+  ENABLE_CUDA_FALSE=
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cudaval" >&5
+$as_echo "$cudaval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use cuBLAS library" >&5
+$as_echo_n "checking whether to use cuBLAS library... " >&6; }
+# Check whether --enable-cublas was given.
+if test "${enable_cublas+set}" = set; then :
+  enableval=$enable_cublas; cublasval=$enableval
+else
+  cublasval=no
+fi
+
+if test "$cublasval" = "yes"; then
+	if test "$fourlib" = "cuda"; then
+
+$as_echo "#define CUBLAS 1" >>confdefs.h
+
+		 if true; then
+  ENABLE_CUBLAS_TRUE=
+  ENABLE_CUBLAS_FALSE='#'
+else
+  ENABLE_CUBLAS_TRUE='#'
+  ENABLE_CUBLAS_FALSE=
+fi
+
+	else
+		as_fn_error $? "CUDA must be enabled in order to use cuBLAS!" "$LINENO" 5
+	fi
+else
+	 if false; then
+  ENABLE_CUBLAS_TRUE=
+  ENABLE_CUBLAS_FALSE='#'
+else
+  ENABLE_CUBLAS_TRUE='#'
+  ENABLE_CUBLAS_FALSE=
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cublasval" >&5
+$as_echo "$cublasval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use cuTensor library" >&5
+$as_echo_n "checking whether to use cuTensor library... " >&6; }
+# Check whether --enable-cutensor was given.
+if test "${enable_cutensor+set}" = set; then :
+  enableval=$enable_cutensor; cutensorval=$enableval
+else
+  cutensorval=no
+fi
+
+if test "$cutensorval" = "yes"; then
+	if test "$fourlib" = "cuda"; then
+
+$as_echo "#define CUTENSOR 1" >>confdefs.h
+
+		 if true; then
+  ENABLE_CUTENSOR_TRUE=
+  ENABLE_CUTENSOR_FALSE='#'
+else
+  ENABLE_CUTENSOR_TRUE='#'
+  ENABLE_CUTENSOR_FALSE=
+fi
+
+	else
+		as_fn_error $? "CUDA must be enabled in order to use cuTensor!" "$LINENO" 5
+	fi
+else
+	 if false; then
+  ENABLE_CUTENSOR_TRUE=
+  ENABLE_CUTENSOR_FALSE='#'
+else
+  ENABLE_CUTENSOR_TRUE='#'
+  ENABLE_CUTENSOR_FALSE=
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cutensorval" >&5
+$as_echo "$cutensorval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use cuTT library" >&5
+$as_echo_n "checking whether to use cuTT library... " >&6; }
+# Check whether --enable-cutt was given.
+if test "${enable_cutt+set}" = set; then :
+  enableval=$enable_cutt; cuttval=$enableval
+else
+  cuttval=no
+fi
+
+if test "$cuttval" = "yes"; then
+	if test "$fourlib" = "cuda"; then
+
+$as_echo "#define CUTT 1" >>confdefs.h
+
+		 if true; then
+  ENABLE_CUTT_TRUE=
+  ENABLE_CUTT_FALSE='#'
+else
+  ENABLE_CUTT_TRUE='#'
+  ENABLE_CUTT_FALSE=
+fi
+
+	else
+		as_fn_error $? "CUDA must be enabled in order to use cuTT!" "$LINENO" 5
+	fi
+else
+	 if false; then
+  ENABLE_CUTT_TRUE=
+  ENABLE_CUTT_FALSE='#'
+else
+  ENABLE_CUTT_TRUE='#'
+  ENABLE_CUTT_FALSE=
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cuttval" >&5
+$as_echo "$cuttval" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use ESSL library" >&5
 $as_echo_n "checking whether to use ESSL library... " >&6; }
@@ -4336,9 +4515,10 @@ $as_echo "$withfftw" >&6; }
               if test -d "${withfftw}/lib"; then :
   LDFLAGS_save=$LDFLAGS
                      LDFLAGS="-L${withfftw}/lib"
-                     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing fftw_execute" >&5
-$as_echo_n "checking for library containing fftw_execute... " >&6; }
-if ${ac_cv_search_fftw_execute+:} false; then :
+
+                     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing fftw_plan_dft" >&5
+$as_echo_n "checking for library containing fftw_plan_dft... " >&6; }
+if ${ac_cv_search_fftw_plan_dft+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -4351,11 +4531,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char fftw_execute ();
+char fftw_plan_dft ();
 int
 main ()
 {
-return fftw_execute ();
+return fftw_plan_dft ();
   ;
   return 0;
 }
@@ -4368,25 +4548,25 @@ for ac_lib in '' fftw3; do
     LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_fftw_execute=$ac_res
+  ac_cv_search_fftw_plan_dft=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_fftw_execute+:} false; then :
+  if ${ac_cv_search_fftw_plan_dft+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_fftw_execute+:} false; then :
+if ${ac_cv_search_fftw_plan_dft+:} false; then :
 
 else
-  ac_cv_search_fftw_execute=no
+  ac_cv_search_fftw_plan_dft=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_fftw_execute" >&5
-$as_echo "$ac_cv_search_fftw_execute" >&6; }
-ac_res=$ac_cv_search_fftw_execute
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_fftw_plan_dft" >&5
+$as_echo "$ac_cv_search_fftw_plan_dft" >&6; }
+ac_res=$ac_cv_search_fftw_plan_dft
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   FFTW_LIB="-L${withfftw}/lib -lfftw3"
@@ -4454,10 +4634,13 @@ else
   as_fn_error $? "libfftw3f not found!" "$LINENO" 5
 fi
 
-                    LDFLAGS=$LDFLAGS_save
+
+                     LDFLAGS=$LDFLAGS_save
 else
   as_fn_error $? "location to FFTW lib directory is not found!" "$LINENO" 5
 fi
+
+              LIBS=$LIBS_save
 
               if test -d "${withfftw}/include"; then :
   for ac_header in ${withfftw}/include/fftw3.h
@@ -4480,7 +4663,7 @@ else
   as_fn_error $? "location to FFTW include directory is invalid!" "$LINENO" 5
 fi
 
-              LIBS=$LIBS_save
+              CXX_save="$CXX"
 
               fftwflag=
               { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw flag" >&5
@@ -4550,6 +4733,92 @@ $as_echo "none" >&6; }
 fi
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking CUDA directory" >&5
+$as_echo_n "checking CUDA directory... " >&6; }
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda; withcuda=$withval
+else
+  withcuda=""
+fi
+
+if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no"; then
+	if test "$fourlib" != "cuda"; then as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withcuda" >&5
+$as_echo "$withcuda" >&6; }
+	if [ -d "$withcuda/samples/common/inc" ]; then
+		CUDA_LIB="-lcuda -lcufft"
+		CUDA_INC="-I$withcuda/include -I$withcuda/samples/common/inc"
+	else
+		as_fn_error $? "cuda library was not found in given location!" "$LINENO" 5
+	fi
+
+	if test "$cublasval" = "yes"; then
+		CUDA_LIB+=" -lcublas"
+	fi
+
+	if test "$cutensorval" = "yes"; then
+		CUDA_LIB_save=$CUDA_LIB
+
+
+# Check whether --with-cutensor was given.
+if test "${with_cutensor+set}" = set; then :
+  withval=$with_cutensor; withcutensor=$withval
+else
+  withcutensor=""
+fi
+
+		if test "withcutensor" != "yes" && test "$withcutensor" != "" && test "$withcutensor" != "no"; then
+			CUDA_INC+=" -I$withcutensor/include"
+			CUDA_LIB=" -L$withcutensor/lib"
+		fi
+
+# Check whether --with-cutensor-lib was given.
+if test "${with_cutensor_lib+set}" = set; then :
+  withval=$with_cutensor_lib; withcutensorlib=$withval
+else
+  withcutensorlib=""
+fi
+
+		if test "$withcutensorlib" != ""; then
+			CUDA_LIB=" -L$withcutensorlib"
+		fi
+
+		CUDA_LIB_save+=$CUDA_LIB
+		CUDA_LIB=$CUDA_LIB_save
+		CUDA_LIB+=" -lcutensor_static -lcudart"
+	fi
+
+	if test "$cuttval" = "yes"; then
+
+# Check whether --with-cutt was given.
+if test "${with_cutt+set}" = set; then :
+  withval=$with_cutt; withcutt=$withval
+else
+  withcutt=""
+fi
+
+		if test "withcutt" != "yes" && test "$withcutt" != "" && test "$withcutt" != "no"; then
+			CUDA_INC+=" -I$withcutt/include"
+			CUDA_LIB+=" -L$withcutt/lib -lcutt"
+		fi
+	fi
+
+	CUDA_LIB="$CUDA_LIB"
+
+	CUDA_INC="$CUDA_INC"
+
+	CXX_save="$CXX"
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
+$as_echo "none" >&6; }
+	if test "$cudaval" = "yes"; then as_fn_error $? "location to CUDA was not given!" "$LINENO" 5
+	fi
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking ESSL directory" >&5
 $as_echo_n "checking ESSL directory... " >&6; }
 
@@ -4615,7 +4884,7 @@ fi
 
 # check to see if essl or ESSL or MKL has been selected
 if test "$fourlib" = ""; then
-	as_fn_error $? "You must choose to use either ESSL or FFTW or MKL!" "$LINENO" 5
+	as_fn_error $? "You must choose to use either ESSL or FFTW or MKL or CUDA!" "$LINENO" 5
 fi
 
 
@@ -6417,6 +6686,38 @@ if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${ENABLE_CUDA_TRUE}" && test -z "${ENABLE_CUDA_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUDA_TRUE}" && test -z "${ENABLE_CUDA_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUBLAS_TRUE}" && test -z "${ENABLE_CUBLAS_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUBLAS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUBLAS_TRUE}" && test -z "${ENABLE_CUBLAS_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUBLAS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUTENSOR_TRUE}" && test -z "${ENABLE_CUTENSOR_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUTENSOR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUTENSOR_TRUE}" && test -z "${ENABLE_CUTENSOR_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUTENSOR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUTT_TRUE}" && test -z "${ENABLE_CUTT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUTT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CUTT_TRUE}" && test -z "${ENABLE_CUTT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CUTT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -7636,3 +7937,4 @@ fi
 mv p3dfft3config.h include/p3dfft3config.h
 { $as_echo "$as_me:${as_lineno-$LINENO}: configure script complete!" >&5
 $as_echo "$as_me: configure script complete!" >&6;}
+

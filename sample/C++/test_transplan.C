@@ -140,7 +140,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  setup();
+  setup(1);
 
   //Set up 2 transform types for 3D transforms
 
@@ -181,12 +181,17 @@ int main(int argc,char **argv)
   // For final grid, intended for complex-valued array, there will be conjugate symmetry in the dimension of the transform (dim) since it is a R2C transform
   DataGrid grid2(gdims2,dim,&pgrid,dmap,mem_order2);
 
+#ifdef CUDA
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
+  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim,LocHost,LocHost);
+  //Now set up the backward transform
+  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim,LocHost,LocHost);
+#else
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
-
   //Now set up the backward transform
-
   transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim);
+#endif
 
   //Determine local array dimensions. 
 
@@ -249,7 +254,7 @@ int main(int argc,char **argv)
 
   // Clean up all P3DFFT++ data
 
-  p3dfft_cleanup();
+  cleanup();
 
   }
 
