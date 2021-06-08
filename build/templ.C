@@ -1026,7 +1026,7 @@ void divide_work(int *offset,int *mysize,int dims[3],int nslices)
   int i;
   long int size=dims[0]*dims[1]*dims[2];
   long int chunk = size/nslices;
-  int l=chunk % nslices;
+  int l=size % nslices;
   offset[0] = 0;
   for(i=0;i<nslices-1;i++) {
     mysize[i] = (i < l) ? chunk+1 : chunk;

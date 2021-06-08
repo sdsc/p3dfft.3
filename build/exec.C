@@ -394,7 +394,7 @@ void printbuf(char *,int[3],int,int);
       else {
         trans_MPIplan<Type1,Type2> *tr = (trans_MPIplan<Type1,Type2> *) (transplan<Type1,Type2> *) curr_stage;
 #ifdef DEBUG
-	  mo2 = tr->trplan->mo2;
+	mo2 = tr->trplan->mo2;
 #endif
         tr->exec(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in);
 	prev_t = 2;
@@ -671,9 +671,9 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
       double t1=MPI_Wtime();
 #endif
       if((void *) in != (void *) out)
-	(*(trans_type->exec))(plan->libplan_out,in,out);
+	(*(trans_type->exec))(plan->libplan_out[slice],in+offset1[slice]*sizeof(Type1),out+offset2[slice]*sizeof(Type2));
       else if(!trans_type->is_empty) 
-	(*(trans_type->exec))(plan->libplan_in,in,out);
+	(*(trans_type->exec))(plan->libplan_in[slice],in+offset1[slice]*sizeof(Type1),out+offset2[slice]*sizeof(Type2));
       if(dim_deriv == L) {
         int sdims[3]; // Find storage dimensions
         for(int i=0;i<3;i++)
