@@ -76,11 +76,12 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+@ENABLE_CUDA_TRUE@am__append_1 = -DCUDA
 csample_PROGRAMS = test1D_cos_c$(EXEEXT) test1D_cos_complex_c$(EXEEXT) \
 	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
 	test3D_c2c_c$(EXEEXT) testIDIR_deriv_c$(EXEEXT) \
-	test3D_c2c_inplace_c$(EXEEXT)  \
-	test3D_r2c_memord_c$(EXEEXT) test3D_r2c_single_c$(EXEEXT) test2D+empty_c$(EXEEXT) #testIDIR_deriv2_c$(EXEEXT)
+	test3D_c2c_inplace_c$(EXEEXT) test3D_r2c_memord_c$(EXEEXT) \
+	test3D_r2c_single_c$(EXEEXT) test2D+empty_c$(EXEEXT)
 subdir = sample/C
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -112,6 +113,12 @@ test1D_r2c_c_LDADD = $(LDADD)
 test1D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+test2D_empty_c_SOURCES = test2D+empty.c
+test2D_empty_c_OBJECTS = test2D+empty.$(OBJEXT)
+test2D_empty_c_LDADD = $(LDADD)
+test2D_empty_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_c2c_c_OBJECTS = test3D_c2c.$(OBJEXT)
 test3D_c2c_c_OBJECTS = $(am_test3D_c2c_c_OBJECTS)
 test3D_c2c_c_LDADD = $(LDADD)
@@ -130,12 +137,6 @@ test3D_r2c_c_LDADD = $(LDADD)
 test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_test2D+empty_c_OBJECTS = test2D+empty.$(OBJEXT)
-test2D+empty_c_OBJECTS = $(am_test2D+empty_c_OBJECTS)
-test2D+empty_c_LDADD = $(LDADD)
-test2D+empty_c_DEPENDENCIES =  \
-	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_memord_c_OBJECTS = test3D_r2c_memord.$(OBJEXT)
 test3D_r2c_memord_c_OBJECTS = $(am_test3D_r2c_memord_c_OBJECTS)
 test3D_r2c_memord_c_LDADD = $(LDADD)
@@ -148,12 +149,6 @@ test3D_r2c_single_c_LDADD = $(LDADD)
 test3D_r2c_single_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_testIDIR_deriv2_c_OBJECTS = test_deriv2.$(OBJEXT)
-testIDIR_deriv2_c_OBJECTS = $(am_testIDIR_deriv2_c_OBJECTS)
-testIDIR_deriv2_c_LDADD = $(LDADD)
-testIDIR_deriv2_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
 am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
 testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
 testIDIR_deriv_c_LDADD = $(LDADD)
@@ -187,15 +182,15 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
-	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
-	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(test3D_r2c_memord_c_SOURCES) $(test3D_r2c_single_c_SOURCES) \
-	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)  $(test2D+empty_c_SOURCES)
+	$(test1D_r2c_c_SOURCES) test2D+empty.c \
+	$(test3D_c2c_c_SOURCES) $(test3D_c2c_inplace_c_SOURCES) \
+	$(test3D_r2c_c_SOURCES) $(test3D_r2c_memord_c_SOURCES) \
+	$(test3D_r2c_single_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
 DIST_SOURCES = $(test1D_cos_c_SOURCES) $(test1D_cos_complex_c_SOURCES) \
-	$(test1D_r2c_c_SOURCES) $(test3D_c2c_c_SOURCES) \
-	$(test3D_c2c_inplace_c_SOURCES) $(test3D_r2c_c_SOURCES) \
-	$(test3D_r2c_memord_c_SOURCES) $(test3D_r2c_single_c_SOURCES) \
-	$(testIDIR_deriv2_c_SOURCES) $(testIDIR_deriv_c_SOURCES)  $(test2D+empty_c_SOURCES)
+	$(test1D_r2c_c_SOURCES) test2D+empty.c \
+	$(test3D_c2c_c_SOURCES) $(test3D_c2c_inplace_c_SOURCES) \
+	$(test3D_r2c_c_SOURCES) $(test3D_r2c_memord_c_SOURCES) \
+	$(test3D_r2c_single_c_SOURCES) $(testIDIR_deriv_c_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -233,8 +228,11 @@ CC = @CC@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CUDA_INC = @CUDA_INC@
+CUDA_LIB = @CUDA_LIB@
 CXX = @CXX@
 CXXFLAGS = @CXXFLAGS@
+CXX_save = @CXX_save@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 ECHO_C = @ECHO_C@
@@ -323,9 +321,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lstdc++
-CCLD = $(CXX)
+AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
+AM_CFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) \
+	$(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' \
+	-DGIT_DATE='"$(GIT_DATE)"' # $(am__append_1)
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lstdc++
+@ENABLE_CUDA_FALSE@CCLD = $(CXX)
+@ENABLE_CUDA_TRUE@CCLD = nvcc
+@ENABLE_CUDA_TRUE@AM_LDFLAGS = --std=c++11 -ccbin $(CXX_save)
 csampledir = $(datadir)/p3dfft++_samples/
 test3D_r2c_single_c_SOURCES = test3D_r2c_single.c
 test1D_cos_c_SOURCES = test1D_cos.c
@@ -335,9 +338,10 @@ test3D_c2c_inplace_c_SOURCES = test3D_c2c_inplace.c
 test3D_r2c_c_SOURCES = test3D_r2c.c
 test3D_c2c_c_SOURCES = test3D_c2c.c
 testIDIR_deriv_c_SOURCES = test_deriv.c
-testIDIR_deriv2_c_SOURCES = test_deriv2.c
-test3D_r2c_memord_c_SOURCES = test3D_r2c_memord.c
 test2D+empty_c_SOURCES = test2D+empty.c
+
+#testIDIR_deriv2_c_SOURCES = test_deriv2.c
+test3D_r2c_memord_c_SOURCES = test3D_r2c_memord.c
 all: all-am
 
 .SUFFIXES:
@@ -427,6 +431,10 @@ test1D_r2c_c$(EXEEXT): $(test1D_r2c_c_OBJECTS) $(test1D_r2c_c_DEPENDENCIES) $(EX
 	@rm -f test1D_r2c_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test1D_r2c_c_OBJECTS) $(test1D_r2c_c_LDADD) $(LIBS)
 
+test2D+empty_c$(EXEEXT): $(test2D_empty_c_OBJECTS) $(test2D_empty_c_DEPENDENCIES) $(EXTRA_test2D_empty_c_DEPENDENCIES) 
+	@rm -f test2D+empty_c$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test2D_empty_c_OBJECTS) $(test2D_empty_c_LDADD) $(LIBS)
+
 test3D_c2c_c$(EXEEXT): $(test3D_c2c_c_OBJECTS) $(test3D_c2c_c_DEPENDENCIES) $(EXTRA_test3D_c2c_c_DEPENDENCIES) 
 	@rm -f test3D_c2c_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_c2c_c_OBJECTS) $(test3D_c2c_c_LDADD) $(LIBS)
@@ -443,17 +451,9 @@ test3D_r2c_memord_c$(EXEEXT): $(test3D_r2c_memord_c_OBJECTS) $(test3D_r2c_memord
 	@rm -f test3D_r2c_memord_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_r2c_memord_c_OBJECTS) $(test3D_r2c_memord_c_LDADD) $(LIBS)
 
-test2D+empty_c$(EXEEXT): $(test2D+empty_c_OBJECTS) $(test2D+empty_c_DEPENDENCIES) $(EXTRA_test2D+empty_c_DEPENDENCIES) 
-	@rm -f test2D+empty_c$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test2D+empty_c_OBJECTS) $(test2D+empty_c_LDADD) $(LIBS)
-
 test3D_r2c_single_c$(EXEEXT): $(test3D_r2c_single_c_OBJECTS) $(test3D_r2c_single_c_DEPENDENCIES) $(EXTRA_test3D_r2c_single_c_DEPENDENCIES) 
 	@rm -f test3D_r2c_single_c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3D_r2c_single_c_OBJECTS) $(test3D_r2c_single_c_LDADD) $(LIBS)
-
-testIDIR_deriv2_c$(EXEEXT): $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv2_c_DEPENDENCIES) 
-	@rm -f testIDIR_deriv2_c$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testIDIR_deriv2_c_OBJECTS) $(testIDIR_deriv2_c_LDADD) $(LIBS)
 
 testIDIR_deriv_c$(EXEEXT): $(testIDIR_deriv_c_OBJECTS) $(testIDIR_deriv_c_DEPENDENCIES) $(EXTRA_testIDIR_deriv_c_DEPENDENCIES) 
 	@rm -f testIDIR_deriv_c$(EXEEXT)
@@ -672,6 +672,7 @@ uninstall-am: uninstall-csamplePROGRAMS
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
 	uninstall-am uninstall-csamplePROGRAMS
+
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -138,7 +138,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup();
+  p3dfft_setup(8);
 
   //Set up 2 transform types for 3D transforms
 
@@ -185,13 +185,17 @@ int main(int argc,char **argv)
   // Final grid does have conjugate symmetry in the dimension corresponding to dim
   grid2 = p3dfft_init_data_grid(gdims2,dim,Pgrid,dmap,mem_order2);
 
+#ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument is for out-of-place transform (input and output spaces different).
-
-  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim);
-
+  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim,LocHost,LocHost);
   //Now set up the backward transform
-
+  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim,LocHost,LocHost);
+#else
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument is for out-of-place transform (input and output spaces different).
+  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim);
+  //Now set up the backward transform
   trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim);
+#endif
 
   //Determine local array dimensions. 
 

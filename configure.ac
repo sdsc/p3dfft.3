@@ -78,7 +78,7 @@ if test "$compiler" = ''; then
 fi
 
 if test "$CC" = ''; then
-	CC="mpicc"
+	CC="mpicxx"
 fi
 if test "$CXX" = ''; then
 	CXX="mpicxx"
@@ -88,6 +88,7 @@ if test "$FC" = ''; then
 fi
 
 AC_SUBST(CXX_save, "$CXX_save")
+AC_SUBST(FC_save, "$FC_save")
 fourlib=""
 
 AC_MSG_CHECKING([whether to use TIMERS])
@@ -212,6 +213,7 @@ AS_IF([test "$fourlib" = "fftw"],
                     [AC_MSG_ERROR([location to FFTW include directory is invalid!])])
 
               CXX_save="$CXX"
+	      FC_save="$FC"
 
               fftwflag=
               AC_MSG_CHECKING([fftw flag])
@@ -257,7 +259,7 @@ if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no
 
 	AC_MSG_RESULT([$withcuda])
 	if [[ -d "$withcuda/samples/common/inc" ]]; then
-		CUDA_LIB="-lcuda -lcufft"
+		CUDA_LIB="-L$withcuda/lib64 -lcuda -lcufft"
 		CUDA_INC="-I$withcuda/include -I$withcuda/samples/common/inc"
 	else
 		AC_MSG_ERROR([cuda library was not found in given location!])
@@ -296,6 +298,7 @@ if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no
 	AC_SUBST(CUDA_LIB, "$CUDA_LIB")
 	AC_SUBST(CUDA_INC, "$CUDA_INC")
 	CXX_save="$CXX"
+	FC_save="$FC"
 else
 	AC_MSG_RESULT([none])
 	if test "$cudaval" = "yes"; then AC_MSG_ERROR([location to CUDA was not given!])

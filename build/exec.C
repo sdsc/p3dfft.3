@@ -79,12 +79,14 @@ All Rights Reserved.
 */
 
 #include "p3dfft.h"
+#include <unistd.h>
 
 namespace p3dfft {
 
   extern int nslices;
   int nslices;
 #ifdef CUDA
+  extern cudaStream_t *streams;
   cudaStream_t *streams;
 #endif
 
@@ -142,23 +144,24 @@ void printbuf(char *,int[3],int,int);
 #ifdef CUDA
   int prevLoc=LocHost;
   cudaStream_t *stream;
-  int nextdev = 0;
-  int currdev = -1;
+  //int nextdev = 0;
+  //  int currdev = -1;
   int ndev = 0;
-  char *DevBuf[2];
+  char *DevBuf;
   int size1 = grid1->Ldims[0] * grid1->Ldims[1] * grid1->Ldims[2];
   bool DevAlloc = false;
-  bool DevAlloc2 = false;
+  //  bool DevAlloc2 = false;
   void *devbuf = NULL;
   void *tmpdev,*tmpdev2;
   event_t *event_hold=NULL;
 
   //  checkCudaErrors(cudaMalloc((&(DevBuf[0])),size1*sizeof(Type1)));
   if(size_out >= maxDevSize && OutLoc == LocDevice)
-    DevBuf[0] = (char *) out;
-  else
-    checkCudaErrors(cudaMalloc((&(DevBuf[0])),maxDevSize));
-
+    DevBuf = (char *) out;
+  else {
+    checkCudaErrors(cudaMalloc(&DevBuf,maxDevSize));
+    DevAlloc = true;
+  }
   /*
   if(InLoc == LocHost && Stages->kind != MPI_ONLY) {
   // if(!types[0]->isEmpty) ...
@@ -246,7 +249,7 @@ void printbuf(char *,int[3],int,int);
 	*/
     }
     else  // not last stage; outloc = device
-      buf[next] = DevBuf[currdev];
+      buf[next] = DevBuf;
   
     
 #else //non-CUDA
@@ -279,27 +282,27 @@ void printbuf(char *,int[3],int,int);
 
 #endif
       
-    if(curr_stage->kind == TRANS_ONLY) {
+      if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
       
       transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
 
 #ifdef CUDA     
       if(st->InLoc == LocHost && !tr->trans_type->is_empty) {
-        if(currdev < 0) {
-          currdev = 1 - nextdev;
+	//        if(currdev < 0) {
+	// currdev = 1 - nextdev;
           //      nextdev = 1;
-          checkCudaErrors(cudaMalloc(&(DevBuf[currdev]),size1*st->stage_prec*dt_1));
-          for(i=0;i<nslices;i++) {
-            stream = &(streams[i]);
-            checkCudaErrors(cudaMemcpyAsync(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
-            checkCudaErrors(cudaEventRecord(st->EVENT_H2D,*stream));
-          }
-          event_hold = &(st->EVENT_H2D);
-        }
-	buf[curr] = DevBuf[currdev];
+	  
+	//	checkCudaErrors(cudaMalloc(&(DevBuf[currdev],st->stage_prec*max(size1*dt_1,size2*dt_2)));
+	for(i=0;i<nslices;i++) {
+	  stream = &(streams[i]);
+	  checkCudaErrors(cudaMemcpyAsync(DevBuf+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
+	  checkCudaErrors(cudaEventRecord(st->EVENT_H2D,*stream));
+	}
+	event_hold = &(st->EVENT_H2D);
+	buf[curr] = DevBuf;
       }
-
+      
         /*      
       nextdev = 1 - currdev;
       checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2 * st->stage_prec*dt_2));
@@ -308,7 +311,7 @@ void printbuf(char *,int[3],int,int);
         buf[next] = DevBuf[nextdev];
       */
       if(st->OutLoc != LocHost && buf[next] != buf_out)
-	buf[next] = DevBuf[currdev];
+	buf[next] = DevBuf;
 #endif
 
       if(dt_1 == dt_2)
@@ -319,7 +322,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 #ifdef CUDA
           if(st->InLoc == LocHost)
-            tr->DevBuf = DevBuf[currdev];
+            tr->DevBuf = DevBuf;
 	  //          if(st->OutLoc == LocHost)
 	  // tr->DevBuf2 = DevBuf[nextdev];
 #endif
@@ -333,7 +336,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 #ifdef CUDA
 	  if(st->InLoc == LocHost)
-	    tr->DevBuf = DevBuf[currdev];
+	    tr->DevBuf = DevBuf;
 	  // if(st->OutLoc == LocHost)
 	  //  tr->DevBuf2 = DevBuf[nextdev];
 #endif
@@ -347,7 +350,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 #ifdef CUDA
 	if(st->InLoc == LocHost)
-	  tr->DevBuf = DevBuf[currdev];
+	  tr->DevBuf = DevBuf;
 	//	if(st->OutLoc == LocHost)
 	//  tr->DevBuf2 = DevBuf[nextdev];
 #endif
@@ -468,8 +471,8 @@ void printbuf(char *,int[3],int,int);
 #endif
 
 #ifdef CUDA
-  if(ndev > 0)
-    checkCudaErrors(cudaFree(DevBuf[currdev]));
+  if(DevAlloc)
+    checkCudaErrors(cudaFree(DevBuf));
 #endif
 
 }
@@ -611,6 +614,8 @@ void printbuf(char *,int[3],int,int);
 #ifdef CUDA
   //  if(useCuda) {
   bool DevAlloc = false;
+  char *DevBuf2;
+  bool DevAlloc2 = false;
   cudaStream_t *stream;
 
   if(InLoc == LocHost) {  // Need to transfer data from host to device
@@ -632,9 +637,9 @@ void printbuf(char *,int[3],int,int);
     in = (Type1 *) DevBuf;
   }
   if(OutLoc == LocHost)  { // If no device space is given as input, allocate device space
+    size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
+    size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
     if(DevBuf == NULL) {
-      size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
-      size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
       if(size2 <= size1)
 	DevBuf = (char *) in;
       else {
@@ -642,7 +647,13 @@ void printbuf(char *,int[3],int,int);
 	DevAlloc = true;
       }
     }
-    out = (Type2 *) DevBuf;
+    if(size2 > size1) {
+      checkCudaErrors(cudaMalloc((&(DevBuf2)),size2));
+      DevAlloc2 = true;
+      out = (Type2 *) DevBuf2;
+    }
+    else
+      out = (Type2 *) DevBuf;
   }
 #endif
 
@@ -671,9 +682,9 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
       double t1=MPI_Wtime();
 #endif
       if((void *) in != (void *) out)
-	(*(trans_type->exec))(plan->libplan_out[slice],in+offset1[slice]*sizeof(Type1),out+offset2[slice]*sizeof(Type2));
+	(*(trans_type->exec))(plan->libplan_out[slice],in+offset1[slice],out+offset2[slice]);
       else if(!trans_type->is_empty) 
-	(*(trans_type->exec))(plan->libplan_in[slice],in+offset1[slice]*sizeof(Type1),out+offset2[slice]*sizeof(Type2));
+	(*(trans_type->exec))(plan->libplan_in[slice],in+offset1[slice],out+offset2[slice]);
       if(dim_deriv == L) {
         int sdims[3]; // Find storage dimensions
         for(int i=0;i<3;i++)
@@ -757,8 +768,10 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
       checkCudaErrors(cudaMemcpy(out_,out, size2, cudaMemcpyDeviceToHost)); 
     }
     else if(cmpl == SLICE) {
+      //      checkCudaErrors(cudaMemcpy(out_+offset2[slice]*sizeof(Type2),out+offset2[slice], mysize2[slice]*sizeof(Type2),cudaMemcpyDeviceToHost));
       checkCudaErrors(cudaMemcpyAsync(out_+offset2[slice]*sizeof(Type2),out+offset2[slice], mysize2[slice]*sizeof(Type2),cudaMemcpyDeviceToHost,streams[slice]));
       checkCudaErrors(cudaEventRecord(EVENT_D2H,streams[slice]));
+      //      printf("%d: offset2=%d %d, mysize2=%d %d\n",taskid,offset2[0],offset2[1],mysize2[0],mysize2[1]);
     }
 //     cudaDeviceSynchronize();
 #ifdef TIMERS
@@ -766,6 +779,8 @@ _=%ld\n",taskid,mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2],(long int ) in, (long 
 #endif
     if(DevAlloc)
       checkCudaErrors(cudaFree(DevBuf));
+    if(DevAlloc2)
+      checkCudaErrors(cudaFree(DevBuf2));
 #endif
   }
 }
@@ -1850,10 +1865,12 @@ tLoc\n");
 #ifdef CUDA
   cudaStream_t *stream;
 
+  //  printf("offset1=%d %d, mysize1=%d %d\n",trplan->offset1[0],trplan->offset1[1],trplan->mysize1[0],trplan->mysize1[1]);
   if(InLoc == LocHost) {
-    checkCudaErrors(cudaMalloc(&(trplan->DevBuf),max(size0*sizeof(Type1),size0*sizeof(Type2))));
+    checkCudaErrors(cudaMalloc(&(trplan->DevBuf),max(size0*sizeof(Type1),size1*sizeof(Type2))));
     for(i=0;i<nslices;i++) {
       stream = &(streams[i]);
+      //      checkCudaErrors(cudaMemcpy(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice));
       checkCudaErrors(cudaMemcpyAsync(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
       checkCudaErrors(cudaEventRecord(EVENT_H2D,*stream));
     }
@@ -1872,6 +1889,7 @@ tLoc\n");
     trplan->exec_slice(src,(char *) buf,dim_deriv,i,nslices,event_hold,OW);
 
 #ifdef CUDA
+  //  checkCudaErrors(cudaEventRecord(EVENT_D2H));
   checkCudaErrors(cudaEventSynchronize(trplan->EVENT_D2H));
   //  checkCudaErrors(cudaFree(trplan->DevBuf2));
   if(InLoc == LocHost)

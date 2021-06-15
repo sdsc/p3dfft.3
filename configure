@@ -663,6 +663,7 @@ ENABLE_CUBLAS_TRUE
 ENABLE_CUDA_FALSE
 ENABLE_CUDA_TRUE
 CXX_save
+FC_save
 GIT_VERSION
 GIT_DATE
 MAINT
@@ -3068,7 +3069,7 @@ $as_echo "#define INTEL 1" >>confdefs.h
 fi
 
 if test "$CC" = ''; then
-	CC="mpicc"
+	CC="mpicxx"
 fi
 if test "$CXX" = ''; then
 	CXX="mpicxx"
@@ -3078,6 +3079,7 @@ if test "$FC" = ''; then
 fi
 
 CXX_save="$CXX_save"
+FC_save="$FC_save"
 
 fourlib=""
 
@@ -4664,6 +4666,7 @@ else
 fi
 
               CXX_save="$CXX"
+	      FC_save="$FC"
 
               fftwflag=
               { $as_echo "$as_me:${as_lineno-$LINENO}: checking fftw flag" >&5
@@ -4750,7 +4753,7 @@ if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withcuda" >&5
 $as_echo "$withcuda" >&6; }
 	if [ -d "$withcuda/samples/common/inc" ]; then
-		CUDA_LIB="-lcuda -lcufft"
+		CUDA_LIB="-L$withcuda/lib64 -lcuda -lcufft"
 		CUDA_INC="-I$withcuda/include -I$withcuda/samples/common/inc"
 	else
 		as_fn_error $? "cuda library was not found in given location!" "$LINENO" 5
@@ -4812,6 +4815,7 @@ fi
 	CUDA_INC="$CUDA_INC"
 
 	CXX_save="$CXX"
+	FC_save="$FC"
 else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
 $as_echo "none" >&6; }

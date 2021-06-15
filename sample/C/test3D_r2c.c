@@ -136,7 +136,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup();
+   p3dfft_setup(8); // Use 8 streams/slices
 
   //Set up 2 transform types for 3D transforms
 
@@ -194,12 +194,18 @@ int main(int argc,char **argv)
   Zpencil = p3dfft_init_data_grid(gdims2,0,Pgrid,dmap2,mem_order2);
 
 
+ 
+#ifdef CUDA
+  //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc,LocHost,LocHost);
+  //Now set up the backward transform
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr,LocHost,LocHost);
+#else
   //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
   trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc);
-
   //Now set up the backward transform
-
   trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr);
+#endif
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 

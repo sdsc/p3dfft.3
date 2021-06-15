@@ -87,8 +87,13 @@ using namespace p3dfft;
 
 extern "C" {
 
+#ifdef CUDA
+void p3dfft_setup(int nslices) {
+    p3dfft::setup(nslices);
+#else
 void p3dfft_setup() {
     p3dfft::setup();
+#endif
 
 P3DFFT_EMPTY_TYPE_SINGLE=p3dfft::EMPTY_TYPE_SINGLE;
 P3DFFT_EMPTY_TYPE_DOUBLE=p3dfft::EMPTY_TYPE_DOUBLE;
@@ -154,8 +159,11 @@ void p3dfft_cleanup() {
 
 
 
+#ifdef CUDA
+  Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp,int InLoc,int OutLoc){
+#else
   Plan3D p3dfft_plan_3Dtrans(Grid *Cgr1,Grid *Cgr2,Type3D tp){
-
+#endif
 
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: type3D=%d.  initiating gr1\n",tp);
@@ -182,6 +190,30 @@ void p3dfft_cleanup() {
   int dt1 = types1D[type3D->types[L[0]]]->dt1;
   int dt2 = types1D[type3D->types[L[2]]]->dt2;
 
+#ifdef CUDA
+  if(type3D->prec == 4) 
+    if(dt1 == 1)
+      if(dt2 == 1)
+	tr3D = new transform3D<float,float>(*gr1,*gr2,type3D,InLoc,OutLoc);
+      else
+	tr3D = new transform3D<float,mycomplex>(*gr1,*gr2,type3D,InLoc,OutLoc);
+    else
+      if(dt2 == 1)
+	tr3D = new transform3D<mycomplex,float>(*gr1,*gr2,type3D,InLoc,OutLoc);
+      else
+	tr3D = new transform3D<mycomplex,mycomplex>(*gr1,*gr2,type3D,InLoc,OutLoc);
+    else
+    if(dt1 == 1)
+      if(dt2 == 1)
+	tr3D = new transform3D<double,double>(*gr1,*gr2,type3D,InLoc,OutLoc);
+      else
+	tr3D = new transform3D<double,complex_double>(*gr1,*gr2,type3D,InLoc,OutLoc);
+    else
+      if(dt2 == 1)
+	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D,InLoc,OutLoc);
+      else
+	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D,InLoc,OutLoc);
+#else
   if(type3D->prec == 4) 
     if(dt1 == 1)
       if(dt2 == 1)
@@ -204,6 +236,7 @@ void p3dfft_cleanup() {
 	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D);
+#endif
 
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: count\n");
@@ -232,7 +265,11 @@ void p3dfft_cleanup() {
 
 }
 
+#ifdef CUDA
+  int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d,int InLoc,int OutLoc)
+#else
 int p3dfft_plan_1Dtrans(Grid *Cgr1,Grid *Cgr2,int type_ID,int d)
+#endif
 {
     stage *tr;
 
@@ -245,6 +282,30 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 
   gen_trans_type *tp = types1D[type_ID];
 
+#ifdef CUDA
+  if(tp->prec == 4) 
+    if(tp->dt1 == 1)
+      if(tp->dt2 == 1)
+	tr = (stage *) new transplan<float,float>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+      else
+	tr = (stage *) new transplan<float,mycomplex>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+    else
+      if(tp->dt2 == 1)
+	tr = (stage *) new transplan<mycomplex,float>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+      else
+	tr = (stage *) new transplan<mycomplex,mycomplex>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+    else
+    if(tp->dt1 == 1)
+      if(tp->dt2 == 1)
+	tr = (stage *) new transplan<double,double>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+      else
+	tr = (stage *) new transplan<double,complex_double>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+    else
+      if(tp->dt2 == 1)
+	tr = (stage *) new transplan<complex_double,double>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+      else
+	tr = (stage *) new transplan<complex_double,complex_double>(*gr1,*gr2,tp,d,InLoc,OutLoc);
+#else
   if(tp->prec == 4) 
     if(tp->dt1 == 1)
       if(tp->dt2 == 1)
@@ -267,7 +328,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 	tr = (stage *) new transplan<complex_double,double>(*gr1,*gr2,tp,d);
       else
 	tr = (stage *) new transplan<complex_double,complex_double>(*gr1,*gr2,tp,d);
-
+#endif
   int count = stored_trans1D.size();
 
   stored_trans1D.push_back(tr);
@@ -553,7 +614,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     ProcGrid *pgrid = stored_proc_grids[Cgrid->pgrid];
     DataGrid *grid1 = new DataGrid(Cgrid->Gdims,Cgrid->dim_conj_sym,pgrid,Cgrid->Dmap,Cgrid->MemOrder);
 
-     compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,idir);
+    //     compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,idir);
     delete grid1;
 
   }
@@ -563,7 +624,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     ProcGrid *pgrid = stored_proc_grids[Cgrid->pgrid];
     DataGrid *grid1 = new DataGrid(Cgrid->Gdims,Cgrid->dim_conj_sym,pgrid,Cgrid->Dmap,Cgrid->MemOrder);
 
-    compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,idir);
+    //    compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,idir);
     delete grid1;
 
   }
@@ -581,13 +642,41 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   //  return(count);
 }
 
+#ifdef CUDA
+  void p3dfft_plan_1Dtrans_f(int *plan,int *Fgr1,int *Fgr2,int *type_ID,int *d, int *InLoc,int *OutLoc)
+#else
   void p3dfft_plan_1Dtrans_f(int *plan,int *Fgr1,int *Fgr2,int *type_ID,int *d)
+#endif
 {
   DataGrid *gr1 = stored_data_grids[*Fgr1];
   DataGrid *gr2 = stored_data_grids[*Fgr2];
   stage *tr;
   gen_trans_type *tp = types1D[*type_ID];
 
+#ifdef CUDA
+  if(tp->prec == 4) 
+    if(tp->dt1 == 1)
+      if(tp->dt2 == 1)
+	tr = new transplan<float,float>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+      else
+	tr = new transplan<float,mycomplex>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+    else
+      if(tp->dt2 == 1)
+	tr = new transplan<mycomplex,float>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+      else
+	tr = new transplan<mycomplex,mycomplex>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+    else
+    if(tp->dt1 == 1)
+      if(tp->dt2 == 1)
+	tr = new transplan<double,double>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+      else
+	tr = new transplan<double,complex_double>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+    else
+      if(tp->dt2 == 1)
+	tr = new transplan<complex_double,double>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+      else
+	tr = new transplan<complex_double,complex_double>(*gr1,*gr2,tp,*d,*InLoc,*OutLoc);
+#else
   if(tp->prec == 4) 
     if(tp->dt1 == 1)
       if(tp->dt2 == 1)
@@ -610,7 +699,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 	tr = new transplan<complex_double,double>(*gr1,*gr2,tp,*d);
       else
 	tr = new transplan<complex_double,complex_double>(*gr1,*gr2,tp,*d);
-
+#endif
 
   int count = stored_trans1D.size();
 
@@ -624,17 +713,21 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   void p3dfft_compute_deriv_single_f(float *in,float *out,int *igrid,int *idir) {
     DataGrid *grid1 = stored_data_grids[*igrid];
 
-    compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,*idir-1);
+    //    compute_deriv<mycomplex>((mycomplex *) in,(mycomplex *) out,grid1,*idir-1);
   }
 
   void p3dfft_compute_deriv_double_f(double *in,double *out,int *igrid,int *idir) {
     DataGrid *grid1 = stored_data_grids[*igrid];
 
-    compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,*idir-1);
+    //compute_deriv<complex_double>((complex_double *) in,(complex_double *) out,grid1,*idir-1);
   }
 
-  void p3dfft_plan_3Dtrans_f(Plan3D *plan,int *Fgr1,int *Fgr2,Type3D *tp){
 
+#ifdef CUDA
+  void p3dfft_plan_3Dtrans_f(Plan3D *plan,int *Fgr1,int *Fgr2,Type3D *tp,int *InLoc,int *OutLoc){
+#else
+  void p3dfft_plan_3Dtrans_f(Plan3D *plan,int *Fgr1,int *Fgr2,Type3D *tp){
+#endif
   /* 
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: type3D=%d.  initiating gr1\n",*tp);
@@ -664,6 +757,30 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
   int dt1 = types1D[type3D->types[L[0]]]->dt1;
   int dt2 = types1D[type3D->types[L[2]]]->dt2;
 
+#ifdef CUDA
+  if(type3D->prec == 4) 
+    if(dt1 == 1)
+      if(dt2 == 1)
+	tr3D = new transform3D<float,float>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+      else
+	tr3D = new transform3D<float,mycomplex>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+    else
+      if(dt2 == 1)
+	tr3D = new transform3D<mycomplex,float>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+      else
+	tr3D = new transform3D<mycomplex,mycomplex>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+    else
+    if(dt1 == 1)
+      if(dt2 == 1)
+	tr3D = new transform3D<double,double>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+      else
+	tr3D = new transform3D<double,complex_double>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+    else
+      if(dt2 == 1)
+	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+      else
+	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D,*InLoc,*OutLoc);
+#else
   if(type3D->prec == 4) 
     if(dt1 == 1)
       if(dt2 == 1)
@@ -686,6 +803,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 	tr3D = new transform3D<complex_double,double>(*gr1,*gr2,type3D);
       else
 	tr3D = new transform3D<complex_double,complex_double>(*gr1,*gr2,type3D);
+#endif
 
 #ifdef DEBUG
   printf("p3dfft_plan_3Dtrans: count\n");

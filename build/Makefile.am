@@ -29,7 +29,7 @@ exec.o: $(top_builddir)/include/p3dfft.h
 
 templ.o: $(top_builddir)/include/p3dfft.h
 
-#wrap.o: $(top_builddir)/include/p3dfft.h
+wrap.o: $(top_builddir)/include/p3dfft.h
 
 #deriv.o: $(top_builddir)/include/p3dfft.h
 
@@ -37,7 +37,7 @@ lib_LIBRARIES = libp3dfft.3.a
 
 LDADD = $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lm -lstdc++
 
-libp3dfft_3_a_SOURCES = init.C exec.C templ.C #wrap.C deriv.C
+libp3dfft_3_a_SOURCES = init.C exec.C templ.C wrap.C fwrap.f90 fp3dfft++mod.f90 #deriv.C
 
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod

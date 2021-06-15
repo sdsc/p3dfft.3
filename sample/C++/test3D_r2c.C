@@ -122,7 +122,7 @@ int main(int argc,char **argv)
       printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
-  setup(1);
+  setup(8);
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
@@ -207,7 +207,8 @@ int main(int argc,char **argv)
 
   long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
   complex_double *OUT=new complex_double[size2];
-  
+
+ 
 #ifdef CUDA
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<double,complex_double> trans_f(Xpencil,Zpencil,&type_rcc,LocHost,LocHost);
