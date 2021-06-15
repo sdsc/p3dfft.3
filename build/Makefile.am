@@ -25,7 +25,7 @@ CXX = $(LINKER)
 
 init.o: $(top_builddir)/include/p3dfft.h
 
-exec.o: $(top_builddir)/include/p3dfft.h
+exec.o: $(top_builddir)/include/p3dfft.h reorder.C
 
 templ.o: $(top_builddir)/include/p3dfft.h
 

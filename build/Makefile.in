@@ -295,7 +295,6 @@ ARFLAGS = -v -r -u
 @ENABLE_CUDA_FALSE@LINKER = $(CXX_save)
 @ENABLE_CUDA_TRUE@LINKER = nvcc
 
-wrap.o: $(top_builddir)/include/p3dfft.h
 
 #deriv.o: $(top_builddir)/include/p3dfft.h
 lib_LIBRARIES = libp3dfft.3.a
@@ -597,9 +596,11 @@ init.o: $(top_builddir)/include/p3dfft.h
 
 wrap.o: $(top_builddir)/include/p3dfft.h
 
-exec.o: $(top_builddir)/include/p3dfft.h
+exec.o: $(top_builddir)/include/p3dfft.h reorder.C
 
 templ.o: $(top_builddir)/include/p3dfft.h
+
+wrap.o: $(top_builddir)/include/p3dfft.h
 
 fwrap.o: fp3dfft++mod.o
 

@@ -561,11 +561,32 @@ void printbuf(char *,int[3],int,int);
   int i;
 
 #ifdef CUDA
-  event_t event;
-  for(i=0;i<nslices;i++) 
-    exec_slice(in_,out_,dim_deriv,i,nslices,&event,OW);
-  
+  size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
+  size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
+  if(size2 <= size1 || OutLoc == LocDevice)
+    DevBuf = out_;
+  else {
+    checkCudaErrors(cudaMalloc((&(DevBuf)),size1));
+    DevAlloc = true;
+    if(size2 > size1) {
+      checkCudaErrors(cudaMalloc((&(DevBuf2)),size2));
+      DevAlloc2 = true;
+    }
+
+  }
+
+  for(i=0;i<nslices;i++) {
+    stream = &(streams[slice]);
+    checkCudaErrors(cudaMemcpyAsync(DevBuf+offset1[slice]*sizeof(Type1),in_ + offset1[slice]*sizeof(Type1),mysize1[slice]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
+    checkCudaErrors(cudaEventRecord(EVENT_H2D,*stream));
+    exec_slice(in_,out_,dim_deriv,i,nslices,NULL,OW);
+  }
+
   cudaDeviceSynchronize();
+  if(devAlloc)
+    checkCudaErrors(cudaFree(Devbuf));
+  if(devAlloc2)
+    checkCudaErrors(cudaFree(Devbuf2));
 #else
   for(i=0;i<nslices;i++) 
     exec_slice(in_,out_,dim_deriv,slice,nslices,NULL,OW);  
