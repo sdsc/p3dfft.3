@@ -138,7 +138,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup(8);
+  p3dfft_setup(2);
 
   //Set up 2 transform types for 3D transforms
 
@@ -233,7 +233,7 @@ int main(int argc,char **argv)
   for(i=0;i<Nrep;i++) {
 
   // Execute forward transform
-    p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,0);
+    p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,-1,0);
 
     //  if(myid == 0)
     // printf("Results of forward transform: \n");
@@ -242,7 +242,7 @@ int main(int argc,char **argv)
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execute backward transform
-  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,1);
+  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,-1,1);
   }
 
   // Check that we recover the input

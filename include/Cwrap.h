@@ -98,11 +98,17 @@ typedef struct CDataGrid_struct CDataGrid;
 typedef struct CDataGrid_struct Grid;
 
 
+#ifdef CUDA
+void p3dfft_setup(int nslices);
+int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int,int);
+Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int,int);
+#else
 void p3dfft_setup();
-void p3dfft_cleanup();
-  Type3D p3dfft_init_3Dtype(int[3]); //,char *);
-  int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int);
+int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int);
 Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D);
+#endif
+void p3dfft_cleanup();
+Type3D p3dfft_init_3Dtype(int[3]); //,char *);
   int find_grid(int [3],int ,int *,int [3]);
 int p3dfft_init_proc_grid(int pdims[3],MPI_Comm comm);
 Grid *p3dfft_init_data_grid(int[3],int,int,int[3],int[3]);
@@ -111,8 +117,8 @@ void p3dfft_free_data_grid(Grid *gr);
 void p3dfft_free_proc_grid(int pgrid);
 void p3dfft_inv_mo(int [3],int [3]);
 void p3dfft_write_buf(double *,char *,int [3],int [3]);
-void p3dfft_exec_1Dtrans_double(int,double *,double *, int);
-void p3dfft_exec_1Dtrans_single(int,float *,float *, int);
+void p3dfft_exec_1Dtrans_double(int,double *,double *, int,int);
+void p3dfft_exec_1Dtrans_single(int,float *,float *, int,int);
 void p3dfft_exec_3Dtrans_double(Plan3D,double *,double *, int);
 void p3dfft_exec_3Dtrans_single(Plan3D,float *,float *, int);
 void p3dfft_exec_3Dderiv_double(Plan3D,double *,double *,int, int);

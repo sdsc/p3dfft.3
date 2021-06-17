@@ -53,7 +53,7 @@ int main(int argc,char **argv)
   int imo1[3];
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
-  int pdims[3],ndim,nx,ny,nz;
+  int pdims[3],ndim,nx,ny,nz,nslices;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -69,10 +69,10 @@ int main(int argc,char **argv)
      printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
-        nx=ny=nz=128; Nrep=1;ndim=2;
+        nx=ny=nz=128; Nrep=1;ndim=2;nslices=1;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
-        fclose(fp);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&nslices,&Nrep);
+       fclose(fp);
      }
      printf("P3DFFT test R2C, 3D wave input\n");
 #ifndef SINGLE_PREC
@@ -86,6 +86,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -122,7 +123,7 @@ int main(int argc,char **argv)
       printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
-  setup(8);
+  setup(nslices);
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {C2RFFT_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};

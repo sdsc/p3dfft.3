@@ -78,27 +78,27 @@
 !    TRADEMARK OR OTHER RIGHTS.
 
 
-      subroutine p3dfft_1Dtrans_double(plan,IN,OUT,OW)
+      subroutine p3dfft_1Dtrans_double(plan,IN,OUT,dim_deriv,OW)
       use p3dfft_plus_plus
 
       double precision, TARGET :: IN(1,1,*)
       double precision, TARGET :: OUT(1,1,*)
-      integer OW,plan
+      integer OW,plan,dim_deriv
 
-      call p3dfft_exec_1Dtrans_double(plan,IN,OUT,OW)
+      call p3dfft_exec_1Dtrans_double(plan,IN,OUT,dim_deriv,OW)
 
       return
       end subroutine
 
-      subroutine p3dfft_1Dtrans_single(plan,IN,OUT,OW)
+      subroutine p3dfft_1Dtrans_single(plan,IN,OUT,dim_deriv,OW)
       use p3dfft_plus_plus
 
 
       real, TARGET :: IN(1,1,*)
       real, TARGET :: OUT(1,1,*)
-      integer OW,plan
+      integer OW,plan,dim_deriv
 
-      call p3dfft_exec_1Dtrans_single(plan,IN,OUT,OW)
+      call p3dfft_exec_1Dtrans_single(plan,IN,OUT,dim_deriv,OW)
 
       return
       end subroutine

@@ -542,7 +542,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     
 }
 
-  void p3dfft_exec_1Dtrans_double(int plan,double *in,double *out,int OW) {
+  void p3dfft_exec_1Dtrans_double(int plan,double *in,double *out,int dim_deriv,int OW) {
 
     stage *trans = stored_trans1D[plan];
     
@@ -550,20 +550,20 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     if(trans->dt1 == 1)
       if(trans->dt2 == 1) {
 	transplan<double,double> *tr = (transplan<double,double> *) trans;
-	tr->exec((char *) in,(char *) out,OW);
+	tr->exec((char *) in,(char *) out,dim_deriv,OW);
       }
       else {
 	transplan<double,complex_double> *tr = (transplan<double,complex_double> *) trans;
-	tr->exec((char *) in,(char *) out,OW);
+	tr->exec((char *) in,(char *) out,dim_deriv,OW);
       }
     else
       if(trans->dt2 == 1) {
 	transplan<complex_double,double> *tr = (transplan<complex_double,double> *) trans;
-	tr->exec((char *) in,(char *) out,OW);
+	tr->exec((char *) in,(char *) out,dim_deriv,OW);
       }
       else {
 	transplan<complex_double,complex_double> *tr = (transplan<complex_double,complex_double> *) trans;
-	tr->exec((char *) in,(char *) out,OW);
+	tr->exec((char *) in,(char *) out,dim_deriv,OW);
       }
 
     /*    
@@ -575,7 +575,7 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     
   }
 
-  void p3dfft_exec_1Dtrans_single(int plan,float *in,float *out, int OW) {
+  void p3dfft_exec_1Dtrans_single(int plan,float *in,float *out, int dim_deriv,int OW) {
 
     stage *trans = stored_trans1D[plan];
     int prec;
@@ -583,20 +583,20 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
     if(trans->dt1 == 1)
       if(trans->dt2 == 1) {
 	transplan<float,float> *tr = (transplan<float,float> *) trans;
-	tr->exec((char *) in,(char *) out, OW);
+	tr->exec((char *) in,(char *) out, dim_deriv,OW);
       }
       else {
 	transplan<float,mycomplex> *tr = (transplan<float,mycomplex> *) trans;
-	tr->exec((char *) in,(char *)  out, OW);
+	tr->exec((char *) in,(char *)  out, dim_deriv,OW);
       }
     else
       if(trans->dt2 == 1) {
 	transplan<mycomplex,float> *tr = (transplan<mycomplex,float> *) trans;
-	tr->exec((char *) in,(char *) out, OW);
+	tr->exec((char *) in,(char *) out, dim_deriv,OW);
       }
       else {
 	transplan<mycomplex,mycomplex> *tr = (transplan<mycomplex,mycomplex> *) trans;
-	tr->exec((char *) in,(char *) out, OW);
+	tr->exec((char *) in,(char *) out, dim_deriv,OW);
       }
     
     /*
@@ -632,6 +632,62 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
 
 
   ///////////////// Fortran wrap functions ////////////////////////
+
+#ifdef CUDA
+void p3dfft_setup_f(int *nslices) {
+    p3dfft::setup(*nslices);
+#else
+void p3dfft_setup_f() {
+    p3dfft::setup();
+#endif
+
+P3DFFT_EMPTY_TYPE_SINGLE=p3dfft::EMPTY_TYPE_SINGLE;
+P3DFFT_EMPTY_TYPE_DOUBLE=p3dfft::EMPTY_TYPE_DOUBLE;
+P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX=p3dfft::EMPTY_TYPE_SINGLE_COMPLEX;
+P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX=p3dfft::EMPTY_TYPE_DOUBLE_COMPLEX;
+P3DFFT_R2CFFT_S=p3dfft::R2CFFT_S;
+P3DFFT_R2CFFT_D=p3dfft::R2CFFT_D;
+P3DFFT_C2RFFT_S=p3dfft::C2RFFT_S;
+P3DFFT_C2RFFT_D=p3dfft::C2RFFT_D;
+P3DFFT_CFFT_FORWARD_S=p3dfft::CFFT_FORWARD_S;
+P3DFFT_CFFT_FORWARD_D=p3dfft::CFFT_FORWARD_D;
+P3DFFT_CFFT_BACKWARD_S=p3dfft::CFFT_BACKWARD_S;
+P3DFFT_CFFT_BACKWARD_D=p3dfft::CFFT_BACKWARD_D;
+P3DFFT_DCT1_REAL_S=p3dfft::DCT1_REAL_S;
+P3DFFT_DCT1_REAL_D=p3dfft::DCT1_REAL_D; 
+P3DFFT_DST1_REAL_S=p3dfft::DST1_REAL_S;
+P3DFFT_DST1_REAL_D=p3dfft::DST1_REAL_D;
+P3DFFT_DCT2_REAL_S=p3dfft::DCT2_REAL_S;
+P3DFFT_DCT2_REAL_D=p3dfft::DCT2_REAL_D; 
+P3DFFT_DST2_REAL_S=p3dfft::DST2_REAL_S;
+P3DFFT_DST2_REAL_D=p3dfft::DST2_REAL_D;
+P3DFFT_DCT3_REAL_S=p3dfft::DCT3_REAL_S;
+P3DFFT_DCT3_REAL_D=p3dfft::DCT3_REAL_D; 
+P3DFFT_DST3_REAL_S=p3dfft::DST3_REAL_S;
+P3DFFT_DST3_REAL_D=p3dfft::DST3_REAL_D;
+P3DFFT_DCT4_REAL_S=p3dfft::DCT4_REAL_S;
+P3DFFT_DCT4_REAL_D=p3dfft::DCT4_REAL_D; 
+P3DFFT_DST4_REAL_S=p3dfft::DST4_REAL_S;
+P3DFFT_DST4_REAL_D=p3dfft::DST4_REAL_D;
+
+P3DFFT_DCT1_COMPLEX_S=p3dfft::DCT1_COMPLEX_S;
+P3DFFT_DCT1_COMPLEX_D=p3dfft::DCT1_COMPLEX_D; 
+P3DFFT_DST1_COMPLEX_S=p3dfft::DST1_COMPLEX_S;
+P3DFFT_DST1_COMPLEX_D=p3dfft::DST1_COMPLEX_D;
+P3DFFT_DCT2_COMPLEX_S=p3dfft::DCT2_COMPLEX_S;
+P3DFFT_DCT2_COMPLEX_D=p3dfft::DCT2_COMPLEX_D; 
+P3DFFT_DST2_COMPLEX_S=p3dfft::DST2_COMPLEX_S;
+P3DFFT_DST2_COMPLEX_D=p3dfft::DST2_COMPLEX_D;
+P3DFFT_DCT3_COMPLEX_S=p3dfft::DCT3_COMPLEX_S;
+P3DFFT_DCT3_COMPLEX_D=p3dfft::DCT3_COMPLEX_D; 
+P3DFFT_DST3_COMPLEX_S=p3dfft::DST3_COMPLEX_S;
+P3DFFT_DST3_COMPLEX_D=p3dfft::DST3_COMPLEX_D;
+P3DFFT_DCT4_COMPLEX_S=p3dfft::DCT4_COMPLEX_S;
+P3DFFT_DCT4_COMPLEX_D=p3dfft::DCT4_COMPLEX_D; 
+P3DFFT_DST4_COMPLEX_S=p3dfft::DST4_COMPLEX_S;
+P3DFFT_DST4_COMPLEX_D=p3dfft::DST4_COMPLEX_D;
+
+}
 
   void p3dfft_init_3Dtype_f(int *type,int types[3]) //,char *name)
 {
@@ -898,13 +954,13 @@ pgrid = stored_proc_grids[Cgr2->pgrid];
    return(p3dfft_exec_3Dderiv_single(*plan,in,out,*idir-1,*OW));
   }
  
-  void p3dfft_exec_1Dtrans_double_f(int *plan,double *in,double *out, int *OW) {
-    return(p3dfft_exec_1Dtrans_double(*plan,in,out,*OW));
+  void p3dfft_exec_1Dtrans_double_f(int *plan,double *in,double *out, int *dim_deriv,int *OW) {
+    return(p3dfft_exec_1Dtrans_double(*plan,in,out, *dim_deriv,*OW));
   }
 
 
-  void p3dfft_exec_1Dtrans_single_f(int *plan,float *in,float *out,int *OW) {
-    return(p3dfft_exec_1Dtrans_single(*plan,in,out, *OW));
+  void p3dfft_exec_1Dtrans_single_f(int *plan,float *in,float *out,int *dim_deriv,int *OW) {
+    return(p3dfft_exec_1Dtrans_single(*plan,in,out,*dim_deriv,*OW));
   }
 
 

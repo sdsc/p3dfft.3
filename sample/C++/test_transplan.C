@@ -225,7 +225,7 @@ int main(int argc,char **argv)
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT,false);
+  trans_f.exec((char *) IN,(char *) OUT,-1,false);
 
   Nglob = gdims[0]*gdims[1]*gdims[2];
 
@@ -236,7 +236,7 @@ int main(int argc,char **argv)
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
-  trans_b.exec((char *) OUT,(char *) FIN,true);
+  trans_b.exec((char *) OUT,(char *) FIN,-1,true);
 
   mydiff = check_res(IN,FIN,sdims1);
 

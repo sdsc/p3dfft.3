@@ -1061,14 +1061,16 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     d2[i] = dims2[imo2[i]];
   }
 
+  rel_change(imo1,imo2,mc);
+
 #ifdef CUDA
-  if(scheme == TRANS_IN)
+  if(mc[0] == 0 && mc[1] == 2 && mc[2] == 1)
+    m = 1;
+  else if(scheme == TRANS_IN)
     m = d1[1]*d1[2];
   else
     m = d2[1]*d2[2];
 #else
-
-  rel_change(imo1,imo2,mc);
 
   switch(mc[0]) {
   case 1:
@@ -1362,20 +1364,29 @@ template <class Type> MPIplan<Type>::~MPIplan()
     A = (Type1 *) fftw_malloc(size);
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
     if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
-      for(i=0;i<nslices;i++)
-        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] < 1) 
+	  mysize[i] = 1;
+	plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      }
       plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0)
       //        cout << "Error in find_plan: isign is not set" << endl;
-      for(i=0;i<nslices;i++)
-        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] < 1) 
+	  mysize[i] = 1;
+	plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      }
       plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
     }
     else { //R2C or C2R
-      for(i=0;i<nslices;i++)
-        plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1)
+	  mysize[i] = 1;
+	plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      }
       plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
     }
     if(plan->libplan_in[0] == NULL)
@@ -1402,8 +1413,11 @@ template <class Type> MPIplan<Type>::~MPIplan()
     cout << "Allocated A and B. Types:" << type-> dt1 << " and " << type->dt2<< endl;
 #endif
     if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
-      for(i=0;i<nslices;i++)
-        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1) 
+	  mysize[i] = 1;
+	plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      }
       plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
     }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
@@ -1412,8 +1426,11 @@ template <class Type> MPIplan<Type>::~MPIplan()
 #ifdef DEBUG
       printf("Calling doplan\n");
 #endif
-      for(i=0;i<nslices;i++)
-        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1)
+	  mysize[i] = 1; 
+	plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      }
       plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
 
 #ifdef DEBUG
@@ -1424,8 +1441,11 @@ template <class Type> MPIplan<Type>::~MPIplan()
 #ifdef DEBUG
       cout << "Calling doplan" << endl;
 #endif
-      for(i=0;i<nslices;i++)
-        plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1) 
+	  mysize[i] = 1;
+	plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      }
       plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
 #ifdef DEBUG
       printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[0]);
@@ -1461,24 +1481,27 @@ template <class Type> MPIplan<Type>::~MPIplan()
 
       // Plan CUDA transform
       for(i=0;i<nslices;i++) {
+	if(mysize[i] <1) 
+	  mysize[i] = 1;
 	cufftResult res = cufftPlanMany(&(plan->libplan_inout[i]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,mysize[i]);
 	if(res != CUFFT_SUCCESS)
-	  printf("Error in CUFFT C2C_d\n");
+	  printf("Error in CUFFT planner\n");
 	else {
-          plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
-          cufftSetStream(plan->libplan_inout[i],streams[i]);
+	  plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
+	  cufftSetStream(plan->libplan_inout[i],streams[i]);
+	}
 #ifdef DEBUG
-          printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out[i]);
+	printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out[i]);
 #endif
-        }
       }
-      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,m);
-      if(res != CUFFT_SUCCESS)
-        printf("Error in CUFFT C2C_d\n");
-      else
+      }
+    cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,m);
+    if(res != CUFFT_SUCCESS)
+      printf("Error in CUFFT C2C_d\n");
+    else
       plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_inout[nslices];
+    
 
-    }
 
     /*
     else //R2C or C2R

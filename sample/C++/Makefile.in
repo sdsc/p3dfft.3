@@ -78,10 +78,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 @ENABLE_CUDA_TRUE@am__append_1 = -DCUDA
 cppsample_PROGRAMS = test3D_c2c_cpp$(EXEEXT) test3D_r2c_cpp$(EXEEXT) \
-	test1D_transplan_cpp$(EXEEXT) test1D_cos_cpp$(EXEEXT) \
-	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
+	test1D_transplan_cpp$(EXEEXT)  \
 	test3D_c2c_inplace_cpp$(EXEEXT) testIDIR_deriv_cpp$(EXEEXT) \
 	test3D_r2c_single_cpp$(EXEEXT)
+#test1D_cos_cpp$(EXEEXT) 	test1D_cos_complex_cpp$(EXEEXT) test1D_sin_cpp$(EXEEXT) \
+
 subdir = sample/C++
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -180,14 +181,12 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(test1D_cos_complex_cpp_SOURCES) $(test1D_cos_cpp_SOURCES) \
-	$(test1D_sin_cpp_SOURCES) $(test1D_transplan_cpp_SOURCES) \
+SOURCES = 	 $(test1D_transplan_cpp_SOURCES) \
 	$(test3D_c2c_cpp_SOURCES) $(test3D_c2c_inplace_cpp_SOURCES) \
 	$(test3D_r2c_cpp_SOURCES) $(test3D_r2c_single_cpp_SOURCES) \
 	$(testIDIR_deriv_cpp_SOURCES)
-DIST_SOURCES = $(test1D_cos_complex_cpp_SOURCES) \
-	$(test1D_cos_cpp_SOURCES) $(test1D_sin_cpp_SOURCES) \
-	$(test1D_transplan_cpp_SOURCES) $(test3D_c2c_cpp_SOURCES) \
+#$(test1D_cos_complex_cpp_SOURCES) $(test1D_cos_cpp_SOURCES) $(test1D_sin_cpp_SOURCES)
+DIST_SOURCES = 	$(test1D_transplan_cpp_SOURCES) $(test3D_c2c_cpp_SOURCES) \
 	$(test3D_c2c_inplace_cpp_SOURCES) $(test3D_r2c_cpp_SOURCES) \
 	$(test3D_r2c_single_cpp_SOURCES) $(testIDIR_deriv_cpp_SOURCES)
 am__can_run_installinfo = \

@@ -126,7 +126,7 @@
 
 ! Set up work structures for P3DFFT
 
-      call p3dfft_setup
+      call p3dfft_setup(8)
 
 ! Set up 2 transform types for 3D transforms
 
@@ -193,10 +193,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,LocHost,LocHost)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,LocHost,LocHost)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 

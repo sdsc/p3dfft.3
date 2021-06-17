@@ -14,7 +14,7 @@ CXXLD = $(CXX_LINKER)
 
 cppsampledir = $(datadir)/p3dfft++_samples/
 
-cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp test3D_c2c_inplace_cpp testIDIR_deriv_cpp  test3D_r2c_single_cpp #testIDIR_deriv2_cpp
+cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp  test3D_c2c_inplace_cpp testIDIR_deriv_cpp  test3D_r2c_single_cpp #testIDIR_deriv2_cpp #test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp
 
 testIDIR_deriv_cpp_SOURCES = test_deriv.C
 

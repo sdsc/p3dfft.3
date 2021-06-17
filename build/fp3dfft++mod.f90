@@ -23,6 +23,7 @@ integer, bind(C,name='P3DFFT_DCT1_COMPLEX_D') :: P3DFFT_DCT1_COMPLEX_D
 integer, bind(C,name='P3DFFT_DST1_COMPLEX_S') :: P3DFFT_DST1_COMPLEX_S
 integer, bind(C,name='P3DFFT_DST1_COMPLEX_D') :: P3DFFT_DST1_COMPLEX_D
 
+integer, parameter:: LocDevice=1,LocHost=2
 
 !type, public, bind(C) :: grid
 !      integer(C_INT) :: taskid
@@ -55,7 +56,9 @@ interface
 
       end subroutine
 
-      subroutine p3dfft_setup() bind(C,name="p3dfft_setup")
+      subroutine p3dfft_setup(nslices) bind(C,name="p3dfft_setup_f")
+      import  
+      integer(C_INT) :: nslices
       end subroutine
 
       subroutine p3dfft_cleanup() bind(C,name="p3dfft_cleanup")
@@ -89,15 +92,15 @@ interface
       integer(C_INT) :: in(3),out(3)
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_double(plan,in,out,OW) bind(C,name='p3dfft_exec_1Dtrans_double_f')
+      subroutine p3dfft_exec_1Dtrans_double(plan,in,out,dim_deriv,OW) bind(C,name='p3dfft_exec_1Dtrans_double_f')
       import
-      integer(C_INT) plan,OW
+      integer(C_INT) plan,OW,dim_deriv
       real(C_DOUBLE), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_exec_1Dtrans_single(plan,in,out,OW) bind(C,name='p3dfft_exec_1Dtrans_single_f')
+      subroutine p3dfft_exec_1Dtrans_single(plan,in,out,dim_deriv,OW) bind(C,name='p3dfft_exec_1Dtrans_single_f')
       import
-      integer(C_INT) plan,OW
+      integer(C_INT) plan,OW,dim_deriv
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
@@ -125,17 +128,17 @@ interface
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim) bind(C, name='p3dfft_plan_1Dtrans_f')
+      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim,inloc,outloc) bind(C, name='p3dfft_plan_1Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2,dim
-      integer(C_INT) :: trans_ID
+      integer(C_INT) :: trans_ID,inloc,outloc
 
       end subroutine
 
-      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID) bind(C, name='p3dfft_plan_3Dtrans_f')
+      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID,inloc,outloc) bind(C, name='p3dfft_plan_3Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2
-      integer(C_INT) :: trans_ID
+      integer(C_INT) :: trans_ID,inloc,outloc
 
       end subroutine
 

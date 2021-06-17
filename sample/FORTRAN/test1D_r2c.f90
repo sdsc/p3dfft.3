@@ -123,13 +123,13 @@
 
 ! Set up work structures for P3DFFT
 
-      call p3dfft_setup
+      call p3dfft_setup(8)
 
 ! Set up 2 transform types for 1D transforms
 
-      type_ids1 = P3DFFT_R2CFFT_D;
+      type_ids1 = P3DFFT_R2CFFT_D
 
-      type_ids2 = P3DFFT_C2RFFT_D;
+      type_ids2 = P3DFFT_C2RFFT_D
 
 ! Set up global dimensions of the grid
 
@@ -176,10 +176,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,LocHost,LocHost)
 
 ! Now set up the backward transform
-      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,LocHost,LocHost)
 
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
@@ -203,7 +203,7 @@
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,0)
+      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,-1,0)
 
       Ntot = ldims2(1)*ldims2(2)*ldims2(3)
 
@@ -218,7 +218,7 @@
 
       call check_res_forward(AEND,mydims2,ar_dim2,gstart2)
 
-      call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
+      call p3dfft_1Dtrans_double(trans_b,AEND,C,-1,1)
 
 ! Free work space
       call p3dfft_cleanup
