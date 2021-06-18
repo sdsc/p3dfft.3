@@ -287,24 +287,33 @@ void printbuf(char *,int[3],int,int);
       if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
       
-      transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
+	transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
 
-#ifdef CUDA     
-      if(st->InLoc == LocHost && !tr->trans_type->is_empty) {
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
+
+#ifdef CUDA    
+	  if(st->OutLoc != LocHost && buf[next] != buf_out)
+	    buf[next] = DevBuf[currdev];
+
+	  if(!tr->trans_type->is_empty) {
+
+	    if(st->InLoc == LocHost) {
 	//        if(currdev < 0) {
 	// currdev = 1 - nextdev;
           //      nextdev = 1;
 	  
 	//	checkCudaErrors(cudaMalloc(&(DevBuf[currdev],st->stage_prec*max(size1*dt_1,size2*dt_2)));
-	for(i=0;i<nslices;i++) {
-	  stream = &(streams[i]);
-	  checkCudaErrors(cudaMemcpyAsync(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
+	      for(i=0;i<nslices;i++) {
+		stream = &(streams[i]);
+		checkCudaErrors(cudaMemcpyAsync(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
 	  //checkCudaErrors(cudaMemcpy(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice));
-	  checkCudaErrors(cudaEventRecord(st->EVENT_H2D,*stream));
-	}
-	event_hold = &(st->EVENT_H2D);
-	buf[curr] = DevBuf[currdev];
-      }
+		checkCudaErrors(cudaEventRecord(st->EVENT_H2D,*stream));
+	      }
+	      event_hold = &(st->EVENT_H2D);
+	      buf[curr] = DevBuf[currdev];
+	    }
       
         /*      
       nextdev = 1 - currdev;
@@ -313,155 +322,124 @@ void printbuf(char *,int[3],int,int);
       if(st->OutLoc != LocHost && buf[next] != buf_out)
         buf[next] = DevBuf[nextdev];
       */
-      if(st->OutLoc != LocHost && buf[next] != buf_out)
-	buf[next] = DevBuf[currdev];
-#endif
 
-      if(dt_1 == dt_2)
-        if(prev_t == 1) {
-          transplan<Type1,Type1> *tr = (transplan<Type1,Type1> *) st;
-#ifdef DEBUG
-	  mo2 = tr->mo2;
-#endif
-
-#ifdef CUDA
-          if(st->InLoc == LocHost)
-            tr->DevBuf = DevBuf[currdev];
-	  if(st->OutLoc == LocHost) {
-	    if(size2*dt_2 > size1*dt_1) {
-	      checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2*dt_2*st->stage_prec));
+	    if(st->InLoc == LocHost)
+	      tr->DevBuf = DevBuf[currdev];
+	    if(st->OutLoc == LocHost) {
+	      if(size2*dt_2 > size1*dt_1) {
+		checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2*dt_2*st->stage_prec));
 	      tr->DevBuf2 = DevBuf[nextdev];
 	      DevAlloc2 = true;
+	      }
+	      else
+		tr->DevBuf2 = DevBuf[currdev];
 	    }
-	    else
-	      tr->DevBuf2 = DevBuf[currdev];
 	  }
 #endif
-          for(i=0;i<nslices;i++)
-	    tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
+
+	  if(dt_1 == dt_2)
+	    if(prev_t == 1) {
+	      transplan<Type1,Type1> *tr = (transplan<Type1,Type1> *) st;
+	      if(!tr->is_empty)
+		for(i=0;i<nslices;i++)
+		  tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
+	      else
+		tr->exec_slice(buf[curr],buf[next],idir,0,1,event_hold,OW || buf[curr] != (char *) in);
+
 	}
 	else {
 	  transplan<Type2,Type2> *tr = (transplan<Type2,Type2> *) st;
-#ifdef DEBUG
-	  mo2 = tr->mo2;
-#endif
-
-#ifdef CUDA
-	  if(st->InLoc == LocHost)
-	    tr->DevBuf = DevBuf[currdev];
-	  if(st->OutLoc == LocHost) {
-	    if(size2 * dt_2 > size1 * dt_1) {
-	      checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2*dt_2*st->stage_prec));
-	      tr->DevBuf2 = DevBuf[nextdev];
-	      DevAlloc2 = true;
-	    }
-	    else
-	      tr->DevBuf2 = DevBuf[currdev];
-	  }
-#endif
-	  
-	  for(i=0;i<nslices;i++) 
-	    tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
+	  if(!tr->is_empty)
+	    for(i=0;i<nslices;i++)
+	      tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
+	  else
+	    tr->exec_slice(buf[curr],buf[next],idir,0,1,event_hold,OW || buf[curr] != (char *) in);
 	}
-      else {
-        transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
-#ifdef DEBUG
-	  mo2 = tr->mo2;
-#endif
-
-#ifdef CUDA
-	if(st->InLoc == LocHost)
-	  tr->DevBuf = DevBuf[currdev];
-	  if(st->OutLoc == LocHost) {
-	    if(size2*dt_2 > size1*dt_1) {
-	      checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2*dt_2*st->stage_prec));
-	      tr->DevBuf2 = DevBuf[nextdev];
-	      DevAlloc2 = true;
-	    }
+	  else {
+	    transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
+	    if(!tr->is_empty)
+	      for(i=0;i<nslices;i++)
+		tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
 	    else
-	      tr->DevBuf2 = DevBuf[currdev];
+	      tr->exec_slice(buf[curr],buf[next],idir,0,1,event_hold,OW || buf[curr] != (char *) in);
+	    
+	    prev_t = 2;
 	  }
-#endif
-	  for(i=0;i<nslices;i++) 
-	    tr->exec_slice(buf[curr],buf[next],idir,i,nslices,event_hold,OW || buf[curr] != (char *) in);
-	  
-	  prev_t = 2;
-      }
-
-      if(DevAlloc2) {
-	checkCudaErrors(cudaFree(DevBuf[nextdev]));
+      
+	  if(DevAlloc2) {
+	    checkCudaErrors(cudaFree(DevBuf[nextdev]));
 	//	currdev = 1-currdev;
 	//nextdev = 1-nextdev;
-	DevAlloc2 = false;
-      }
+	    DevAlloc2 = false;
+	  }
       
-    }    
-    else if(curr_stage->kind == MPI_ONLY) { // Only MPI plan (exchange, no transform)
-      if(prev_t == 1) {
-	MPIplan<Type1> *tr = (MPIplan<Type1> *) curr_stage; 
+      }    
+      else if(curr_stage->kind == MPI_ONLY) { // Only MPI plan (exchange, no transform)
+	if(prev_t == 1) {
+	  MPIplan<Type1> *tr = (MPIplan<Type1> *) curr_stage; 
 #ifdef DEBUG
 	  mo2 = tr->mo2;
 #endif
-	tr->exec(buf[curr],buf[next]);
-      }
-      else {
-	MPIplan<Type2> *tr = (MPIplan<Type2> *) curr_stage; 
-#ifdef DEBUG
-	  mo2 = tr->mo2;
-#endif
-	tr->exec(buf[curr],buf[next]);
-      }
-    }
-    else { // MPI and transform combined
-
-      if(dt_1 == dt_2)
-        if(prev_t == 1) {
-          trans_MPIplan<Type1,Type1> *tr = (trans_MPIplan<Type1,Type1> *) (transplan<Type1,Type1> *) curr_stage;
-#ifdef DEBUG
-	  mo2 = tr->trplan->mo2;
-#endif
-          tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char * ) in);
-        }
+	  tr->exec(buf[curr],buf[next]);
+	}
 	else {
-	  trans_MPIplan<Type2,Type2> *tr = (trans_MPIplan<Type2,Type2> *) (transplan<Type2,Type2> *) curr_stage;
+	  MPIplan<Type2> *tr = (MPIplan<Type2> *) curr_stage; 
+#ifdef DEBUG
+	  mo2 = tr->mo2;
+#endif
+	  tr->exec(buf[curr],buf[next]);
+	}
+      }
+      else { // MPI and transform combined
+	
+	if(dt_1 == dt_2)
+	  if(prev_t == 1) {
+	    trans_MPIplan<Type1,Type1> *tr = (trans_MPIplan<Type1,Type1> *) (transplan<Type1,Type1> *) curr_stage;
+#ifdef DEBUG
+	    mo2 = tr->trplan->mo2;
+#endif
+	    tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char * ) in);
+	  }
+	  else {
+	    trans_MPIplan<Type2,Type2> *tr = (trans_MPIplan<Type2,Type2> *) (transplan<Type2,Type2> *) curr_stage;
+#ifdef DEBUG
+	    mo2 = tr->trplan->mo2;
+#endif
+	    tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char *) in);
+	  }
+	else {
+	  trans_MPIplan<Type1,Type2> *tr = (trans_MPIplan<Type1,Type2> *) (transplan<Type1,Type2> *) curr_stage;
 #ifdef DEBUG
 	  mo2 = tr->trplan->mo2;
 #endif
 	  tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char *) in);
+	  prev_t = 2;
 	}
-      else {
-        trans_MPIplan<Type1,Type2> *tr = (trans_MPIplan<Type1,Type2> *) (transplan<Type1,Type2> *) curr_stage;
-#ifdef DEBUG
-	mo2 = tr->trplan->mo2;
-#endif
-        tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char *) in);
-	prev_t = 2;
       }
-    }
-
+      
 #ifdef DEBUG
-    int imo[3];
-    char str[80];
-    for(i=0;i<3;i++)
-      imo[mo2[i]] = i; 
-    sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
-    write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
+      int imo[3];
+      char str[80];
+      for(i=0;i<3;i++)
+	imo[mo2[i]] = i; 
+      sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
+      write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
 #endif
-	
-    if(nvar > 1) { // Keep track and delete buffers that are no longer used
+      
+      if(nvar > 1) { // Keep track and delete buffers that are no longer used
 #ifdef CUDA
-      checkCudaErrors(cudaFreeHost(var[nextvar]));
+	checkCudaErrors(cudaFreeHost(var[nextvar]));
 #else
-      delete [] var[nextvar];
+	delete [] var[nextvar];
 #endif
-      nvar--;
-    }
-    
-    next = 1-next;
-    curr = 1-curr;
+	nvar--;
+      }
+      
+      next = 1-next;
+      curr = 1-curr;
 #ifdef CUDA
-  /*     if(currdev >= 0)
-     checkCudaErrors(cudaFree(DevBuf[currdev]));
+      /*     if(currdev >= 0)
+	     checkCudaErrors(cudaFree(DevBuf[currdev]));
     if(DevAlloc2) {
       currdev = nextdev;
       nextdev = 1 - currdev;
@@ -471,18 +449,18 @@ void printbuf(char *,int[3],int,int);
       currdev = -1;
   */
 
-    prevLoc = curr_stage->OutLoc;
-
-  if(st->OutLoc == LocHost) { // && Dev Alloc2
-      cudaEventSynchronize(st->EVENT_D2H);
-      //      cudaFree(devbuf);
-      event_hold = NULL;
-    }
-    else
-      event_hold = &(st->EVENT_EXEC);
+      prevLoc = curr_stage->OutLoc;
+      
+      if(st->OutLoc == LocHost) { // && Dev Alloc2
+	cudaEventSynchronize(st->EVENT_D2H);
+	//      cudaFree(devbuf);
+	event_hold = NULL;
+      }
+      else
+	event_hold = &(st->EVENT_EXEC);
 #endif
   }
-
+  
 #ifdef CUDA
   if(prevLoc != OutLoc) {
     size_t size = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*sizeof(Type2);
@@ -661,7 +639,6 @@ void printbuf(char *,int[3],int,int);
   
   if(trans_type->is_empty) {
 #ifdef CUDA
-#ifdef CUTENSOR
     if(InLoc == LocDevice && OutLoc == LocDevice) {
       int d1[3];
       for(int i=0;i<3;i++)
@@ -669,15 +646,22 @@ void printbuf(char *,int[3],int,int);
 #ifdef TIMERS
       timers.reorder_out -= MPI_Wtime();
 #endif
+#ifdef CUTENSOR
       ro_cutensor_out((Type2 *) in,out,mc,d1,slice,nslices,streams[slice]);
+#endif
 #ifdef TIMERS
       timers.reorder_out += MPI_Wtime();
 #endif
       return;
     }
-    //    else if(InLoc == LocHost && OutLoc == LocHost)
+    else if(InLoc == LocHost && OutLoc == LocHost) 
 #endif
-#endif
+      if((void *) in == (void *) out)
+	reorder_in(in,mo1,mo2,dims1);
+      else
+	reorder_out((Type2 *) in,out,mo1,mo2,dims1);
+    
+    return;
   }
 
 #ifdef CUDA
@@ -1136,10 +1120,10 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 // dims2[mo2[i]] = d1[mo1[i]]
 // Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
 // Assume the 'in' buffer is large enough for both input and output
-template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3])
+  template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims[3])
 {
   int mc[3],i,j,k,ii,jj,kk,i2,j2,k2;
-  Type *pin,*pin1,*pout,*pout1,*tmp;
+  Type1 *pin,*pin1,*pout,*pout1,*tmp;
   void rel_change(int *,int *,int *);
   int d1[3],imo1[3],imo2[3];
 
@@ -1152,12 +1136,12 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
   rel_change(imo1,imo2,mc);
 
   int nb13,nb31,nb23,nb32;
-  int pad = CACHEPAD/sizeof(Type);
+  int pad = CACHEPAD/sizeof(Type1);
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
-      tmp = new Type[(d1[0]+pad)*d1[1]];
+      tmp = new Type1[(d1[0]+pad)*d1[1]];
       pin1 = in;
       for(k=0;k <d1[2];k++) {
 	pout = tmp;
@@ -1184,15 +1168,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
 
     case 2: //1,2,0
       if(d1[0]*d1[1] >0)	
-	nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+	nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
       if(d1[0]*d1[2] >0)	
-	nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+	nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[2]);
       else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
 
-      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
+      tmp = new Type1[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
       for(k=0;k <d1[2];k++) 
@@ -1231,15 +1215,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
     switch(mc[1]) {
     case 1: //2,1,0
       if(d1[0]*d1[1] >0)	
-	nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
       if(d1[2]*d1[1] >0)	
-	nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d1[2]*d1[1]);
       else nb13 = 1;
       if(nb13 < 1) nb13 = 1;
 
-      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
+      tmp = new Type1[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
       for(k=0;k <d1[2];k++) 
@@ -1275,15 +1259,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
       break;
     case 0: //2,0,1
       if(d1[0]*d1[1] >0)	
-	nb31 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+	nb31 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       else nb31 = 1;
       if(nb31 < 1) nb31 = 1;
       if(d1[2]*d1[1] >0)	
-	nb13 = CACHE_BL / (sizeof(Type)*d1[2]*d1[1]);
+	nb13 = CACHE_BL / (sizeof(Type1)*d1[2]*d1[1]);
       else nb13 = 1;
       if(nb13 < 1) nb13 = 1;
 
-      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
+      tmp = new Type1[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
       for(k=0;k <d1[2];k++) 
@@ -1322,15 +1306,15 @@ template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims[3]
   case 0: //0,2,1
     if(mc[1] == 2) {
       if(d1[0]*d1[1] >0)	
-	nb32 = CACHE_BL / (sizeof(Type)*d1[0]*d1[1]);
+	nb32 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[1]);
       else nb32 = 1;
       if(nb32 < 1) nb32 = 1;
       if(d1[0]*d1[2] >0)	
-	nb23 = CACHE_BL / (sizeof(Type)*d1[0]*d1[2]);
+	nb23 = CACHE_BL / (sizeof(Type1)*d1[0]*d1[2]);
       else nb23 = 1;
       if(nb23 < 1) nb23 = 1;
 
-      tmp = new Type[(d1[0]+1)*d1[1]*d1[2]];
+      tmp = new Type1[(d1[0]+1)*d1[1]*d1[2]];
       pin = in;
       pout = tmp;
       for(k=0;k <d1[2];k++) 

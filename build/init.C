@@ -140,7 +140,7 @@ void setup(int nslices_)
 #endif
   name = "Empty Type Single";
   p = new trans_type1D<float,float>(name,NULL,NULL,true);
-  //  p->is_empty = true;
+  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -152,7 +152,7 @@ void setup(int nslices_)
 #endif
   name = "Empty Type Double";
   p = new trans_type1D<double,double>(name,NULL,NULL,true);
-  //  p->is_empty = true;
+  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -164,7 +164,7 @@ void setup(int nslices_)
 #endif
   name = "Empty Type Single Complex";
   p = new trans_type1D<mycomplex,mycomplex>(name,NULL,NULL,true);
-  //  p->is_empty = true;
+  p->is_empty = true;
   types1D.push_back(p);
 
 
@@ -176,7 +176,7 @@ void setup(int nslices_)
 #endif
   name = "Empty Type Double Complex";
   p = new trans_type1D<complex_double,complex_double>(name,NULL,NULL,true);
-  //  p->is_empty = true;
+  p->is_empty = true;
   types1D.push_back(p);
 
 

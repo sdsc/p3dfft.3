@@ -455,7 +455,7 @@ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &gr
   if(grid2.nd == 1 && grid1.MemOrder[trans_dim] != 0 && grid2.MemOrder[trans_dim] != 0)
     trans_dim = grid2.L[1];
 #ifdef DEBUG
-  printf("Calling final init_transplan, trans_dim=%d\n",grid2.L[0]);
+  printf("Calling final init_transplan, trans_dim=%d\n",trans_dim);
 #endif
   return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc1,loc2)));
       //    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);

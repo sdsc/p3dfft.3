@@ -1233,14 +1233,17 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   // Find relative change in the memory mapping from input to output
   rel_change(imo1,imo2,imc);
 
+  
 #ifdef CUDA
-  ro_cutensor_in<Type2>(in,out,imc, d2, 0,1,0);
-#else
-
+  if(InLoc == LocDevice && OutLoc == LocDevice)
+    ro_cutensor_in<Type2>(in,out,imc, d2, 0,1,0);
+  else     
+#endif
+    {
   pin =  in;
-  switch(mc[0]) {
+  switch(imc[0]) {
   case 1:
-    switch(mc[1]) {
+    switch(imc[1]) {
     case 0: //1,0,2
       for(k=0;k <d1[2];k++) {
 	pout1 = out + k*d1[0]*d1[1];
@@ -1289,7 +1292,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     break;
 
   case 2:
-    switch(mc[1]) {
+    switch(imc[1]) {
     case 1: //2,1,0
       if(d1[0]*d1[1] >0)	
 	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
@@ -1354,7 +1357,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     break;
 
   case 0: //0,2,1
-    if(mc[1] == 2) {
+    if(imc[1] == 2) {
       if(d1[0]*d1[1] >0)	
 	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb32 = 1;
@@ -1391,7 +1394,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
     break;
   }
 
-#endif
+  }
+
 }
 
 
