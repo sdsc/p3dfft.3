@@ -163,6 +163,9 @@ void printbuf(char *,int[3],int,int);
   else {
     checkCudaErrors(cudaMalloc(&(DevBuf[currdev]),maxDevSize));
     DevAlloc = true;
+#ifdef DEBUG
+    printf("Allocated DevBuf size %d\n",maxDevSize);
+#endif
   }
   /*
   if(InLoc == LocHost && Stages->kind != MPI_ONLY) {
@@ -205,16 +208,16 @@ void printbuf(char *,int[3],int,int);
     if(!curr_stage->next && OutLoc == LocDevice && (void *) out != (void *) buf[curr]) {
       // Last stage
       buf[next] = buf_out;
-      if(curr_stage->OutLoc == LocHost)
-        printf("Warning: last stage output location differs from end location\n");
+      //if(curr_stage->OutLoc == LocHost)
+      //  printf("Warning: last stage output location differs from end location\n");
     }
     else if(!curr_stage->next && OutLoc == LocHost) {
       // Last stage
       buf[next] = buf_out;
-      if(curr_stage->OutLoc == LocDevice)
-        printf("Warning: last stage output location differs from end location\n");
+      //      if(curr_stage->OutLoc == LocDevice)
+      //  printf("Warning: last stage output location differs from end location\n");
     }
-    else if(curr_stage->OutLoc == LocHost) {
+    else       if(curr_stage->kind != TRANS_ONLY || ((transplan<Type1,Type2> *) curr_stage)->OutLoc == LocHost) {
       // Not last stage; output = host
       //      if (curr_stage->InLoc != LocHost)
 	if(OW && size2*dt_2 <= size0 && InLoc == LocHost && OW) 
@@ -294,12 +297,12 @@ void printbuf(char *,int[3],int,int);
 #endif
 
 #ifdef CUDA    
-	  if(st->OutLoc != LocHost && buf[next] != buf_out)
+	  if(tr->OutLoc != LocHost && buf[next] != buf_out)
 	    buf[next] = DevBuf[currdev];
 
 	  if(!tr->trans_type->is_empty) {
 
-	    if(st->InLoc == LocHost) {
+	    if(tr->InLoc == LocHost) {
 	//        if(currdev < 0) {
 	// currdev = 1 - nextdev;
           //      nextdev = 1;
@@ -307,11 +310,11 @@ void printbuf(char *,int[3],int,int);
 	//	checkCudaErrors(cudaMalloc(&(DevBuf[currdev],st->stage_prec*max(size1*dt_1,size2*dt_2)));
 	      for(i=0;i<nslices;i++) {
 		stream = &(streams[i]);
-		checkCudaErrors(cudaMemcpyAsync(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
+		checkCudaErrors(cudaMemcpyAsync(DevBuf[currdev]+tr->offset1[i]*st->stage_prec*dt_1,buf[curr]+tr->offset1[i] * st->stage_prec*dt_1,tr->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice,*stream));
 	  //checkCudaErrors(cudaMemcpy(DevBuf[currdev]+st->offset1[i]*st->stage_prec*dt_1,buf[curr]+st->offset1[i] * st->stage_prec*dt_1,st->mysize1[i] * st->stage_prec*dt_1,cudaMemcpyHostToDevice));
-		checkCudaErrors(cudaEventRecord(st->EVENT_H2D,*stream));
+		checkCudaErrors(cudaEventRecord(tr->EVENT_H2D,*stream));
 	      }
-	      event_hold = &(st->EVENT_H2D);
+	      event_hold = &(tr->EVENT_H2D);
 	      buf[curr] = DevBuf[currdev];
 	    }
       
@@ -323,9 +326,9 @@ void printbuf(char *,int[3],int,int);
         buf[next] = DevBuf[nextdev];
       */
 
-	    if(st->InLoc == LocHost)
+	    if(tr->InLoc == LocHost)
 	      tr->DevBuf = DevBuf[currdev];
-	    if(st->OutLoc == LocHost) {
+	    if(tr->OutLoc == LocHost) {
 	      if(size2*dt_2 > size1*dt_1) {
 		checkCudaErrors(cudaMalloc(&(DevBuf[nextdev]),size2*dt_2*st->stage_prec));
 	      tr->DevBuf2 = DevBuf[nextdev];
@@ -373,6 +376,14 @@ void printbuf(char *,int[3],int,int);
 	    DevAlloc2 = false;
 	  }
       
+	  if(tr->OutLoc == LocHost) { // && Dev Alloc2
+	    cudaEventSynchronize(tr->EVENT_D2H);
+	//      cudaFree(devbuf);
+	    event_hold = NULL;
+	  }
+	  else
+	    event_hold = &(tr->EVENT_EXEC);
+	  prevLoc = tr->OutLoc;
       }    
       else if(curr_stage->kind == MPI_ONLY) { // Only MPI plan (exchange, no transform)
 	if(prev_t == 1) {
@@ -389,6 +400,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 	  tr->exec(buf[curr],buf[next]);
 	}
+	prevLoc = LocHost;
       }
       else { // MPI and transform combined
 	
@@ -415,6 +427,7 @@ void printbuf(char *,int[3],int,int);
 	  tr->exec(buf[curr],buf[next],idir,event_hold,DevBuf[currdev],OW  || buf[curr] != (char *) in);
 	  prev_t = 2;
 	}
+      prevLoc = LocHost;
       }
       
 #ifdef DEBUG
@@ -449,15 +462,7 @@ void printbuf(char *,int[3],int,int);
       currdev = -1;
   */
 
-      prevLoc = curr_stage->OutLoc;
       
-      if(st->OutLoc == LocHost) { // && Dev Alloc2
-	cudaEventSynchronize(st->EVENT_D2H);
-	//      cudaFree(devbuf);
-	event_hold = NULL;
-      }
-      else
-	event_hold = &(st->EVENT_EXEC);
 #endif
   }
   
@@ -466,10 +471,10 @@ void printbuf(char *,int[3],int,int);
     size_t size = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*sizeof(Type2);
     checkCudaErrors(cudaEventSynchronize(*event_hold));
     if(OutLoc == LocHost) {
-      checkCudaErrors(cudaMemcpy(out+st->offset2[i],buf[curr], size, cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(out,buf[curr], size, cudaMemcpyDeviceToHost));
     }
     else
-      checkCudaErrors(cudaMemcpy(out+st->offset2[i],buf[curr],  size, cudaMemcpyHostToDevice));
+      checkCudaErrors(cudaMemcpy(out,buf[curr],  size, cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaFree(buf[curr]));
   }
@@ -1921,8 +1926,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 
 #ifdef CUDA
   if(trplan->OutLoc != LocHost)
-    printf("Error in trans_MPIplan::pack_sendbuf_trans: expected LocHost for ou\
-tLoc\n");
+    printf("Error in trans_MPIplan::pack_sendbuf_trans: expected LocHost for outLoc\n");
   if(OW && trplan->dt2 <= trplan->dt1)  // CC or C2R
     buf = (Type2 *) src;
   else {
@@ -1940,6 +1944,7 @@ tLoc\n");
 
 #ifdef DEBUG
   char str[80];
+  printf("pack_send_trans: InLoc=%d\n",InLoc);
   sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
   //  inv_mo(mo2,imo2);
   // Optimize in the future
@@ -1955,15 +1960,21 @@ tLoc\n");
       trplan->DevBuf = devbuf;
     else {
       checkCudaErrors(cudaMalloc(&(trplan->DevBuf),size0*sizeof(Type1)));
+#ifdef DEBUG
+      printf("pack_sendbuf_trans: Allocated DevBuf size %d\n",size0*sizeof(Type1));
+#endif
       DevAlloc = true;
     }
     for(i=0;i<nslices;i++) {
       stream = &(streams[i]);
+#ifdef DEBUG
+      printf("pack_sendbuf_trans: offset = %d,slice=%d\n",trplan->offset1[i],i);
+#endif
       //checkCudaErrors(cudaMemcpy(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice));
       checkCudaErrors(cudaMemcpyAsync(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
-      checkCudaErrors(cudaEventRecord(EVENT_H2D,*stream));
+      checkCudaErrors(cudaEventRecord(trplan->EVENT_H2D,*stream));
     }
-    event_hold = &(EVENT_H2D);
+    event_hold = &(trplan->EVENT_H2D);
   }
   if(size1*sizeof(Type2) > size0*sizeof(Type1)) {
     checkCudaErrors(cudaMalloc(&(trplan->DevBuf2),size1*sizeof(Type2)));
