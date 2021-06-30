@@ -1856,7 +1856,7 @@ void DataGrid::InitPencil()
     for(;p < proc; p++) {
       st[i][p] = st[i][p-1] +sz[i][p-1];
       sz[i][p] = size;
-      en[i][p] = en[i][p-1] +sz[i][p-1];
+      en[i][p] = en[i][p-1] +size;
     }
     //st[i][p][j] = st[i][p-1][j] + size;
     //sz[i][p][j] = size;
