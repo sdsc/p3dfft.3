@@ -765,87 +765,6 @@ void setup(int nslices_)
 
 }
 
-#ifdef TIMERS
-void timer::init()
-{
-
-  reorder_trans = 0.0;
-  reorder_out = 0.0;
-  reorder_in = 0.0;
-  trans_exec = 0.0;
-  trans_deriv = 0.0;
-  packsend = 0.0;
-  packsend_trans = 0.0;
-  unpackrecv = 0.0;
-  alltoall = 0.0;
-
-}
-
-void timer::print(MPI_Comm comm)
-{
-
-  timer gtimers_avg,gtimers_min,gtimers_max;
-  gtimers_avg.init();
-  gtimers_min.init();
-  gtimers_max.init();
-  int nproc,taskid;
-  MPI_Comm_rank(comm,&taskid);
-  MPI_Comm_size(comm,&nproc);
-
-  MPI_Reduce(&reorder_trans,&gtimers_avg.reorder_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&reorder_trans,&gtimers_min.reorder_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&reorder_trans,&gtimers_max.reorder_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
-
-  MPI_Reduce(&reorder_out,&gtimers_avg.reorder_out,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&reorder_out,&gtimers_min.reorder_out,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&reorder_out,&gtimers_max.reorder_out,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&reorder_in,&gtimers_avg.reorder_in,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&reorder_in,&gtimers_min.reorder_in,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&reorder_in,&gtimers_max.reorder_in,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&trans_exec,&gtimers_avg.trans_exec,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&trans_exec,&gtimers_min.trans_exec,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&trans_exec,&gtimers_max.trans_exec,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&trans_deriv,&gtimers_avg.trans_deriv,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&trans_deriv,&gtimers_min.trans_deriv,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&trans_deriv,&gtimers_max.trans_deriv,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&packsend_trans,&gtimers_avg.packsend_trans,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&packsend_trans,&gtimers_min.packsend_trans,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&packsend_trans,&gtimers_max.packsend_trans,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&packsend,&gtimers_avg.packsend,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&packsend,&gtimers_min.packsend,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&packsend,&gtimers_max.packsend,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&unpackrecv,&gtimers_avg.unpackrecv,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&unpackrecv,&gtimers_min.unpackrecv,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&unpackrecv,&gtimers_max.unpackrecv,1,MPI_DOUBLE,MPI_MAX,0,comm);
-  MPI_Reduce(&alltoall,&gtimers_avg.alltoall,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&alltoall,&gtimers_min.alltoall,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&alltoall,&gtimers_max.alltoall,1,MPI_DOUBLE,MPI_MAX,0,comm);
-#ifdef CUDA
-  MPI_Reduce(&gpu_transfer,&gtimers_avg.gpu_transfer,1,MPI_DOUBLE,MPI_SUM,0,comm);
-  MPI_Reduce(&gpu_transfer,&gtimers_min.gpu_transfer,1,MPI_DOUBLE,MPI_MIN,0,comm);
-  MPI_Reduce(&gpu_transfer,&gtimers_max.gpu_transfer,1,MPI_DOUBLE,MPI_MAX,0,comm);
-#endif
-
-  if(taskid == 0) {
-    printf("TIMERS (avg/min/max): \nReorder_trans (%lf %lf %lf)\n",gtimers_avg.reorder_trans/nproc,gtimers_min.reorder_trans,gtimers_max.reorder_trans);
-    printf("Reorder_out   (%lf %lf %lf)\n",gtimers_avg.reorder_out/nproc,gtimers_min.reorder_out,gtimers_max.reorder_out);
-    printf("Reorder_in    (%lf %lf %lf)\n",gtimers_avg.reorder_in/nproc,gtimers_min.reorder_in,gtimers_max.reorder_in);
-    printf("Trans_exec    (%lf %lf %lf)\n",gtimers_avg.trans_exec/nproc,gtimers_min.trans_exec,gtimers_max.trans_exec);
-    printf("Trans_deriv    (%lf %lf %lf)\n",gtimers_avg.trans_deriv/nproc,gtimers_min.trans_deriv,gtimers_max.trans_deriv);
-    printf("Packsend      (%lf %lf %lf)\n",gtimers_avg.packsend/nproc,gtimers_min.packsend,gtimers_max.packsend);
-    printf("Packsend_trans(%lf %lf %lf)\n",gtimers_avg.packsend_trans/nproc,gtimers_min.packsend_trans,gtimers_max.packsend_trans);
-    printf("Unpackrecv    (%lf %lf %lf)\n",gtimers_avg.unpackrecv/nproc,gtimers_min.unpackrecv,gtimers_max.unpackrecv);
-    printf("Alltoall      (%lf %lf %lf)\n",gtimers_avg.alltoall/nproc,gtimers_min.alltoall,gtimers_max.alltoall);
-#ifdef CUDA
-    printf("GPU Transfer      (%lf %lf %lf)\n",gtimers_avg.gpu_transfer/nproc,gtimers_min.gpu_transfer,gtimers_max.gpu_transfer);
-#endif
-
-  }
-
-}
-
-  extern  timer timers;
-#endif
 
 
 void cleanup()
@@ -1749,7 +1668,7 @@ void timer::init()
   packsend_trans = 0.0;
   unpackrecv = 0.0;
   alltoall = 0.0;
-
+  gpu_transfer = 0.0;
 }
 
 void timer::print(MPI_Comm comm)
@@ -1804,8 +1723,7 @@ void timer::print(MPI_Comm comm)
     printf("Unpackrecv    (%lf %lf %lf)\n",gtimers_avg.unpackrecv/nproc,gtimers_min.unpackrecv,gtimers_max.unpackrecv);
     printf("Alltoall      (%lf %lf %lf)\n",gtimers_avg.alltoall/nproc,gtimers_min.alltoall,gtimers_max.alltoall);
 #ifdef CUDA
-    printf("GPU Transfer      (%lf %lf %lf)\n",gtimers_avg.gpu_transfer/nproc,gtimers_min.gpu_transfer,gtim\
-	   ers_max.gpu_transfer);
+    printf("GPU Transfer      (%lf %lf %lf)\n",gtimers_avg.gpu_transfer/nproc,gtimers_min.gpu_transfer,gtimers_max.gpu_transfer);
 #endif
 
 
@@ -2045,7 +1963,7 @@ void DataGrid::InitPencil()
     for(;p < proc; p++) {
       st[i][p] = st[i][p-1] +sz[i][p-1];
       sz[i][p] = size;
-      en[i][p] = en[i][p-1] +sz[i][p-1];
+      en[i][p] = en[i][p-1] +size;
     }
     //st[i][p][j] = st[i][p-1][j] + size;
     //sz[i][p][j] = size;
