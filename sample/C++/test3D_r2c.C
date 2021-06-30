@@ -215,7 +215,7 @@ int main(int argc,char **argv)
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  //  trans_f.exec(IN,OUT,false);
+  trans_f.exec(IN,OUT,false);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];
