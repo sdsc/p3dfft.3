@@ -236,6 +236,7 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef CUDA
     InLoc = InLoc_;
     OutLoc = OutLoc_;
+    printf("%d: InLoc%d,OutLoc=%d\n",Pgrid->taskid,InLoc,OutLoc);
     loc = InLoc;
     // Find maximum memory size among all the stages
     maxDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
@@ -348,6 +349,7 @@ void inv_mo(int mo[3],int imo[3]);
 	}
 #ifdef CUDA
 	loc = LocHost;
+	printf("%d: loc=%d\n",Pgrid->taskid,loc);
 #endif
 
       //      curr_stage = init_trans_MPIplan(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],prec);
@@ -396,7 +398,8 @@ void inv_mo(int mo[3],int imo[3]);
       }
 
       loc = loc2;
-      //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
+    printf("%d: loc=%d\n",Pgrid->taskid,loc); 
+     //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
       curr_stage->kind = TRANS_ONLY;            
     }
     
@@ -900,7 +903,7 @@ int dist(int a)
 }
 
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d,int InLoc_,int OutLoc_) // bool inplace_) 
+  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d,int InLoc_,int OutLoc_) // bool inplace_) 
   {   init_tr(gr1,gr2, type,d);
     InLoc = InLoc_;
     OutLoc = OutLoc_;
@@ -922,6 +925,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   trans_dim = d; 
   trans_type = (trans_type1D<Type1,Type2> *) type;
 
+#ifdef CUDA
+  cudaEventCreate(&EVENT_H2D);
+  cudaEventCreate(&EVENT_D2H);
+  cudaEventCreate(&EVENT_EXEC);
+#endif
 
   dt1 = type->dt1;
   dt2 = type->dt2;
@@ -1008,7 +1016,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   }
 }  
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_) // bool inplace_) 
+template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_)   // bool inplace_) 
 {   
   trans_type = (trans_type1D<Type1,Type2> *) types1D[type_ID];
 
@@ -1124,10 +1132,6 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(con
 #ifdef CUDA
   // Make sure data is on host after transplan, no matter where we started
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,InLoc,LocHost); 
-  offset1 = trplan->offset1;
-  offset2 = trplan->offset2;
-  mysize1 = trplan->mysize1;
-  mysize2 = trplan->mysize2;
 #else
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
 #endif

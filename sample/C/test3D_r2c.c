@@ -413,8 +413,6 @@ double check_res(double *A,double *B,int *ldims)
       for(x=0;x < ldims[0];x++) {
 	if(fabs(*p1 - *p2) > mydiff) {
 	  mydiff = fabs(*p1-*p2);
-	  if(fabs(*p2) > 0.00001)
-	    printf("p2=%lg, at %d %d %d\n",*p2,x,y,z); 
 	}
 	p1++;
 	p2++;

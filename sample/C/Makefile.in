@@ -324,7 +324,7 @@ top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
 AM_CFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) \
 	$(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' \
-	-DGIT_DATE='"$(GIT_DATE)"' # $(am__append_1)
+	-DGIT_DATE='"$(GIT_DATE)"' $(am__append_1)
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lstdc++
 @ENABLE_CUDA_FALSE@CCLD = $(CXX)
 @ENABLE_CUDA_TRUE@CCLD = nvcc
