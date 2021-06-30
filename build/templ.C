@@ -236,7 +236,9 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef CUDA
     InLoc = InLoc_;
     OutLoc = OutLoc_;
+#ifdef DEBUG
     printf("%d: InLoc%d,OutLoc=%d\n",Pgrid->taskid,InLoc,OutLoc);
+#endif
     loc = InLoc;
     // Find maximum memory size among all the stages
     maxDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
@@ -349,7 +351,9 @@ void inv_mo(int mo[3],int imo[3]);
 	}
 #ifdef CUDA
 	loc = LocHost;
+#ifdef DEBUG
 	printf("%d: loc=%d\n",Pgrid->taskid,loc);
+#endif
 #endif
 
       //      curr_stage = init_trans_MPIplan(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],prec);
@@ -398,7 +402,9 @@ void inv_mo(int mo[3],int imo[3]);
       }
 
       loc = loc2;
+#ifdef DEBUG
     printf("%d: loc=%d\n",Pgrid->taskid,loc); 
+#endif
      //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
       curr_stage->kind = TRANS_ONLY;            
     }
