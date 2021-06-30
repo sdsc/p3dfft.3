@@ -216,6 +216,9 @@ int main(int argc,char **argv)
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
 
+  // warm-up
+    trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
+
   // timing loop
 
   for(i=0; i < Nrep;i++) {

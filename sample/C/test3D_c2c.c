@@ -222,7 +222,7 @@ int main(int argc,char **argv)
   OUT=(double *) malloc(sizeof(double) *size1 *2);
 
   // Warm-up run, forward transform
-  //p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
+  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
   Nglob = gdims[0]*gdims[1];
   Nglob *= gdims[2];
