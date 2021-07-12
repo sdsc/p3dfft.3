@@ -16,6 +16,6 @@ lib_LIBRARIES = libp3dfft.3.a
 
 LDADD = $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) -lm -lstdc++
 
-libp3dfft_3_a_SOURCES = init.C exec.C templ.C wrap.C deriv.C fwrap.f90 fp3dfft++mod.f90
+libp3dfft_3_a_SOURCES = init.C exec.C templ.C wrap.C deriv.C fp3dfft++mod.f90 fwrap.f90
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod
