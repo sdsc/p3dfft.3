@@ -568,7 +568,10 @@ template <class Type> class MPIplan : public stage {
 
   MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int prec_);
   //MPIplan() {};
-  ~MPIplan();
+  ~MPIplan() {
+    delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+    delete grid1,grid2;
+};
   void exec(char *in,char *out);
   template <class Type1,class Type2> friend class trans_MPIplan;
   };

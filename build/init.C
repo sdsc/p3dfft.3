@@ -824,13 +824,6 @@ void timer::print(MPI_Comm comm)
 
 #endif
 
-
-template <class Type> MPIplan<Type>::~MPIplan()
-{
-  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
-  delete grid1,grid2;
-}
-
 void cleanup()
 {
   
