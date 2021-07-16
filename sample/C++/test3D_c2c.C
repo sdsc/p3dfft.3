@@ -256,7 +256,7 @@ int main(int argc,char **argv)
   MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0)
-    printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
+    printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
 
   delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures
