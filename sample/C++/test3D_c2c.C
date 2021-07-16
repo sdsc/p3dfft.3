@@ -220,6 +220,9 @@ int main(int argc,char **argv)
     trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
 
   // timing loop
+#ifdef TIMERS
+    timers.init();
+#endif
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
@@ -257,6 +260,9 @@ int main(int argc,char **argv)
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
+#ifdef TIMERS
+    timers.print(MPI_COMM_WORLD);
+#endif
 
   delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures
