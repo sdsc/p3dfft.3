@@ -116,11 +116,11 @@ const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #endif
 
 const int DEF_FFT_FLAGS=0;
-#define LocDevice 1
-#define LocHost 2
 
 #endif
 
+#define LocDevice 1
+#define LocHost 2
 #define NONE 0
 #define SLICE 1
 #define FULL 2
@@ -230,6 +230,7 @@ void divide_work(int *offset,int *mysize,int dims[3],int nslices);
 bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
+ size_t max_long(size_t a,size_t b);
 
 #ifdef CUDA
 
@@ -538,7 +539,7 @@ template <class Type1,class Type2>  class trans_type1D  : public gen_trans_type{
  // void (*exec)(long,Type1 *,Type2 *);
  void (*exec)(...);
 
-  trans_type1D(const char *name,  planResult (*doplan_)(...),void (*exec)(...)=NULL,int isign=0);
+ //trans_type1D(const char *name,  planResult (*doplan_)(...),void (*exec)(...)=NULL,int isign=0);
   inline int getID() {return(ID);}
 
   trans_type1D(const trans_type1D &rhs) 
@@ -722,10 +723,12 @@ template <class Type> class MPIplan : public stage {
 
  public :
 
+  size_t WorkSpace;
+
   MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int prec_);
   //MPIplan() {};
   ~MPIplan();
-  void exec(char *in,char *out);
+  void exec(char *in,char *out,char *tmpbuf=NULL);
   template <class Type1,class Type2> friend class trans_MPIplan;
   template <class Type11,class Type2> friend  class transform3D;
 
@@ -748,58 +751,62 @@ template <class Type1,class Type2>   class transplan : public stage {
   int *inembed,*onembed;
   unsigned fft_flag;
   void compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]);
-  char *DevBuf,*DevBuf2;
+  //  char *DevBuf,*DevBuf2;
 
   public :
+
+  int WorkSpace=0;
 
 #ifdef CUDA
   //  bool useCuda=false;
   int InLoc=LocHost;
   int OutLoc=LocHost;
   cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
+#endif
   int *offset1,*mysize1;
   int *offset2,*mysize2;
-#endif
   bool is_empty=false;
   int trans_dim;  // Rank of dimension of the transform
   int mo1[3],mo2[3];
   bool is_set;
   trans_type1D<Type1,Type2> *trans_type;
   Plantype<Type1,Type2> *plan;
-  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d,int InLoc_,int OutLoc_); //, bool inplace_);
-  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_); //, bool inplace_); 
+  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d,int InLoc_=LocHost,int OutLoc_=LocHost); //, bool inplace_);
+  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_=LocHost,int OutLoc_=LocHost); //, bool inplace_); 
   void init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d); // bool inplace_) 
   transplan() {};
   ~transplan() {
     delete grid1,grid2; 
     delete [] offset1,mysize1;
     delete [] offset2,mysize2;
+#ifdef CUDA
     cudaEventDestroy(EVENT_EXEC);
     cudaEventDestroy(EVENT_H2D);
     cudaEventDestroy(EVENT_D2H);
+#endif
   };
 
   void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1);
   
-  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false);
+  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false);
+  void rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false, char *tmpbuf=NULL);
 
-  void rot210in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false);
+  void rot210in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot201in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false);
+  void rot201in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL);
 
   void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false);
 
-  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int dt1,int dt2, int slice=0,int nslices=1,bool deriv=false);
+  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int dt1,int dt2, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot120out(Type1 *in,Type2 *out,bool inplace, int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false);
+  void rot120out(Type1 *in,Type2 *out,bool inplace, int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot210out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false);
+  void rot210out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot201out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false);
+  void rot201out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
 
-  void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false);
+  void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL);
 
 
 #ifdef CUBLAS
@@ -811,18 +818,21 @@ template <class Type1,class Type2>   class transplan : public stage {
     void ro120out_cu(dim3 gridDim,dim3 blockSize,Type1 *in,Type1 *out,int d[3]);
 #endif
 
-  void exec(char *in,char *out, int dim_deriv,bool OW=false);
-  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false);
-
+    void exec(char *in,char *out, int dim_deriv,bool OW=false, char *tmpbuf=NULL);
+#ifdef CUDA
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL);
+#else
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL);
+#endif
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
+  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3],char *tmpbuf=NULL);
   void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
   void reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int slice,int nslices);
-  void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
-  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false);
-  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
+  // void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW, char *tmpbuf=NULL);
+  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL);
+  //  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void find_plan(trans_type1D<Type1,Type2> *type);
-  void exec_deriv(char *in,char *out, bool OW=false);
+  //void exec_deriv(char *in,char *out, bool OW=false);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
   //template <class Type1,class Type2>  
@@ -836,9 +846,9 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
  private : 
 
-  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,char *devbuf=NULL,bool OW=false);
+  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
   void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,bool OW);
-  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
+  //  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
   
 
@@ -847,16 +857,16 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   bool is_set;
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
+  size_t WorkSpaceHost=0,WorkSpaceDev=0;
 
   trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_,int InLoc_); //,bool inplace_);
   ~trans_MPIplan() {};
 #ifdef CUDA
   int InLoc=LocHost;
-  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,char *devbuf=NULL,bool OW=false);
-#else
-  void exec(char *in,char *out,  int dim_deriv,bool OW=false);
 #endif
-  void exec_deriv(char *in,char *out, bool OW);
+  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL);
+
+  //  void exec_deriv(char *in,char *out, bool OW);
 
   template <class TypeIn1,class TypeOut1> friend class transplan;
   template <class Type> friend class MPIplan;
@@ -1103,21 +1113,21 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   friend class stage;
 #ifdef CUDA
   int InLoc,OutLoc;
-  size_t maxDevSize;
 #endif
   int *offset,*mysize;
 
  public:
 
-  void exec(Type1 *in,Type2 *out, bool OW=false);
-  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false);
+  size_t WorkSpaceHost=0,WorkSpaceDev=0;
+  void exec(Type1 *in,Type2 *out, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
+  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
 
   transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type,const int InLoc_=0, const int OutLoc_=0);
   ~transform3D();
 };
 
- template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,  int loc1=0, int loc2=0);
- template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec);
+ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2, size_t *workspace, int loc1=0, int loc2=0);
+ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec,size_t *workspace);
 //extern int ntrans;
 //extern int npl;
 //static Ntrans_types=0;
@@ -1190,6 +1200,7 @@ template class trans_type1D<complex_double,complex_double>;
     double packsend_deriv;
     double unpackrecv;
     double alltoall;
+    double gpu_transfer;
   public:
     void init();
     void print(MPI_Comm);
@@ -1213,6 +1224,9 @@ template class trans_type1D<complex_double,complex_double>;
 #endif
 
   // Namespace
+
+  //#include "templ.C"
+  //#include "exec.C"
 }
 
 

@@ -76,10 +76,15 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-fsample_PROGRAMS = test1D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
-	test3D_r2c_f$(EXEEXT) testIDIR_deriv_f$(EXEEXT) \
-	test3D_c2c_inplace_f$(EXEEXT) test3D_r2c_single_f$(EXEEXT)
-#test1D_cos_f$(EXEEXT) test1D_cos_complex_f$(EXEEXT) 
+FCLD = $(FC)
+@ENABLE_CUDA_FALSE@fsample_PROGRAMS = test1D_r2c_f$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_c2c_f$(EXEEXT) test3D_r2c_f$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_c2c_inplace_f$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_r2c_single_f$(EXEEXT)
+@ENABLE_CUDA_TRUE@fsample_PROGRAMS = test1D_r2c_f$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_r2c_f$(EXEEXT) test3D_c2c_f$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_c2c_inplace_f$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_r2c_single_f$(EXEEXT)
 subdir = sample/FORTRAN
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -92,22 +97,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(fsampledir)"
 PROGRAMS = $(fsample_PROGRAMS)
-am_test1D_cos_complex_f_OBJECTS = test1D_cos_complex.$(OBJEXT)
-test1D_cos_complex_f_OBJECTS = $(am_test1D_cos_complex_f_OBJECTS)
-test1D_cos_complex_f_LDADD = $(LDADD)
-am__DEPENDENCIES_1 =
-test1D_cos_complex_f_DEPENDENCIES =  \
-	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test1D_cos_f_OBJECTS = test1D_cos.$(OBJEXT)
-test1D_cos_f_OBJECTS = $(am_test1D_cos_f_OBJECTS)
-test1D_cos_f_LDADD = $(LDADD)
-test1D_cos_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
 am_test1D_r2c_f_OBJECTS = test1D_r2c.$(OBJEXT)
 test1D_r2c_f_OBJECTS = $(am_test1D_r2c_f_OBJECTS)
 test1D_r2c_f_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
 test1D_r2c_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
@@ -135,12 +128,6 @@ test3D_r2c_single_f_LDADD = $(LDADD)
 test3D_r2c_single_f_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_testIDIR_deriv_f_OBJECTS = test_deriv.$(OBJEXT)
-testIDIR_deriv_f_OBJECTS = $(am_testIDIR_deriv_f_OBJECTS)
-testIDIR_deriv_f_LDADD = $(LDADD)
-testIDIR_deriv_f_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -161,7 +148,6 @@ AM_V_FC = $(am__v_FC_@AM_V@)
 am__v_FC_ = $(am__v_FC_@AM_DEFAULT_V@)
 am__v_FC_0 = @echo "  FC      " $@;
 am__v_FC_1 = 
-FCLD = $(FC)
 FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
 	$@
 AM_V_FCLD = $(am__v_FCLD_@AM_V@)
@@ -170,11 +156,10 @@ am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
 SOURCES = $(test1D_r2c_f_SOURCES) $(test3D_c2c_f_SOURCES) \
 	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(test3D_r2c_single_f_SOURCES) $(testIDIR_deriv_f_SOURCES)
-#$(test1D_cos_complex_f_SOURCES) $(test1D_cos_f_SOURCES) 
+	$(test3D_r2c_single_f_SOURCES)
 DIST_SOURCES = $(test1D_r2c_f_SOURCES) $(test3D_c2c_f_SOURCES) \
 	$(test3D_c2c_inplace_f_SOURCES) $(test3D_r2c_f_SOURCES) \
-	$(test3D_r2c_single_f_SOURCES) $(testIDIR_deriv_f_SOURCES)
+	$(test3D_r2c_single_f_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -217,7 +202,6 @@ CUDA_LIB = @CUDA_LIB@
 CXX = @CXX@
 CXXFLAGS = @CXXFLAGS@
 CXX_save = @CXX_save@
-FC_save = @FC_save@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 ECHO_C = @ECHO_C@
@@ -229,6 +213,7 @@ ESSL_LIB = @ESSL_LIB@
 EXEEXT = @EXEEXT@
 FC = @FC@
 FCFLAGS = @FCFLAGS@
+FC_save = @FC_save@
 FFTWF_LIB = @FFTWF_LIB@
 FFTW_INC = @FFTW_INC@
 FFTW_LIB = @FFTW_LIB@
@@ -306,13 +291,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_FCFLAGS = -I$(top_builddir)/include -I$(top_builddir)/build $(FFTW_INC) $(ESSL_INC) $(CUDA_INC)
+AM_FCFLAGS = -I$(top_builddir)/include -I$(top_builddir)/build $(FFTW_INC) $(ESSL_INC)
+LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lmpi -lgfortran -lstdc++
+AM_LDFLAGS = #-cxxlib
+fsampledir = $(datadir)/p3dfft++_samples/
 @ENABLE_CUDA_FALSE@FCLD = $(FC)
 @ENABLE_CUDA_TRUE@FCLD = nvcc
-@ENABLE_CUDA_TRUE@AM_LDFLAGS = --std=c++11 -ccbin $(FC_save)
-LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lstdc++
-AM_LDFLAGS += -lgfortran #-cxxlib
-fsampledir = $(datadir)/p3dfft++_samples/
 test1D_cos_f_SOURCES = test1D_cos.f90 # wrap.f90 p3dfft++.f90
 test1D_cos_complex_f_SOURCES = test1D_cos_complex.f90 # wrap.f90 p3dfft++.f90
 test1D_r2c_f_SOURCES = test1D_r2c.f90 # wrap.f90 p3dfft++.f90
@@ -403,14 +387,6 @@ uninstall-fsamplePROGRAMS:
 clean-fsamplePROGRAMS:
 	-test -z "$(fsample_PROGRAMS)" || rm -f $(fsample_PROGRAMS)
 
-test1D_cos_complex_f$(EXEEXT): $(test1D_cos_complex_f_OBJECTS) $(test1D_cos_complex_f_DEPENDENCIES) $(EXTRA_test1D_cos_complex_f_DEPENDENCIES) 
-	@rm -f test1D_cos_complex_f$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test1D_cos_complex_f_OBJECTS) $(test1D_cos_complex_f_LDADD) $(LIBS)
-
-test1D_cos_f$(EXEEXT): $(test1D_cos_f_OBJECTS) $(test1D_cos_f_DEPENDENCIES) $(EXTRA_test1D_cos_f_DEPENDENCIES) 
-	@rm -f test1D_cos_f$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test1D_cos_f_OBJECTS) $(test1D_cos_f_LDADD) $(LIBS)
-
 test1D_r2c_f$(EXEEXT): $(test1D_r2c_f_OBJECTS) $(test1D_r2c_f_DEPENDENCIES) $(EXTRA_test1D_r2c_f_DEPENDENCIES) 
 	@rm -f test1D_r2c_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test1D_r2c_f_OBJECTS) $(test1D_r2c_f_LDADD) $(LIBS)
@@ -430,10 +406,6 @@ test3D_r2c_f$(EXEEXT): $(test3D_r2c_f_OBJECTS) $(test3D_r2c_f_DEPENDENCIES) $(EX
 test3D_r2c_single_f$(EXEEXT): $(test3D_r2c_single_f_OBJECTS) $(test3D_r2c_single_f_DEPENDENCIES) $(EXTRA_test3D_r2c_single_f_DEPENDENCIES) 
 	@rm -f test3D_r2c_single_f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test3D_r2c_single_f_OBJECTS) $(test3D_r2c_single_f_LDADD) $(LIBS)
-
-testIDIR_deriv_f$(EXEEXT): $(testIDIR_deriv_f_OBJECTS) $(testIDIR_deriv_f_DEPENDENCIES) $(EXTRA_testIDIR_deriv_f_DEPENDENCIES) 
-	@rm -f testIDIR_deriv_f$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(testIDIR_deriv_f_OBJECTS) $(testIDIR_deriv_f_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

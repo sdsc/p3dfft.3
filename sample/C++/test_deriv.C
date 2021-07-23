@@ -69,7 +69,9 @@ int main(int argc,char **argv)
   double gtmax = 0.;
   int pdims[3],nx,ny,nz,n,ndim,idir;
   FILE *fp;
-
+  size_t workspace_host,workspace_dev;
+  int nslices=1;
+  
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
@@ -85,14 +87,14 @@ int main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1, idir=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;idir=1;
      } else {
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&idir);
+       fscanf(fp,"%d %d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&idir,&nslices);
         fclose(fp);
      }
      printf("P3DFFT test, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n",nx,ny,nz,ndim,Nrep,idir);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n%d slices\n",nx,ny,nz,ndim,Nrep,idir,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n",nx,ny,nz,ndim,Nrep,idir);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n idir=%d\n%d slices\n",nx,ny,nz,ndim,Nrep,idir,nslices);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -139,7 +141,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  setup();
+  setup(nslices);
 
   //Set up 2 transform types for 3D transforms
 

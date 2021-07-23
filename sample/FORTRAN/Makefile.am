@@ -6,7 +6,15 @@ AM_LDFLAGS = #-cxxlib
 
 fsampledir = $(datadir)/p3dfft++_samples/
 
-fsample_PROGRAMS = test1D_r2c_f test3D_c2c_f test3D_r2c_f  testIDIR_deriv_f test3D_c2c_inplace_f  test3D_r2c_single_f #testIDIR_deriv2_f test1D_cos_f test1D_cos_complex_f 
+
+if ENABLE_CUDA
+FCLD = nvcc
+fsample_PROGRAMS = test1D_r2c_f test3D_r2c_f test3D_c2c_f test3D_c2c_inplace_f test3D_r2c_single_f #testIDIR_deriv2_c test1D_cos_c test1D_cos_complex_c  testIDIR_deriv_c 
+else
+FCLD = $(FC)
+fsample_PROGRAMS = test1D_r2c_f test3D_c2c_f test3D_r2c_f  test3D_c2c_inplace_f  test3D_r2c_single_f #testIDIR_deriv_f testIDIR_deriv2_f test1D_cos_f test1D_cos_complex_f 
+endif
+
 
 #p3dfft_plus_plus.mod: p3dfft++.o
 

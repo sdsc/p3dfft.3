@@ -76,12 +76,23 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+CCLD = $(CC)
 @ENABLE_CUDA_TRUE@am__append_1 = -DCUDA
-csample_PROGRAMS = test1D_cos_c$(EXEEXT) test1D_cos_complex_c$(EXEEXT) \
-	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
-	test3D_c2c_c$(EXEEXT) testIDIR_deriv_c$(EXEEXT) \
-	test3D_c2c_inplace_c$(EXEEXT) test3D_r2c_memord_c$(EXEEXT) \
-	test3D_r2c_single_c$(EXEEXT) test2D+empty_c$(EXEEXT)
+@ENABLE_CUDA_FALSE@csample_PROGRAMS = test1D_cos_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test1D_cos_complex_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test1D_r2c_c$(EXEEXT) test3D_r2c_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_c2c_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	testIDIR_deriv_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_c2c_inplace_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_r2c_memord_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test3D_r2c_single_c$(EXEEXT) \
+@ENABLE_CUDA_FALSE@	test2D+empty_c$(EXEEXT)
+@ENABLE_CUDA_TRUE@csample_PROGRAMS = test1D_r2c_c$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_r2c_c$(EXEEXT) test3D_c2c_c$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_c2c_inplace_c$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_r2c_memord_c$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test3D_r2c_single_c$(EXEEXT) \
+@ENABLE_CUDA_TRUE@	test2D+empty_c$(EXEEXT)
 subdir = sample/C
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -100,61 +111,65 @@ test1D_cos_c_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 test1D_cos_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test1D_cos_complex_c_OBJECTS = test1D_cos_complex.$(OBJEXT)
 test1D_cos_complex_c_OBJECTS = $(am_test1D_cos_complex_c_OBJECTS)
 test1D_cos_complex_c_LDADD = $(LDADD)
 test1D_cos_complex_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test1D_r2c_c_OBJECTS = test1D_r2c.$(OBJEXT)
 test1D_r2c_c_OBJECTS = $(am_test1D_r2c_c_OBJECTS)
 test1D_r2c_c_LDADD = $(LDADD)
 test1D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 test2D_empty_c_SOURCES = test2D+empty.c
 test2D_empty_c_OBJECTS = test2D+empty.$(OBJEXT)
 test2D_empty_c_LDADD = $(LDADD)
 test2D_empty_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_c2c_c_OBJECTS = test3D_c2c.$(OBJEXT)
 test3D_c2c_c_OBJECTS = $(am_test3D_c2c_c_OBJECTS)
 test3D_c2c_c_LDADD = $(LDADD)
 test3D_c2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_c2c_inplace_c_OBJECTS = test3D_c2c_inplace.$(OBJEXT)
 test3D_c2c_inplace_c_OBJECTS = $(am_test3D_c2c_inplace_c_OBJECTS)
 test3D_c2c_inplace_c_LDADD = $(LDADD)
 test3D_c2c_inplace_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_r2c_c_OBJECTS = test3D_r2c.$(OBJEXT)
 test3D_r2c_c_OBJECTS = $(am_test3D_r2c_c_OBJECTS)
 test3D_r2c_c_LDADD = $(LDADD)
 test3D_r2c_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_test3D_r2c_memord_c_OBJECTS = test3D_r2c_memord.$(OBJEXT)
 test3D_r2c_memord_c_OBJECTS = $(am_test3D_r2c_memord_c_OBJECTS)
 test3D_r2c_memord_c_LDADD = $(LDADD)
 test3D_r2c_memord_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test3D_r2c_single_c_OBJECTS = test3D_r2c_single.$(OBJEXT)
 test3D_r2c_single_c_OBJECTS = $(am_test3D_r2c_single_c_OBJECTS)
 test3D_r2c_single_c_LDADD = $(LDADD)
 test3D_r2c_single_c_DEPENDENCIES =  \
 	$(top_builddir)/build/libp3dfft.3.a $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_testIDIR_deriv_c_OBJECTS = test_deriv.$(OBJEXT)
 testIDIR_deriv_c_OBJECTS = $(am_testIDIR_deriv_c_OBJECTS)
 testIDIR_deriv_c_LDADD = $(LDADD)
 testIDIR_deriv_c_DEPENDENCIES = $(top_builddir)/build/libp3dfft.3.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -244,6 +259,7 @@ ESSL_LIB = @ESSL_LIB@
 EXEEXT = @EXEEXT@
 FC = @FC@
 FCFLAGS = @FCFLAGS@
+FC_save = @FC_save@
 FFTWF_LIB = @FFTWF_LIB@
 FFTW_INC = @FFTW_INC@
 FFTW_LIB = @FFTW_LIB@
@@ -321,8 +337,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' -DGIT_DATE='"$(GIT_DATE)"'
-AM_CFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) \
+AM_CPPFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) \
 	$(CUDA_INC) -DGIT_VERSION='"$(GIT_VERSION)"' \
 	-DGIT_DATE='"$(GIT_DATE)"' $(am__append_1)
 LDADD = -lm $(top_builddir)/build/libp3dfft.3.a $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lstdc++

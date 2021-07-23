@@ -52,7 +52,7 @@
       integer(8) size1,size2
       integer(C_INT), dimension(3) :: pdims,ldims1,ldims2,mem_order1
       integer(C_INT), dimension(3) :: mem_order2,dmap1,dmap2,gdims1,gdims2
-      integer(C_INT) grid1,grid2,pgrid
+      integer(C_INT) grid1,grid2,pgrid,workspace,nslices
       integer mpicomm,myid
       integer a(3)
       integer mydims1(3),mydims2(3)
@@ -75,10 +75,10 @@
          endif
          ndim = 2
 
-        read (3,*) nx, ny, nz, ndim,n
+        read (3,*) nx, ny, nz, ndim,nslices,n
 	print *,'P3DFFT test, Single Precision, 3D wave input, 3D Real-to-complex FFT'
         write (*,*) "procs=",nproc," nx=",nx, &
-                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n
+                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n, " nslices=",nslices
        endif
 
 ! Broadcast parameters
@@ -88,6 +88,7 @@
       call MPI_Bcast(nz,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(n,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ndim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
+      call MPI_Bcast(nslices,1, MPI_INTEGER,0,mpi_comm_world,ierr)
 
 ! Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -128,7 +129,7 @@
 
 ! Set up work structures for P3DFFT
 
-      call p3dfft_setup(8)
+      call p3dfft_setup(nslices)
 
 ! Set up 2 transform types for 3D transforms
 
@@ -197,10 +198,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_rcc,LocHost,LocHost)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_rcc,workspace)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_ccr,LocHost,LocHost)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_ccr,workspace)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 

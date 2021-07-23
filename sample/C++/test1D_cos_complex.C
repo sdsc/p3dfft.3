@@ -140,7 +140,7 @@ using namespace p3dfft;
 
   // Set up work structures for P3DFFT
 
-  setup(1);
+  setup();
 
   //Set up transform types for 1D cosine transform
 
@@ -157,7 +157,7 @@ using namespace p3dfft;
   // Define the initial processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
 
   ProcGrid pgrid(pdims,MPI_COMM_WORLD);
-
+\
   //Initialize initial and final grids, based on the above information
   // For initial grid, intended for real-valued array, there is no conjugate symmetry, i.e. -1
   cnt=1;
@@ -177,14 +177,14 @@ using namespace p3dfft;
 
 #ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim,LocHost,LocHost);
+  transplan<complex_double,complex_double> trans_f(grid1,grid2,type_ids1,dim,LocHost,LocHost);
   //Now set up the backward transform
-  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim,LocHost,LocHost);
+  transplan<complex_double,complex_double> trans_b(grid2,grid1,type_ids2,dim,LocHost,LocHost);
 #else
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
-  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
+  transplan<complex_double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
   //Now set up the backward transform
-  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim);
+  transplan<complex_double,complex_double> trans_b(grid2,grid1,type_ids2,dim);
 #endif
 
   //Determine local array dimensions. 

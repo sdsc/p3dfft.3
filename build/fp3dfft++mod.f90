@@ -56,9 +56,16 @@ interface
 
       end subroutine
 
+!      subroutine p3dfft_setup(nslices) bind(C,name="p3dfft_setup_f")
+!      import  
+!      integer(C_INT) :: nslices
+!      end subroutine
+
       subroutine p3dfft_setup(nslices) bind(C,name="p3dfft_setup_f")
       import  
+
       integer(C_INT) :: nslices
+
       end subroutine
 
       subroutine p3dfft_cleanup() bind(C,name="p3dfft_cleanup")
@@ -128,17 +135,17 @@ interface
       real(C_FLOAT), dimension(*) :: in,out
       end subroutine
 
-      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim,inloc,outloc) bind(C, name='p3dfft_plan_1Dtrans_f')
+      subroutine p3dfft_plan_1Dtrans(myplan,grid1,grid2,trans_ID,dim,workspace) bind(C, name='p3dfft_plan_1Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2,dim
-      integer(C_INT) :: trans_ID,inloc,outloc
+      integer(C_INT) :: trans_ID,workspace
 
       end subroutine
 
-      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID,inloc,outloc) bind(C, name='p3dfft_plan_3Dtrans_f')
+      subroutine p3dfft_plan_3Dtrans(myplan,grid1,grid2,trans_ID,workspace) bind(C, name='p3dfft_plan_3Dtrans_f')
       import
       integer(C_INT) :: myplan,grid1,grid2
-      integer(C_INT) :: trans_ID,inloc,outloc
+      integer(C_INT) :: trans_ID,workspace
 
       end subroutine
 

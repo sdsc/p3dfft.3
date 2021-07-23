@@ -299,7 +299,7 @@ ARFLAGS = -v -r -u
 #deriv.o: $(top_builddir)/include/p3dfft.h
 lib_LIBRARIES = libp3dfft.3.a
 LDADD = $(FFTW_LIB) $(FFTWF_LIB) $(ESSL_LIB) $(CUDA_LIB) -lm -lstdc++
-libp3dfft_3_a_SOURCES = init.C exec.C templ.C wrap.C fwrap.f90 fp3dfft++mod.f90 #deriv.C
+libp3dfft_3_a_SOURCES = init.C exec.C templ.C wrap.C fp3dfft++mod.f90 fwrap.f90  #deriv.C
 sources = $(libp3dfft_3_a_SOURCES)
 all: all-am
 
@@ -384,6 +384,7 @@ distclean-compile:
 
 .C.obj:
 	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
 .f90.o:
 	$(AM_V_FC)$(FCOMPILE) -c -o $@ $<
 

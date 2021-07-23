@@ -54,7 +54,9 @@ int main(int argc,char **argv)
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
   int pdims[3],ndim,nx,ny,nz;
+  int nslices=1;
   FILE *fp;
+  size_t workspace_host,workspace_dev;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -71,14 +73,14 @@ int main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
         fclose(fp);
      }
      printf("P3DFFT test C2C, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices/streams\n",nx,ny,nz,ndim,Nrep,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices/streams\n",nx,ny,nz,ndim,Nrep,nslices);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -86,6 +88,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -122,7 +125,7 @@ int main(int argc,char **argv)
       printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
-  setup(1);
+  setup(nslices);
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {CFFT_FORWARD_D,CFFT_FORWARD_D,CFFT_FORWARD_D};
   int type_ids2[3] = {CFFT_BACKWARD_D,CFFT_BACKWARD_D,CFFT_BACKWARD_D};
@@ -225,14 +228,17 @@ int main(int argc,char **argv)
 
   // timing loop
 
+#ifdef TIMERS
+  timers.init();
+#endif
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
     trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
-    if(myid == 0)
-      cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,sdims2,glob_start2);
+    //if(myid == 0)
+      //      cout << "Results of forward transform: "<< endl;
+    //    print_res(OUT,gdims,sdims2,glob_start2);
     normalize(OUT,size2,gdims);
     check_res_forward(OUT,sdims2,glob_start2,gsdims,myid);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -261,6 +267,9 @@ int main(int argc,char **argv)
   MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
+#ifdef TIMERS
+  timers.print(MPI_COMM_WORLD);
+#endif
 
   delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures

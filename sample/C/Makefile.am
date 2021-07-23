@@ -6,13 +6,14 @@ if ENABLE_CUDA
 CCLD = nvcc
 AM_CPPFLAGS += -DCUDA
 AM_LDFLAGS = --std=c++11 -ccbin $(CXX_save)
+csample_PROGRAMS = test1D_r2c_c test3D_r2c_c test3D_c2c_c test3D_c2c_inplace_c  test3D_r2c_memord_c test3D_r2c_single_c test2D+empty_c #testIDIR_deriv2_c test1D_cos_c test1D_cos_complex_c  testIDIR_deriv_c 
 else
 CCLD = $(CXX)
+csample_PROGRAMS = test1D_cos_c test1D_cos_complex_c test1D_r2c_c test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test3D_c2c_inplace_c  test3D_r2c_memord_c test3D_r2c_single_c test2D+empty_c #testIDIR_deriv2_c
 endif
 
 csampledir = $(datadir)/p3dfft++_samples/
 
-csample_PROGRAMS = test1D_cos_c test1D_cos_complex_c test1D_r2c_c test3D_r2c_c test3D_c2c_c testIDIR_deriv_c test3D_c2c_inplace_c  test3D_r2c_memord_c test3D_r2c_single_c test2D+empty_c #testIDIR_deriv2_c
 
 test3D_r2c_single_c_SOURCES = test3D_r2c_single.c
 

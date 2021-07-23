@@ -72,6 +72,7 @@ int main(int argc,char **argv)
   double gtmax = 0.;
   int pdims[3],nx,ny,nz,n,dim,cnt;
   FILE *fp;
+  int nslices=1;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -90,7 +91,11 @@ int main(int argc,char **argv)
         printf("Cannot open input file. Setting to default nx=ny=nz=128, dim=0, n=1.\n");
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
+#ifdef CUDA
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&dim,&nslices,&Nrep);
+#else
+       fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
+#endif
         fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
@@ -112,7 +117,9 @@ int main(int argc,char **argv)
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
-
+#ifdef CUDA
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
+#endif
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
      fp = fopen("dims","r");
@@ -140,7 +147,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  setup(1);
+  setup(nslices);
 
   //Set up 2 transform types for 3D transforms
 

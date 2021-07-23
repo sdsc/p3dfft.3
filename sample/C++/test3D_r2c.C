@@ -217,14 +217,14 @@ int main(int argc,char **argv)
   transform3D<complex_double,double> trans_b(Zpencil,Xpencil,&type_ccr,LocHost,LocHost);
 #else
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_rcc);
+  transform3D<double,complex_double> trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_ccr);
+  transform3D<complex_double,double> trans_b(Zpencil,Xpencil,&type_ccr);
 #endif
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  //  trans_f.exec(IN,OUT,false);
+  trans_f.exec(IN,OUT,false);
 
   double t=0.;
   Nglob = gdims[0]*gdims[1];

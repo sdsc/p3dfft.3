@@ -131,7 +131,7 @@ void inv_mo(int mo[3],int imo[3]);
 
   int dmap1[3],dmap2[3],gdims[3],L[3],st;
   int d1,d2,nd,i;
-  void swap0(int new_mo[3],int mo[3],int L);
+  int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
   int monext[3];
   int dims1[3],dims2[3];
   gen_trans_type *tmptype;
@@ -206,6 +206,11 @@ void inv_mo(int mo[3],int imo[3]);
     printf("%d: Planning stages: %d %d %d\n",Pgrid->taskid,L[0],L[1],L[2]);
 #endif
 
+    WorkSpaceHost = 0;
+    WorkSpaceDev=0;
+    size_t ws,wshost,wsdev;
+    MPIplan<Type1> *mpiplan;
+
     if(init_steps) {
       if(grid1_.Pdims[L[0]] != 1) { // Plan a transpose
 	for(i=0;i<3;i++) {
@@ -222,7 +227,8 @@ void inv_mo(int mo[3],int imo[3]);
 
 	tmpgrid1 = new DataGrid(gdims,grid1_.dim_conj_sym,Pgrid,dmap,monext);
 
-	curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	curr_stage = dynamic_cast<stage*> (mpiplan=new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	WorkSpaceHost += mpiplan->WorkSpace;
 	curr_stage->kind = MPI_ONLY;
 	Stages = prev_stage = curr_stage;
 	delete tmpgrid0;
@@ -240,9 +246,11 @@ void inv_mo(int mo[3],int imo[3]);
     printf("%d: InLoc%d,OutLoc=%d\n",Pgrid->taskid,InLoc,OutLoc);
 #endif
     loc = InLoc;
-    // Find maximum memory size among all the stages
-    maxDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
 #endif
+    // Find max_longimum memory size among all the stages
+    //    max_longDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
+    int *s=grid2->Ldims;
+    size_t size_out = s[0]*s[1]*s[2]*dt2*prec; 
 
   // Plan the three main (transform) stages of the algorithm
   for(int st=0;st < 3;st++) {
@@ -269,8 +277,11 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
     if(st < 2) { 
-      if(!tmptype->is_empty)
-	swap0(monext,mocurr,L[st]);
+      if(!tmptype->is_empty) 
+	if(st == 1) 
+	  swap0(monext,mocurr,L[st],(int *) grid2_.MemOrder);
+	else 
+	  swap0(monext,mocurr,L[st]);
       if(tmpgrid0->Pdims[L[st+1]] > 1) {
 	d1 = L[st+1];
 	d2 = L[st];
@@ -279,7 +290,7 @@ void inv_mo(int mo[3],int imo[3]);
     else   {
       for(i=0;i<3;i++) 
 	monext[i] = grid2_.MemOrder[i];
-      if(monext[L[st]] != 0)
+      if(monext[L[st]] != 0) 
 	swap0(monext,mocurr,L[st]);
     }
 
@@ -333,22 +344,33 @@ void inv_mo(int mo[3],int imo[3]);
 #endif
 
 #ifdef CUDA
-	maxDevSize = max(maxDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
-        maxDevSize = max(maxDevSize,(size_t) intgrid->Ldims[0]*intgrid->Ldims[1]*intgrid->Ldims[2]*dt_2*prec);
+	//	max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+        //max_longDevSize = max_long(max_longDevSize,(size_t) intgrid->Ldims[0]*intgrid->Ldims[1]*intgrid->Ldims[2]*dt_2*prec);
 #endif
+
 
       // Plan/set up 1D transform combined with MPI exchange for this stage
 	switch(use_type2) {
 	case 1:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  trans_MPIplan<Type1,Type1> *tr11;
+	  curr_stage = dynamic_cast<stage*> (tr11 =new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr11->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr11->WorkSpaceDev);
 	  break;
 	case 2:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  trans_MPIplan<Type2,Type2> *tr22;
+	  curr_stage = dynamic_cast<stage*> (tr22 = new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr22->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr22->WorkSpaceDev);
 	  break;
 	case 12:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  trans_MPIplan<Type1,Type2> *tr12;
+	  curr_stage = dynamic_cast<stage*> (tr12 = new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr12->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr12->WorkSpaceDev);
 	  break;
 	}
+
 #ifdef CUDA
 	loc = LocHost;
 #ifdef DEBUG
@@ -366,10 +388,16 @@ void inv_mo(int mo[3],int imo[3]);
 	printf("Calling init_MPIsplan, d1=%d, d2=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), MemOrder=(%d %d %d)\n",d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],monext[0],monext[1],monext[2]);
 #endif
 
-	if(dt_1 == dt1)
-	  curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
-	else
-	  curr_stage = dynamic_cast<stage*> (new MPIplan<Type2>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	if(dt_1 == dt1) {
+	  MPIplan<Type1> *tr;
+	  curr_stage = dynamic_cast<stage*> (tr = new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	  WorkSpaceHost = max_long(WorkSpaceHost,tr->WorkSpace);
+	}
+	else {
+	  MPIplan<Type2> *tr;
+	  curr_stage = dynamic_cast<stage*> (tr = new MPIplan<Type2>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	  WorkSpaceHost = max_long(WorkSpaceHost,tr->WorkSpace);
+	}
 	curr_stage->kind = MPI_ONLY;
       }
     }
@@ -382,8 +410,8 @@ void inv_mo(int mo[3],int imo[3]);
 #endif
 
 #ifdef CUDA
-      maxDevSize = max(maxDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
-      maxDevSize = max(maxDevSize,(size_t) tmpgrid1->Ldims[0]*tmpgrid1->Ldims[1]*tmpgrid1->Ldims[2]*dt_2*prec);
+      //      max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+      //max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid1->Ldims[0]*tmpgrid1->Ldims[1]*tmpgrid1->Ldims[2]*dt_2*prec);
 
       loc2 = (st == 2) ? OutLoc : loc;  
 #endif
@@ -391,23 +419,47 @@ void inv_mo(int mo[3],int imo[3]);
       // Plan/set up 1D transform, possibly combined with local transpose as needed
       switch(use_type2) {
       case 1:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+	transplan<Type1,Type1> *tr11;
+	curr_stage = dynamic_cast<stage*> (tr11 = new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr11->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr11->WorkSpace);
+#endif
 	break;
       case 2:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+	  transplan<Type2,Type2> *tr22;
+	curr_stage = dynamic_cast<stage*> (tr22 = new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr22->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr22->WorkSpace);
+#endif
 	break;
       case 12:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+	  transplan<Type1,Type2> *tr12;
+	curr_stage = dynamic_cast<stage*> (tr12 = new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr12->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr12->WorkSpace);
+#endif
 	break;
       }
 
       loc = loc2;
+
 #ifdef DEBUG
     printf("%d: loc=%d\n",Pgrid->taskid,loc); 
 #endif
      //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
       curr_stage->kind = TRANS_ONLY;            
     }
+    
+    s=tmpgrid1->Ldims;
+    size_t size2 = s[0]*s[1]*s[2]*dt_2*prec; 
+    if(size2 > size_out)
+      WorkSpaceHost += size2;
     
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
@@ -428,9 +480,10 @@ void inv_mo(int mo[3],int imo[3]);
       if(dmap[i] != grid2_.Dmap[i] && grid2_.Pdims[i] > 1)
 	reverse_steps = true;
 
-  if(reverse_steps) 
-    curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec);
-
+  if(reverse_steps)  {
+    curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec,&wshost);
+    WorkSpaceHost += wshost;
+  }
   bool iseq = true;
   for(i=0; i < 3; i++) 
     if(monext[i] != grid2_.MemOrder[i]) {
@@ -440,10 +493,19 @@ void inv_mo(int mo[3],int imo[3]);
   
   if(!iseq) { //If not in the final memory ordering
     prev_stage = curr_stage;
-    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,LocHost,OutLoc);
+    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,&ws,LocHost,OutLoc_);
     curr_stage->kind = TRANS_ONLY;
     prev_stage->next = curr_stage;
+#ifdef CUDA
+    WorkSpaceDev += ws;
+#else
+    WorkSpaceHost += ws;
+#endif    
   }
+
+#ifdef DEBUG
+  printf("%d: Workspace=%ld (host) and %ld (dev)\n",Pgrid->taskid,WorkSpaceHost,WorkSpaceDev);
+#endif
 
   delete tmpgrid0;
 
@@ -457,7 +519,7 @@ void inv_mo(int mo[3],int imo[3]);
   
 }
 
-template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,int loc1,int loc2)
+  template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,size_t *workspace,int loc1,int loc2)
 {
   gen_trans_type *t=empty_type<Type>();
   int trans_dim = grid2.L[0];
@@ -466,13 +528,15 @@ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &gr
 #ifdef DEBUG
   printf("Calling final init_transplan, trans_dim=%d\n",trans_dim);
 #endif
-  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc1,loc2)));
+  transplan<Type,Type> *tr = new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc1,loc2);
+  *workspace = tr->WorkSpace;
+  return(dynamic_cast<stage*> (tr));
       //    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
   //curr_stage = (stage *) tr;
   // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
 }
 
-template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2,stage *curr,int prec)
+  template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2,stage *curr,int prec,size_t *workspace)
   {
 #ifdef DEBUG
     cout << "Return steps" << endl;
@@ -493,6 +557,9 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
     Pgrid = tmpgrid1->Pgrid;
     gdims = tmpgrid1->Gdims;
 
+    *workspace = 0;
+    size_t ws;
+    MPIplan<Type> *mpiplan;
 
     if(nd == 2) {
       d2 = tmpgrid1->D[1];
@@ -508,9 +575,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  
 	  tmp = L1;
 	  L1 = d1;
@@ -523,16 +592,18 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	    dmap[L1] = tmp;
 	    
 #ifdef DEBUG
-	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
+	    printf("MPI plan 2 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
 #endif
 	    delete tmpgrid1;
 	    tmpgrid1 = tmpgrid0;
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	    
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
       }
     
@@ -550,9 +621,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 
 	prev = curr;
-	curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
+	curr = dynamic_cast<stage*> (mpiplan);
 	prev->next = curr;
 	curr->kind = MPI_ONLY;
+	*workspace = max_long(*workspace,mpiplan->WorkSpace);
 
 	tmp = L1;
 	L1 = d2;
@@ -565,16 +638,18 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  dmap[L1] = tmp;
 	  
 #ifdef DEBUG
-	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
+	    printf("MPI plan 2 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
 #endif
 	    delete tmpgrid1;
 	    tmpgrid1 = tmpgrid0;
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	    
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
       }
 	
@@ -590,9 +665,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  delete tmpgrid1;
 	  tmpgrid1 = tmpgrid0;
 	  tmp = L1;
@@ -611,9 +688,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  delete tmpgrid1;
 	  tmpgrid1 = tmpgrid0;
 	  tmp = L1;
@@ -632,9 +711,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
 	}
 	}
@@ -652,7 +733,8 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,d2,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,d2,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
 	}
@@ -813,7 +895,7 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
       
 	L[2] = gr2->L[0]; // This dimension will be local upon finish
 	if(L[2] == L[0]) {
-	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max_long. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
 	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
 	}
 	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
@@ -829,25 +911,44 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   return init_steps;
 }
 
-void swap0(int newmo[3],int mo[3],int L)
+  int swap0(int newmo[3],int mo[3],int L, int *next)
 {
   int i,j;
+  int dist_mo(int *mo1,int *mo2);
+
   for(i=0; i< 3; i++)
     newmo[i] = mo[i];
 
   if(newmo[L] == 0)
-    return;
+    return(0);
   if(newmo[L] == 1) {
     for(j=0;j<3;j++)
       if(newmo[j] == 0)
 	break;
     newmo[j] = 1;
     newmo[L] = 0;
-    return;
+    return(abs(L-j));
   }
   // [L]=2
-  for(i=0;i<3;i++)
-    newmo[i] = (newmo[i] +1)%3;
+  if(next) {
+    newmo[L] = 0;
+
+    newmo[(L+1)%3] = 2;
+    newmo[(L+2)%3] = 1;
+    int v1 = dist_mo(next,newmo);
+    newmo[(L+1)%3] = 1;
+    newmo[(L+2)%3] = 2;
+    int v2 = dist_mo(next,newmo);
+    if(v1 < v2) {
+    newmo[(L+1)%3] = 2;
+    newmo[(L+2)%3] = 1;
+    }
+  }
+  else
+    for(i=0;i<3;i++)
+      newmo[i] = (newmo[i] +1)%3;
+
+  return(2);
 
   /*
   if(newmo[L] !=0) {
@@ -873,6 +974,22 @@ void swap0(int newmo[3],int mo[3],int L)
   */
 }
 
+
+int dist_mo(int *mo1,int *mo2) 
+{
+  int i,same=0;
+
+  for(i=0;i<3;i++)
+    if(mo1[i] == mo2[i])
+      same++;
+  if(same == 1)
+    return(1);
+  if(same == 3)
+    return(0);
+  
+  return(2);
+
+}
 
 template<class Type1,class Type2> transform3D<Type1,Type2>::~transform3D()
 {
@@ -908,15 +1025,20 @@ int dist(int a)
   }
 }
 
+ size_t max_long(size_t a,size_t b)
+ {
+   return(max((long) a,(long) b));
+ }
 
   template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d,int InLoc_,int OutLoc_) // bool inplace_) 
   {   init_tr(gr1,gr2, type,d);
+#ifdef CUDA
     InLoc = InLoc_;
     OutLoc = OutLoc_;
-
+#endif
   }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
+  template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
 {
   plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(!type->is_set) {
@@ -1014,12 +1136,31 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
       printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
       return;
     }
-    
+      
     Pgrid = gr1.Pgrid;
     if(!(*Pgrid == *gr2.Pgrid))
       printf("Error in transplan: processor grids don't match\n");
     find_plan(trans_type); 
   }
+
+  size_t size1 = dims1[0]*dims1[1]*dims1[2]*sizeof(Type1);
+  size_t size2 = dims2[0]*dims2[1]*dims2[2]*sizeof(Type2);
+
+#ifdef CUDA
+  if(OutLoc == LocHost)
+    WorkSpace = size2;
+  if(InLoc == LocHost)
+    WorkSpace += size1;
+  if(arcmp(mo1,mo2,3)) 
+    WorkSpace += max_long(size1,size2);
+#else
+  if(dt2 > dt1) 
+    WorkSpace = size2;
+  else  if(arcmp(mo1,mo2,3)) 
+    WorkSpace = max_long(size1,size2);
+  if(mo1[d] != 0 && mo2[d] != 0) 
+    WorkSpace += size2;
+#endif  
 }  
 
 template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_)   // bool inplace_) 
@@ -1031,8 +1172,10 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
     return;
   }
   init_tr(gr1,gr2, trans_type,d);
+#ifdef CUDA
   InLoc = InLoc_;
   OutLoc = OutLoc_;
+#endif
 }
 
 void divide_work(int *offset,int *mysize,int dims[3],int nslices)
@@ -1057,7 +1200,7 @@ void divide_work(int *offset,int *mysize,int dims[3],int nslices)
 template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,int *mo2,int *dims1,int *dims2, int trans_dim) {
 
   int i,m,mc[3],imo1[3],imo2[3],d1[3],d2[3], scheme;    //,rel_change(int [3],int [3],int [3]);
-  void swap0(int new_mo[3],int mo[3],int L);
+  int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
 
   if(mo1[trans_dim] == 0) 
     scheme = TRANS_IN;
@@ -1131,23 +1274,32 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 
 }
 
-template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d,int InLoc_) //bool inplace_)   
+ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d,int InLoc_) //bool inplace_)   
 {
   kind = TRANSMPI;
-  InLoc = InLoc_;
+  WorkSpaceHost = 0;
 #ifdef CUDA
+  InLoc = InLoc_;
   // Make sure data is on host after transplan, no matter where we started
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,InLoc,LocHost); 
+  WorkSpaceDev = trplan->WorkSpace;
 #else
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
+  WorkSpaceHost = trplan->WorkSpace;
 #endif
 
   if(trplan->plan == NULL && !trplan->is_empty)
     cout << "Error in trans_MPIplan: null plan" << endl;
 
   stage_prec = trplan->prec;
+  size_t ws;
   mpiplan = new MPIplan<Type2>(intergrid,gr2,d1,d2,stage_prec);
   is_set = true;
+  int *s = (int *) intergrid.Ldims;
+  size_t size1 = s[0]*s[1]*s[2]*sizeof(Type2);
+  s = (int *) gr2.Ldims;
+  size_t size2 = s[0]*s[1]*s[2]*sizeof(Type2);
+  WorkSpaceHost += size1 + max_long(size1,size2);
   //  inplace = inplace_;
   dt1 = trplan->dt1;
   dt2 = trplan->dt2;
@@ -1165,7 +1317,7 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
 }
 */
 
-template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid &gr2, int d1_,int d2_, int prec_)  
+ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid &gr2, int d1_,int d2_, int prec_)  
 {
   int i,d3,l;
 
@@ -1267,7 +1419,7 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   //  is_trans = false;
   kind = MPI_ONLY;
   dt1 = dt2 = sizeof(Type)/prec;
-
+  WorkSpace = (dims1[0]*dims1[1]*dims1[2] + dims2[0]*dims2[1]*dims2[2])*sizeof(Type);
 }
 
 template <class Type> MPIplan<Type>::~MPIplan()
@@ -1354,9 +1506,9 @@ template <class Type> MPIplan<Type>::~MPIplan()
   
   // Inplace
     Type1 *A;
-    int size=max(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
-    int size1=(istride*N+idist*m);
-    int size2=(ostride*N+odist*m);
+    size_t size=max_long(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
+    size_t size1=(istride*N+idist*m);
+    size_t size2=(ostride*N+odist*m);
 
     plan->libplan_in = new planHandle[nslices+1];
     plan->libplan_inout = new planHandle[nslices+1];
@@ -1406,11 +1558,11 @@ template <class Type> MPIplan<Type>::~MPIplan()
     //    fftw_free(B);
 
     // Out of place
-    int size1=(istride*N+idist*m);
-    int size2=(ostride*N+odist*m);
+    size1=(istride*N+idist*m);
+    size2=(ostride*N+odist*m);
     //    printf("size1=%d,size2=%d\n",size1,size2);
 #ifdef DEBUG
-    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",grid1->taskid,istride,ostride,idist,odist);
+    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",Pgrid->taskid,istride,ostride,idist,odist);
 #endif
 
     A = (Type1 *) fftw_malloc(size1*sizeof(Type1));
@@ -1444,7 +1596,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
       plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
 
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[0]);
+      printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
     }
     else { //R2C or C2R
@@ -1458,7 +1610,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
       }
       plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->taskid,plan->libplan_out[0]);
+      printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
     }
     //    delete [] A; // fftw_free
@@ -1501,7 +1653,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	  cufftSetStream(plan->libplan_inout[i],streams[i]);
 	}
 #ifdef DEBUG
-	printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out[i]);
+	printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[i]);
 #endif
       }
       }

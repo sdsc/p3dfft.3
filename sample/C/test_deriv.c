@@ -76,6 +76,8 @@ main(int argc,char **argv)
   int pdims[3],nx,ny,nz,n,ndim,idir;
   Plan3D trans_f,trans_b;
   FILE *fp;
+  size_t workspace_host,workspace_dev;
+  int nslices=1;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -91,7 +93,11 @@ main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1, idir=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;idir=1;
      } else {
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&idir);
+#ifdef CUDA
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&nslices,&Nrep,&idir);
+#else
+       fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&idir);
+#endif
         fclose(fp);
      }
      printf("P3DFFT spectral derivative test, 3D wave input\n");
@@ -107,7 +113,9 @@ main(int argc,char **argv)
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&idir,1,MPI_INT,0,MPI_COMM_WORLD);
-
+#ifdef CUDA
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
+#endif
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
    if(ndim == 1) {
@@ -144,7 +152,11 @@ main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-   p3dfft_setup(8); // Use 8 streams/slices
+#ifdef CUDA
+   p3dfft_setup(nslices); // Use 8 streams/slices
+#else
+   p3dfft_setup(); // Use 8 streams/slices
+#endif
 
   //Set up 2 transform types for 3D transforms
 
@@ -199,16 +211,16 @@ main(int argc,char **argv)
 
 #ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc,LocHost,LocHost);
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc,&workspace_host,&workspace_dev,LocHost,LocHost);
   //Now set up the backward transform
-  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr,LocHost,LocHost);
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr,&workspace_host,&workspace_dev,LocHost,LocHost);
 #else
-  //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc);
-  //Now set up the backward transform
-  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr);
-#endif
+  //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization
 
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_rcc,&workspace_host);
+  //Now set up the backward transform
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_ccr,&workspace_host);
+#endif
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
