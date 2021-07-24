@@ -100,12 +100,12 @@ typedef struct CDataGrid_struct Grid;
 
 #ifdef CUDA
 void p3dfft_setup(int nslices);
-int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,int,int);
-Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,int,int);
+int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,size_t *,int,int);
+Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,size_t *,size_t *,int,int);
 #else
 void p3dfft_setup();
-int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int);
-Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D);
+int p3dfft_plan_1Dtrans(Grid *,Grid *,int,int,size_t *);
+Plan3D p3dfft_plan_3Dtrans(Grid *,Grid *,Type3D,size_t *);
 #endif
 void p3dfft_cleanup();
 Type3D p3dfft_init_3Dtype(int[3]); //,char *);

@@ -79,11 +79,11 @@ All Rights Reserved.
 */
 
 #ifdef CUDA
-void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *, int *, int *);
-void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *, int *,int *);
+void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *, size_t *,int *, int *);
+void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,size_t *,size_t *, int *,int *);
 #else
-  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
-  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *);
+void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,size_t *);
+  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,size_t *);
 #endif
   void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
 int p3dfft_init_proc_grid_f(int *pdims,int *mpicomm);
