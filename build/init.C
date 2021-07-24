@@ -272,7 +272,7 @@ void setup(int nslices_)
 #else
   isign = 0;
 #endif
-  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...) )exec_c2c_forward_s,isign);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...) )exec_c2c_forward_s,false,isign);
 
   types1D.push_back(p);
   CFFT_FORWARD_S = types_count;
@@ -289,7 +289,7 @@ void setup(int nslices_)
 #else
   isign = 0;
 #endif
-  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_forward_d,isign);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_forward_d,false,isign);
 
 
   types1D.push_back(p);
@@ -307,7 +307,7 @@ void setup(int nslices_)
 #else
   isign = 0;
 #endif
-  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...)) exec_c2c_backward_s,isign);
+  p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_c2c_s,(execResult (*)(...)) exec_c2c_backward_s,false,isign);
 
   types1D.push_back(p);
   CFFT_BACKWARD_S = types_count;
@@ -324,7 +324,7 @@ void setup(int nslices_)
 #else
   isign = 0;
 #endif
-  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_backward_d,isign);
+  p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_c2c_d,(execResult (*)(...)) exec_c2c_backward_d,false,isign);
 
   types1D.push_back(p);
   CFFT_BACKWARD_D = types_count;
