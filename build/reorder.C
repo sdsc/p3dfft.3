@@ -828,7 +828,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
   int sdims[3];
 
 #ifdef CUTENSOR
-    ro_cutensor_out<Type1>(in+offset1[slice],(Type1 *) (out+offset2[slice]),imc,d1,slice,nslices,streams[slice]);
+  //    ro_cutensor_out<Type1>(in+offset1[slice],(Type1 *) (out+offset2[slice]),imc,d1,slice,nslices,streams[slice]);
+  ro_cutensor_out<Type1>(in+offset1[slice],((Type1 *) tmpbuf)+offset1[slice],imc,d1,slice,nslices,streams[slice]);
 #elif defined CUTT
     ro_cutt_out<Type1>(in+offset1[slice],out+offset2[slice],imc,d1);
 #else // do our own CUDA transpose
@@ -838,7 +839,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
     if(!is_empty)
-      (*(exec))(plan->libplan_in[slice],out+offset2[slice],out+offset2[slice]);
+      (*(exec))(plan->libplan_out[slice],((Type1 *) tmpbuf) + offset1[slice],out+offset2[slice]);
     if(deriv) {
       /*
       int l=d2[2] % nslices;
