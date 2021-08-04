@@ -223,7 +223,8 @@
 ! Warm-up call to execute forward 3D FFT transform
       call p3dfft_3Dtrans_double(trans_f,BEG,AEND,0)
 
-      Ntot = ldims2(1)*ldims2(2)*ldims2(3)
+      Ntot = ldims2(1)*ldims2(2)
+      Ntot = Ntot *ldims2(3)
       Nglob = dble(nx * ny)
       Nglob = Nglob * nz
       factor = 1.0d0/Nglob

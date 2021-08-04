@@ -30,7 +30,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 
 void init_wave(float *,int[3],int *,int[3]);
 void print_res(float *,int *,int *,int *);
-void normalize(float *,long int,int *);
+void normalize(float *,size_t,int *);
 float check_res(float*,float*,int *);
 void  check_res_forward(float *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
@@ -49,7 +49,7 @@ int main(int argc,char **argv)
   float Nglob;
   int imo1[3];
   int sdims1[3],ldims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   float *IN;
   Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
@@ -222,7 +222,7 @@ int main(int argc,char **argv)
     sdims1[mem_order1[i]] = Xpencil->Ldims[i];
   }
 
-    size1 = sdims1[0]*sdims1[1]*sdims1[2];
+    size1 = MULT3(sdims1);//[0]*sdims1[1]*sdims1[2];
 
     //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
     IN=(float *) malloc(sizeof(float)*size1);
@@ -240,14 +240,13 @@ int main(int argc,char **argv)
     ldims2[mem_order2[i]] = Zpencil->Ldims[i];
   }
 
-    size2 = ldims2[0]*ldims2[1]*ldims2[2];
+    size2 = MULT3(ldims2);//[0]*ldims2[1]*ldims2[2];
     OUT=(float *) malloc(sizeof(float) *size2 *2);
 
     // Warm-up run, forward transform
     p3dfft_exec_3Dtrans_single(trans_f,IN,OUT,0);
 
-    Nglob = gdims[0]*gdims[1];
-    Nglob *= gdims[2];
+    Nglob = MULT3(gdims);
 
     // timing loop
 
@@ -348,9 +347,9 @@ void  check_res_forward(float *OUT,int sdims[3],int dimx,int glob_start[3], int 
 
 }
 
-void normalize(float *A,long int size,int *gdims)
+void normalize(float *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   float f = 1.0/(((float) gdims[0])*((float) gdims[1])*((float) gdims[2]));
   
   for(i=0;i<size*2;i++)

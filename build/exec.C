@@ -136,15 +136,14 @@ void printbuf(char *,int[3],int,int);
   int prev_t = 1;
 
   int *dims1 = grid1->Ldims;
-  size_t size0 = grid1->Ldims[0]*grid1->Ldims[1]*grid1->Ldims[2]*dt1;
-  size_t size_out = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*dt2;
+  size_t size0 = MULT3(grid1->Ldims);//((size_t) s[0]*s[1]) *((size_t) s[2]*dt1);
+  size_t size_out = MULT3(grid2->Ldims);//((size_t) s[0]*s[1]) *((size_t) s[2]*dt1);
   bool DevAlloc = false;
   bool HostAlloc = false;
   
 #ifdef CUDA
   int prevLoc=LocHost;
   cudaStream_t *stream;
-  int size1 = grid1->Ldims[0] * grid1->Ldims[1] * grid1->Ldims[2];
   event_t *event_hold=NULL;
 
   if(!work_dev) {
@@ -210,8 +209,8 @@ void printbuf(char *,int[3],int,int);
     stage_cnt++;
 	//	transplan<Type1,Type2> *st = (transplan<Type1,Type2> *) curr_stage;
     st = curr_stage;
-    int size1 = st->dims1[0] * st->dims1[1] * st->dims1[2]; 
-    int size2 = st->dims2[0] * st->dims2[1] * st->dims2[2]; 
+    size_t size1 = MULT3(st->dims1);//((size_t) s[0]*s[1]) *((size_t) s[2]);
+    size_t size2 = MULT3(st->dims2);//((size_t) s[0]*s[1]) *((size_t) s[2]);
     dt_1 = curr_stage->dt1;
     dt_2 = curr_stage->dt2;
 
@@ -284,7 +283,8 @@ void printbuf(char *,int[3],int,int);
       if(!OW && buf[curr] == buf_in) { //|| size2*dt_2 > size1 *dt_1) {
 	//  out-place
 	// check if we can use the destination array as the output buffer
-	if(dt_2 * size2 <= dt2 * grid2->Ldims[0] *grid2->Ldims[1] *grid2->Ldims[2]) {
+	size_t sz = MULT3(grid2->Ldims) * dt2;//((size_t) dt2 * grid2->Ldims[0]) *((size_t) grid2->Ldims[1] *grid2->Ldims[2]);
+	if(dt_2 * size2 <= sz) {
 	  buf[next] = buf_out;
 #ifdef DEBUG
 	  printf("%d: Using output buffer in out-of-place transform\n",taskid);
@@ -520,7 +520,7 @@ void printbuf(char *,int[3],int,int);
   
 #ifdef CUDA
   if(prevLoc != OutLoc) {
-    size_t size = grid2->Ldims[0]*grid2->Ldims[1]*grid2->Ldims[2]*sizeof(Type2);
+    size_t size = MULT3(grid2->Ldims)*sizeof(Type2);
     checkCudaErrors(cudaEventSynchronize(*event_hold));
     if(OutLoc == LocHost) {
       checkCudaErrors(cudaMemcpy(out,buf[curr], size, cudaMemcpyDeviceToHost));
@@ -641,8 +641,9 @@ void printbuf(char *,int[3],int,int);
   
 
 #ifdef CUDA
-  size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
-  size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
+
+  size_t size1 = MULT3(dims1) * sizeof(Type1);
+  size_t size2 = MULT3(dims2) * sizeof(Type2);
   cudaStream_t *stream;
   cudaEvent_t *event_hold=NULL;
 
@@ -943,10 +944,10 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
   }
 
 #ifdef DEBUG
-  sprintf(str,"reorder_trans.out%d.$d",cnt_reorder_trans++,Pgrid->taskid);
+  sprintf(str,"reorder_trans.out%d.%d",cnt_reorder_trans++,Pgrid->taskid);
 #ifdef CUDA
   Type2 *tmp=new Type2[dims2[0]*dims2[1]*dims2[2]];
-  cudaMemcpy(tmp,out,dims2[0]*dims2[1]*dims2[2]*sizeof(Type2),cudaMemcpyDeviceToHost);
+  cudaMemcpy(tmp,out,MULT3(dims2)*sizeof(Type2),cudaMemcpyDeviceToHost);
   write_buf<Type2>(tmp,str,dims2,imo2);
 #else
   write_buf<Type2>(out,str,dims2,imo2);
@@ -1023,7 +1024,8 @@ void  rel_change(int mo1[3],int mo2[3],int mc[3])
   out = (Type *) out_;
   //  Type *sendbuf = new Type[dims1[0]*dims1[1]*dims1[2]*4];
   Type *sendbuf = (Type *) tmpbuf;
-  tmpbuf += dims1[0]*dims1[1]*dims1[2]*sizeof(Type);
+  size_t sz= MULT3(dims1)*sizeof(Type);
+  tmpbuf += sz;
   //  void MPI_Alltoallv4(char *sendbuf,int *sndcnts,int *sndstrt,char *recvbuf,int *rcvcnts,int *rcvstar,MPI_Comm mpicomm,int n);
 
 #ifdef TIMERS
@@ -1035,7 +1037,8 @@ void  rel_change(int mo1[3],int mo2[3],int mc[3])
 #endif
       //  Type *recvbuf = new Type[dims2[0]*dims2[1]*dims2[2]*4];
   Type *recvbuf = (Type *) tmpbuf;
-  tmpbuf += dims2[0]*dims2[1]*dims2[2]*sizeof(Type);
+  sz= MULT3(dims1)*sizeof(Type);
+  tmpbuf += sz;
 #ifdef TIMERS
   t1=MPI_Wtime();
 #endif
@@ -1179,13 +1182,13 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       case 0: //1,0,2
 	for(i=0;i < numtasks;i++) {
 	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  p0 = dest + istart[i][imo2[0]] + d[0]*((size_t) istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
 	  for(z=0;z < zsize;z++) 
 	    for(y=0;y < ysize;y++) {
-	      pout = p0 + d[0]*d[1]*z +y;
+	      pout = p0 + ((size_t) d[0]*d[1])*z +y;
 	      for(x=0;x < xsize;x++) {
 		*pout = *p1++;
 		pout += d[0];
@@ -1207,7 +1210,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
 	for(i=0;i < numtasks;i++) {
 	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] + (size_t) d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -1255,7 +1258,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	
 	for(i=0;i < numtasks;i++) {
 	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  p0 = dest + istart[i][imo2[0]] + d[0]*((size_t) istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -1295,7 +1298,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	
 	for(i=0;i < numtasks;i++) {
 	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  p0 = dest + istart[i][imo2[0]] + d[0]*((size_t) istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  /*
 	  xstart = istart[i][imo1[0]];
 	  xend = iend[i][imo1[0]];
@@ -1345,7 +1348,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	
 	for(i=0;i < numtasks;i++) {
 	  p1 = recvbuf + *(RcvStrt+i)/sizeof(Type);
-	  p0 = dest + istart[i][imo2[0]] + d[0]*(istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
+	  p0 = dest + istart[i][imo2[0]] + d[0]*((size_t) istart[i][imo2[1]] +d[1]*istart[i][imo2[2]]); 
 	  xsize = isize[i][imo1[0]];
 	  ysize = isize[i][imo1[1]];
 	  zsize = isize[i][imo1[2]];
@@ -1401,7 +1404,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   //  Type2 *sendbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
   Type2 *sendbuf = (Type2 *) tmpbuf;
-  tmpbuf += tmpdims[0]*tmpdims[1]*tmpdims[2]*sizeof(Type2);
+  size_t sz= MULT3(tmpdims)*sizeof(Type2);
+  tmpbuf += sz;
 
 #ifdef TIMERS
   double t1=MPI_Wtime();
@@ -1414,7 +1418,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   //  Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
   Type2 *recvbuf = (Type2 *) tmpbuf;
-  tmpbuf += tmpdims[0]*tmpdims[1]*tmpdims[2]*sizeof(Type2);
+  sz= MULT3(tmpdims)*sizeof(Type2);
+  tmpbuf += sz;
 
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -1504,10 +1509,10 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   }    
 
   tmpdims = trplan->grid1->Ldims;
-  size_t size0=tmpdims[0]*tmpdims[1]*tmpdims[2]*sizeof(Type1);
+  size_t size0 = MULT3(tmpdims) * sizeof(Type1);
 
   tmpdims = trplan->grid2->Ldims;
-  size_t size1 = tmpdims[0]*tmpdims[1]*tmpdims[2]*sizeof(Type2);
+  size_t size1 = MULT3(tmpdims) * sizeof(Type2);
 
 #ifdef CUDA
   if(trplan->OutLoc != LocHost)
@@ -1648,8 +1653,8 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 
   in = (Type1 *) in_;
   out = (Type2 *) out_;
-  size_t size1 = dims1[0]*dims1[1]*dims1[2] * sizeof(Type1);
-  size_t size2 = dims2[0]*dims2[1]*dims2[2] * sizeof(Type2);
+  size_t size1 = MULT3(dims1) * sizeof(Type1);
+  size_t size2 = MULT3(dims2) * sizeof(Type2);
     
   if(trans_type->is_empty) {
 #ifdef CUDA
@@ -1799,7 +1804,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   else {  //If first dimension is not the one to be transformed, need to reorder first, combined with transform
 
     swap0(mocurr,mo1,L);
-    size_t size = dims2[0]*dims2[1]*dims2[2]*sizeof(Type2);
+    size_t size = MULT3(dims2)*sizeof(Type2);//((size_t) dims2[0]*dims2[1])*((size_t) dims2[2]
     //    checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(&buf), size));
     buf = (Type2 *) tmpbuf;
     tmpbuf += size;
@@ -1843,7 +1848,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
     timers.gpu_transfer -= MPI_Wtime();
 #endif
     if(cmpl == FULL && slice == nslices-1) {
-      size_t size2 = dims2[0]*dims2[1]*dims2[2]*sizeof(Type2);
+      size_t size2 = MULT3(dims2)*sizeof(Type2);//((size_t) dims2[0]*dims2[1])*((size_t) dims2[2]);
       cudaDeviceSynchronize();
       checkCudaErrors(cudaMemcpy(out_,out, size2, cudaMemcpyDeviceToHost)); 
     }

@@ -125,6 +125,11 @@ const int DEF_FFT_FLAGS=0;
 #define SLICE 1
 #define FULL 2
 
+size_t inline  MULT3(int *X);
+size_t inline  MULT3(int *X)
+{size_t sz=1; for(int i=0;i<3;i++) sz *= X[i]; 
+  return(sz);
+} 
 
 extern int P3DFFT_EMPTY_TYPE_SINGLE,P3DFFT_EMPTY_TYPE_DOUBLE,P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX,P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX;
 extern int P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
@@ -226,7 +231,7 @@ typedef complex<double> complex_double;
 void setup(int nslices=1);
 void cleanup();
 int arcmp(int *A,int *B,int N);
-void divide_work(int *offset,int *mysize,int dims[3],int nslices);
+void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices);
 bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
@@ -755,7 +760,7 @@ template <class Type1,class Type2>   class transplan : public stage {
 
   public :
 
-  int WorkSpace=0;
+  size_t WorkSpace=0;
 
 #ifdef CUDA
   //  bool useCuda=false;
@@ -763,8 +768,8 @@ template <class Type1,class Type2>   class transplan : public stage {
   int OutLoc=LocHost;
   cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
 #endif
-  int *offset1,*mysize1;
-  int *offset2,*mysize2;
+  size_t *offset1,*mysize1;
+  size_t *offset2,*mysize2;
   bool is_empty=false;
   int trans_dim;  // Rank of dimension of the transform
   int mo1[3],mo2[3];
@@ -1114,7 +1119,7 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 #ifdef CUDA
   int InLoc,OutLoc;
 #endif
-  int *offset,*mysize;
+  size_t *offset,*mysize;
 
  public:
 

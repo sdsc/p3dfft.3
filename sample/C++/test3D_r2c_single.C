@@ -35,7 +35,7 @@ using namespace p3dfft;
 
   void init_wave(float *,int[3],int *,int[3]);
 void print_res(complex<float> *,int *,int *,int *);
-void normalize(complex<float> *,long int,int *);
+void normalize(complex<float> *,size_t,int *);
 float check_res(float*,float *,int *);
 void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
@@ -183,7 +183,7 @@ int main(int argc,char **argv)
     glob_start1[mem_order[i]] = Xpencil.GlobStart[i];
   }
 
-  int size1 = sdims1[0]*sdims1[1]*sdims1[2];
+  size_t size1 = MULT3(sdims1);//[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -202,7 +202,7 @@ int main(int argc,char **argv)
     sdims2[mem_order2[i]] = Zpencil.Ldims[i];
   }
 
-  long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  size_t size2 = MULT3(sdims2);//[0]*sdims2[1]*sdims2[2];
   //  cout << "allocating OUT" << endl;
   complex<float> *OUT=new complex<float>[size2];
   
@@ -223,9 +223,7 @@ int main(int argc,char **argv)
   trans_f.exec(IN,OUT,false);
 
   double t=0.;
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
-
+  Nglob = MULT3(gdims);
   // timing loop
 
 #ifdef TIMERS
@@ -336,9 +334,9 @@ void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start
 
 }
 
-void normalize(complex<float> *A,long int size,int *gdims)
+void normalize(complex<float> *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   float f = 1.0/(((float) gdims[0])*((float) gdims[1])*((float) gdims[2]));
   
   for(i=0;i<size;i++)

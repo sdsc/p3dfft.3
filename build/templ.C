@@ -143,8 +143,8 @@ void inv_mo(int mo[3],int imo[3]);
     MPI_Abort(grid1_.Pgrid->mpi_comm_glob,0);
   }
 
-  offset=new int[nslices];
-  mysize=new int[nslices];
+  offset=new size_t[nslices];
+  mysize=new size_t[nslices];
   divide_work(offset,mysize,(int *) grid1_.Ldims,nslices);
 
   nd = grid1_.nd;
@@ -249,8 +249,7 @@ void inv_mo(int mo[3],int imo[3]);
 #endif
     // Find max_longimum memory size among all the stages
     //    max_longDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
-    int *s=grid2->Ldims;
-    size_t size_out = s[0]*s[1]*s[2]*dt2*prec; 
+    size_t size_out = MULT3(grid2->Ldims)*dt2 * prec;
 
   // Plan the three main (transform) stages of the algorithm
   for(int st=0;st < 3;st++) {
@@ -456,8 +455,7 @@ void inv_mo(int mo[3],int imo[3]);
       curr_stage->kind = TRANS_ONLY;            
     }
     
-    s=tmpgrid1->Ldims;
-    size_t size2 = s[0]*s[1]*s[2]*dt_2*prec; 
+    size_t size2 = MULT3(tmpgrid1->Ldims)*dt_2 * prec;
     if(size2 > size_out)
       WorkSpaceHost += size2;
     
@@ -1077,10 +1075,10 @@ int dist(int a)
     mo2[i] = grid2->MemOrder[i];
   }
 
-  offset1 = new int[nslices];
-  mysize1 = new int[nslices];
-  offset2 = new int[nslices];
-  mysize2 = new int[nslices];
+  offset1 = new size_t[nslices];
+  mysize1 = new size_t[nslices];
+  offset2 = new size_t[nslices];
+  mysize2 = new size_t[nslices];
   divide_work(offset1,mysize1,dims1,nslices);
   divide_work(offset2,mysize2,dims2,nslices);
 
@@ -1143,8 +1141,8 @@ int dist(int a)
     find_plan(trans_type); 
   }
 
-  size_t size1 = dims1[0]*dims1[1]*dims1[2]*sizeof(Type1);
-  size_t size2 = dims2[0]*dims2[1]*dims2[2]*sizeof(Type2);
+  size_t size1 = MULT3(dims1)*sizeof(Type1);
+  size_t size2 = MULT3(dims2)*sizeof(Type2);
 
 #ifdef CUDA
   if(OutLoc == LocHost)
@@ -1178,11 +1176,11 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
 #endif
 }
 
-void divide_work(int *offset,int *mysize,int dims[3],int nslices)
+void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices)
 {
   int i;
-  long int size=dims[0]*dims[1]*dims[2];
-  long int chunk = size/nslices;
+  size_t size=MULT3(dims);
+  size_t chunk = size/nslices;
   int l=size % nslices;
   offset[0] = 0;
   for(i=0;i<nslices-1;i++) {
@@ -1295,11 +1293,9 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   size_t ws;
   mpiplan = new MPIplan<Type2>(intergrid,gr2,d1,d2,stage_prec);
   is_set = true;
-  int *s = (int *) intergrid.Ldims;
-  size_t size1 = s[0]*s[1]*s[2]*sizeof(Type2);
-  s = (int *) gr2.Ldims;
-  size_t size2 = s[0]*s[1]*s[2]*sizeof(Type2);
-  WorkSpaceHost += size1 + max_long(size1,size2);
+  size_t size1 = MULT3((int *) intergrid.Ldims)*sizeof(Type2);
+  size_t size2 = MULT3((int *) gr2.Ldims)*sizeof(Type2);
+  WorkSpaceHost += size1 + size2 + max_long(size1,size2);
   //  inplace = inplace_;
   dt1 = trplan->dt1;
   dt2 = trplan->dt2;
@@ -1399,15 +1395,15 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
   for(int j=0; j< p-1;j++) {
     //    comm_coords[l] = j;
     //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-    SndCnts[j] = gr2.sz[d2][j] * dims1[d3] *dims1[d1] * sz;
-    RcvCnts[j] = dims2[d2] * gr1.sz[d1][j] *dims2[d3] * sz;
+    SndCnts[j] = ((size_t) gr2.sz[d2][j] * dims1[d3]) * ((size_t) dims1[d1] * sz);
+    RcvCnts[j] = ((size_t) dims2[d2] * gr1.sz[d1][j]) *((size_t) dims2[d3] * sz);
     SndStrt[j+1] = SndStrt[j] + SndCnts[j];
     RcvStrt[j+1] = RcvStrt[j] + RcvCnts[j];
   }
   //  comm_coords[l] = p-1;
   //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-  SndCnts[p-1] = gr2.sz[d2][p-1] * dims1[d3]*dims1[d1] * sz;
-  RcvCnts[p-1] = dims2[d2] * gr1.sz[d1][p-1]*dims2[d3] * sz;
+  SndCnts[p-1] = ((size_t) gr2.sz[d2][p-1] * dims1[d3])*((size_t) dims1[d1] * sz);
+  RcvCnts[p-1] = ((size_t) dims2[d2] * gr1.sz[d1][p-1])*((size_t) dims2[d3] * sz);
 
   grid1 = new DataGrid(gr1);
   grid2 = new DataGrid(gr2);
@@ -1419,7 +1415,7 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
   //  is_trans = false;
   kind = MPI_ONLY;
   dt1 = dt2 = sizeof(Type)/prec;
-  WorkSpace = (dims1[0]*dims1[1]*dims1[2] + dims2[0]*dims2[1]*dims2[2])*sizeof(Type);
+  WorkSpace =   (MULT3(dims1)+MULT3(dims2))* sizeof(Type);
 }
 
 template <class Type> MPIplan<Type>::~MPIplan()
@@ -1506,7 +1502,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
   
   // Inplace
     Type1 *A;
-    size_t size=max_long(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
+    size_t size=max_long(sizeof(Type1)*((size_t) istride*N+idist*m),sizeof(Type2)*((size_t) ostride*N+odist*m));
     size_t size1=(istride*N+idist*m);
     size_t size2=(ostride*N+odist*m);
 

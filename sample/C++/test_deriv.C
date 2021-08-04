@@ -42,7 +42,7 @@ using namespace p3dfft;
 
 void init_wave(double *,int[3],int *,int[3]);
 void print_res(complex_double *,int *,int *,int *);
-void normalize(complex_double *,long int,int *);
+void normalize(complex_double *,size_t,int *);
 double check_res(double*,int[3],int[3],int[3],int);
 void  compute_deriv(complex_double *,complex_double *,int[3],int[3],int[3],int[3],int);
 
@@ -57,7 +57,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int sdims1[3],sdims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   int glob_start1[3],glob_start2[3],glob2[3];
   double t=0.;
@@ -213,7 +213,7 @@ int main(int argc,char **argv)
     sdims1[mem_order1[i]] = Xpencil.Ldims[i];
   }
 
-  size1 = sdims1[0]*sdims1[1]*sdims1[2];
+  size1 = MULT3(sdims1);//sdims1[0]*sdims1[1]*sdims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN= new double[size1];
@@ -231,14 +231,13 @@ int main(int argc,char **argv)
     glob2[mem_order2[i]] = Zpencil.Gdims[i];
   }
 
-  size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  size2 = MULT3(sdims2);//sdims2[0]*sdims2[1]*sdims2[2];
   complex_double *OUT=new complex_double[size2];
 
   // Warm-up run, forward transform
   trans_f.exec(IN,OUT,false);
 
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+  Nglob = MULT3(gdims);
 
   // timing loop
 
@@ -289,10 +288,10 @@ int main(int argc,char **argv)
   MPI_Finalize();
 }
 
-void normalize(complex_double *A,long int size,int *gdims)
+void normalize(complex_double *A,size_t size,int *gdims)
 {
-  long int i;
-  double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
+  size_t i;
+  double f = 1.0/MULT3(gdims);
   
   for(i=0;i<size;i++)
     A[i] = A[i] * f;

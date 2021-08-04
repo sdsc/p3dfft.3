@@ -38,7 +38,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 
 void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
-void normalize(double *,long int,int *);
+void normalize(double *,size_t,int *);
 double check_res(double*,double *,int *);
 void  check_res_forward(double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
@@ -57,7 +57,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int sdims1[3],ldims2[3],mydims1[3],mydims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
@@ -244,7 +244,7 @@ int main(int argc,char **argv)
     mydims1[mem_order1[i]] = gdims[i];
   }
 
-  size1 = sdims1[0]*sdims1[1]*sdims1[2];
+  size1 = MULT3(sdims1);//[0]*sdims1[1]*sdims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array
   IN=(double *) malloc(sizeof(double)*size1);
@@ -263,16 +263,14 @@ int main(int argc,char **argv)
     //TODO: Why not check Zpencil same way we check Xpencil?
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);//[0]*ldims2[1]*ldims2[2];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Warm-up run, forward transform
   //  p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
 
-  Nglob = mydims1[0]*mydims1[1];
-  Nglob *= mydims1[2];
-
+  Nglob = MULT3(mydims1);
   // timing loop
 
   for(i=0; i < Nrep;i++) {
@@ -372,9 +370,9 @@ void  check_res_forward(double *OUT,int sdims[3],int dimx,int glob_start[3], int
 
 }
 
-void normalize(double *A,long int size,int *gdims)
+void normalize(double *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
 
   for(i=0;i<size*2;i++)

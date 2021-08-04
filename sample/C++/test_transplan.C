@@ -37,7 +37,7 @@ using namespace p3dfft;
 
 void init_wave1D(double *,int[3],int *,int[3],int);
 void print_res(double *,int *,int *,int *, int);
-void normalize(double *,long int,int *,int);
+void normalize(double *,size_t,int *,int);
 double check_res(double*,double *, int *);
 void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
@@ -56,7 +56,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int *ldims,*ldims2;
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   int glob_start1[3],glob_start2[3];
   double *OUT;
@@ -203,7 +203,7 @@ int main(int argc,char **argv)
   //Determine local array dimensions. 
 
   ldims = grid1.Ldims;
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = MULT3(ldims);//ldims[0]*ldims[1]*ldims[2];
 
   //Now allocate initial and final arrays in physical space (real-valued)
   IN=(double *) malloc(sizeof(double)*size1);
@@ -226,7 +226,7 @@ int main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2.Ldims;
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);//ldims2[0]*ldims2[1]*ldims2[2];
   int ar_dim2 = mem_order2[dim];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
@@ -234,12 +234,12 @@ int main(int argc,char **argv)
 
   trans_f.exec((char *) IN,(char *) OUT,-1,false);
 
-  Nglob = gdims[0]*gdims[1]*gdims[2];
+  Nglob = MULT3(gdims);
 
   //  if(myid == 0)
   // printf("Results of forward transform: \n");
   // print_res(OUT,gdims,sdims2,glob_start2,ld);
-  normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,ld);
+  normalize(OUT,size2,gdims,ld);
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
@@ -300,9 +300,9 @@ void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int 
 
 }
 
-void normalize(double *A,long int size,int *gdims,int dim)
+void normalize(double *A,size_t size,int *gdims,int dim)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[dim]));
   
   for(i=0;i<size*2;i++)

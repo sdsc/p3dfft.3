@@ -31,7 +31,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 
 void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
-void normalize(double *,long int,int *);
+void normalize(double *,size_t,int *);
 double check_res(double*,double *,int *);
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid);
@@ -56,7 +56,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int ldims1[3],ldims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
@@ -217,7 +217,7 @@ int main(int argc,char **argv)
     ldims1[mem_order1[i]] = Xpencil->Ldims[i];
   }
 
-  size1 = ldims1[0]*ldims1[1]*ldims1[2];
+  size1 = MULT3(ldims1);//[0]*ldims1[1]*ldims1[2];
 
   //Now allocate initial and final arrays in physical space as real-valued 1D storage containing a contiguous 3D local array 
   IN=(double *) malloc(sizeof(double)*size1*2);
@@ -236,15 +236,14 @@ int main(int argc,char **argv)
     ldims2[mem_order2[i]] = Zpencil->Ldims[i];
   }
 
+  size2 = MULT3(ldims2);//[0]*ldims1[1]*ldims1[2];
   //  size2 = ldims2[0]*ldims2[1]*ldims2[2];
-  OUT=(double *) malloc(sizeof(double) *size1 *2);
+  OUT=(double *) malloc(sizeof(double) *size2 * 2);
 
   // Warm-up run, forward transform
   //p3dfft_exec_3Dtrans_double(trans_f,IN,OUT,0);
 
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
-
+  Nglob = MULT3(gdims);
   // timing loop
 
   for(i=0; i < Nrep;i++) {
@@ -255,7 +254,7 @@ int main(int argc,char **argv)
     if(myid == 0)
       printf("Results of forward transform: \n");
     print_res(OUT,gdims,ldims2,glob_start2);
-    normalize(OUT,size1,gdims);
+    normalize(OUT,size2,gdims);
     check_res_forward(OUT,ldims2,glob_start2,gdims,myid);
     t -= MPI_Wtime();
     p3dfft_exec_3Dtrans_double(trans_b,OUT,FIN,1); // Backward (inverse) complex-to-real 3D FFT
@@ -343,9 +342,9 @@ void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3]
 
 }
 
-void normalize(double *A,long int size,int *gdims)
+void normalize(double *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
   for(i=0;i<size*2;i++)

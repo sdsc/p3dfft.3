@@ -34,7 +34,7 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 
 void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim);
 void print_res(double *A,int *mydims,int *gstart, int N     );
-void normalize(double *,long int,double);
+void normalize(double *,size_t,double);
 double check_res(double *A,double *B,int *mydims);
 void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
@@ -51,7 +51,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int *ldims1,*ldims2;
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   Grid *grid1,*grid2;
   int glob_start1[3],glob_start2[3];
@@ -202,7 +202,7 @@ int main(int argc,char **argv)
   //Determine local array dimensions. 
 
   ldims1 = grid1->Ldims;
-  size1 = ldims1[0]*ldims1[1]*ldims1[2];
+  size1 = MULT3(ldims1);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
@@ -222,7 +222,7 @@ int main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2->Ldims;
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);
   OUT=(double *) malloc(sizeof(double) *size2*2);
 
   for(i=0;i < 3;i++) {
@@ -238,7 +238,7 @@ int main(int argc,char **argv)
     //  if(myid == 0)
     // printf("Results of forward transform: \n");
     //print_res(OUT,sdims2,glob_start2,sdims1[ar_dim]);
-  normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],0.5/((double) sdims1[ar_dim]-1));
+  normalize(OUT,size2,0.5/((double) sdims1[ar_dim]-1));
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execute backward transform
@@ -304,9 +304,9 @@ void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int 
 
 }
 
-void normalize(double *A,long int size,double f)
+void normalize(double *A,size_t size,double f)
 {
-  long int i;
+  size_t i;
   
   for(i=0;i<size*2;i++)
     A[i] = A[i] * f;

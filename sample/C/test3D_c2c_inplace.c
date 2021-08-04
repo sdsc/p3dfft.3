@@ -32,7 +32,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 
 void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
-void normalize(double *,long int,int *);
+void normalize(double *,size_t,int *);
 double check_res(double*,double *,int *);
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid);
@@ -57,7 +57,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int ldims1[3],ldims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   double *IN,*INOUT;
   Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
@@ -216,7 +216,7 @@ int main(int argc,char **argv)
     ldims1[mem_order1[i]] = Xpencil->Ldims[i];
   }
 
-  size1 = ldims1[0]*ldims1[1]*ldims1[2];
+  size1 = MULT3(ldims1);//[0]*ldims1[1]*ldims1[2];
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -225,7 +225,7 @@ int main(int argc,char **argv)
     ldims2[mem_order2[i]] = Zpencil->Ldims[i];
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);//[0]*ldims2[1]*ldims2[2];
 
   //Now allocate input/output array with the larger of the two sizes
   INOUT= (double *) malloc(sizeof(double) *((size1>size2)?size1:size2)*2);
@@ -239,8 +239,7 @@ int main(int argc,char **argv)
 for(i=0;i<size1*2;i++)
   INOUT[i] = IN[i];
 
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+ Nglob = MULT3(gdims);
 
   // timing loop
 
@@ -340,9 +339,9 @@ void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3]
 
 }
 
-void normalize(double *A,long int size,int *gdims)
+void normalize(double *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
   for(i=0;i<size*2;i++)

@@ -207,8 +207,10 @@
          gstart2(mem_order2(i)+1) = glob_start2(i)
       enddo
 
-      size1 = mydims1(1)*mydims1(2)*mydims1(3)
-      size2 = mydims2(1)*mydims2(2)*mydims2(3)
+      size1 = mydims1(1)*mydims1(2)
+      size1 = size1*mydims1(3)
+      size2 = mydims2(1)*mydims2(2)
+      size2 = size2*mydims2(3)
 
 ! Now allocate initial and final arrays in physical space (real-valued)
 ! In this example we allocate one-dimensional arrays with enough space to store
@@ -226,7 +228,8 @@
          INOUT(i) = BEG(i)
       enddo
 
-      Ntot = ldims2(1)*ldims2(2)*ldims2(3)
+      Ntot = ldims2(1)*ldims2(2)
+      Ntot = Ntot *ldims2(3)
       Nglob = dble(nx * ny)
       Nglob = Nglob * nz
       factor = 1.0d0/Nglob

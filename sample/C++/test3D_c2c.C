@@ -73,7 +73,7 @@ int main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
      } else {
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&nslices,&Nrep);
         fclose(fp);
      }
      printf("P3DFFT test C2C, 3D wave input\n");
@@ -182,7 +182,7 @@ int main(int argc,char **argv)
     sdims1[mem_order1[i]] = Xpencil.Ldims[i];
   }
 
-  int size1 = sdims1[0]*sdims1[1]*sdims1[2];
+  int size1 = MULT3(sdims1);//sdims1[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -202,7 +202,7 @@ int main(int argc,char **argv)
     gsdims[mem_order2[i]] = gdims[i];
   }
 
-  long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  long int size2 = MULT3(sdims1);//sdims2[0]*sdims2[1]*sdims2[2];
   // Allocate input/outpu array for in-place tansform, using the larger size of the two
   complex_double *OUT=new complex_double[size2];
   
@@ -223,8 +223,7 @@ int main(int argc,char **argv)
   trans_f.exec(IN,OUT,false);
 
   double t=0.;
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+  Nglob = MULT3(gdims);
 
   // timing loop
 
@@ -336,7 +335,7 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int 
 void normalize(complex_double *A,long int size,int *gdims)
 {
   long int i;
-  double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
+  double f = 1.0/MULT3(gdims);
   
   for(i=0;i<size;i++)
     A[i] = A[i] * f;
