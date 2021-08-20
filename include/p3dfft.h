@@ -235,7 +235,10 @@ void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices);
 bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
- size_t max_long(size_t a,size_t b);
+size_t max_long(size_t a,size_t b);
+ int ar3d_cnt(int d[3],int init,int dim,int pack_procs,int sz,int l,int od);
+template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int pack_dim,int pack_procs);
+int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
 
 #ifdef CUDA
 
@@ -791,25 +794,25 @@ template <class Type1,class Type2>   class transplan : public stage {
 #endif
   };
 
-  void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1);
+  void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1,int pack_dim=-1,int pack_procs=0);
   
-  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL);
+  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false, char *tmpbuf=NULL);
+  void rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot210in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL);
+  void rot210in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot201in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL);
+  void rot201in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false);
+  void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false,int pack_dim=-1,int pack_procs=0);
 
-  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int dt1,int dt2, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL);
+  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot120out(Type1 *in,Type2 *out,bool inplace, int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
+  void rot120out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot210out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
+  void rot210out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot201out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL);
+  void rot201out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
   void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL);
 
@@ -825,16 +828,16 @@ template <class Type1,class Type2>   class transplan : public stage {
 
     void exec(char *in,char *out, int dim_deriv,bool OW=false, char *tmpbuf=NULL);
 #ifdef CUDA
-  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL);
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 #else
-  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL);
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 #endif
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3],char *tmpbuf=NULL);
-  void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int slice,int nslices);
+  //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3],char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  //void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int pack_dim=-1,int pack_procs=0);
+  //void reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int slice,int nslices,int pack_dim=-1,int pack_procs=0);
   // void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW, char *tmpbuf=NULL);
-  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL);
+  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
   //  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void find_plan(trans_type1D<Type1,Type2> *type);
   //void exec_deriv(char *in,char *out, bool OW=false);
@@ -869,7 +872,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 #ifdef CUDA
   int InLoc=LocHost;
 #endif
-  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL);
+  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
 
   //  void exec_deriv(char *in,char *out, bool OW);
 

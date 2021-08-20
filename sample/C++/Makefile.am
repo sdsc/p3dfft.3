@@ -6,16 +6,17 @@ if ENABLE_CUDA
 CXX_LINKER = nvcc
 AM_CXXFLAGS += -DCUDA
 AM_LDFLAGS = --std=c++11 -ccbin $(CXX_save)
-cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp  test3D_c2c_inplace_cpp # testIDIR_deriv_cpp  test3D_r2c_single_cpp test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp #testIDIR_deriv2_cpp 
+cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp  test3D_c2c_inplace_cpp bench_c2c_cpp # testIDIR_deriv_cpp  test3D_r2c_single_cpp test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp #testIDIR_deriv2_cpp 
 else
 CXX_LINKER = $(CXX)
-cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp  test3D_c2c_inplace_cpp testIDIR_deriv_cpp  test3D_r2c_single_cpp test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp #testIDIR_deriv2_cpp 
+cppsample_PROGRAMS = test3D_c2c_cpp test3D_r2c_cpp test1D_transplan_cpp  test3D_c2c_inplace_cpp bench_c2c_cpp testIDIR_deriv_cpp  test3D_r2c_single_cpp test1D_cos_cpp test1D_cos_complex_cpp test1D_sin_cpp #testIDIR_deriv2_cpp 
 endif
 
 CXXLD = $(CXX_LINKER)
 
 cppsampledir = $(datadir)/p3dfft++_samples/
 
+bench_c2c_cpp_SOURCS = bench_c2c.C
 
 testIDIR_deriv_cpp_SOURCES = test_deriv.C
 

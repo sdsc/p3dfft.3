@@ -394,17 +394,18 @@
       enddo
 
       cdiff=0.0d0
-      do 20 z=glob_start(3)+1,glob_start(3)+ldims(3)
-         do 20 y=glob_start(2)+1,glob_start(2)+ldims(2)
+      do z=glob_start(3)+1,glob_start(3)+ldims(3)
+         do y=glob_start(2)+1,glob_start(2)+ldims(2)
             sinyz=siny(y)*sinz(z)
-            do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
-            ans=sinx(x)*sinyz
-            d = abs(C(x,y,z)-cmplx(ans,0.0d0,8))
-            if(cdiff .lt. d) then
-               cdiff = d
-!               print *,'x,y,z,cdiff=',x,y,z,cdiff
-            endif
- 20   continue
+            do x=glob_start(1)+1,glob_start(1)+ldims(1)
+               ans=sinx(x)*sinyz
+               d = abs(C(x,y,z)-cmplx(ans,0.0d0,8))
+               if(cdiff .lt. d) then
+                  cdiff = d
+               endif
+            enddo
+         enddo
+      enddo
 
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)

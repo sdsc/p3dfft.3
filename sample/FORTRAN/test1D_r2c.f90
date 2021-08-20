@@ -324,17 +324,16 @@
         call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
 
       cdiff=0.0d0
-      do 20 z=1,mydims(3)
-         do 20 y=1,mydims(2)
-            do 20 x=1,mydims(1)
-            if(cdiff .lt. abs(A(x,y,z)-B(x,y,z))) then
-               cdiff = abs(A(x,y,z)-B(x,y,z))
-!               print *,'x,y,z,cdiff=',x,y,z,cdiff
-            endif
- 20   continue
-            
-!      print *,'My diff=',cdiff
-      
+      do  z=1,mydims(3)
+         do  y=1,mydims(2)
+            do  x=1,mydims(1)
+               if(cdiff .lt. abs(A(x,y,z)-B(x,y,z))) then
+                  cdiff = abs(A(x,y,z)-B(x,y,z))
+               endif
+            enddo
+         enddo
+      enddo
+       
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)
 
