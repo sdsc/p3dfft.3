@@ -314,10 +314,10 @@ void printbuf(char *,int[3],int,int);
 
 #endif
       
-#ifdef TIMERS
-    t = MPI_Wtime();
-    tmpi = 0.;
-#endif    
+    //#ifdef TIMERS
+    // t = MPI_Wtime();
+    //tmpi = 0.;
+    //#endif    
 
       if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
@@ -518,10 +518,10 @@ void printbuf(char *,int[3],int,int);
       next = 1-next;
       curr = 1-curr;
 
-#ifdef TIMERS
-    t = MPI_Wtime()-t;
-    printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
-#endif    
+      //#ifdef TIMERS
+      // t = MPI_Wtime()-t;
+      //printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
+      //#endif    
       /*     if(currdev >= 0)
 	     checkCudaErrors(cudaFree(DevBuf[currdev]));
     if(DevAlloc2) {

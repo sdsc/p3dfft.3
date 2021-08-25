@@ -4842,7 +4842,9 @@ $as_echo "$withessl" >&6; }
 	if [ -d "$withessl/lib64" ]; then
 		ESSL_INC="-I$withessl/include"
 
-    ESSL_LIB="-L$withessl/lib64 -lesslbg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64"
+    ESSL_LIB="-L$withessl/lib64 -lessl" # bg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64"
+	CXX_save="$CXX"
+	FC_save="$FC"
 
   else
     as_fn_error $? "essl library was not found in given location!" "$LINENO" 5

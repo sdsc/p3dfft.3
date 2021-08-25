@@ -134,7 +134,25 @@ void setup(int nslices_)
   SHMEM_SIZE=16384;
 #endif
   */
+  /*
+#ifdef ESSL
+ FN iusadr;
+ int ierno,inoal,inomes,itrace,irange,irc,dummy;
+ int naux;
 
+ iusadr = enotrm;
+
+ dummy = 0;
+ einfo (0,dummy,dummy);
+
+ ierno = 2015;
+ inoal = 0;
+ inomes = -1;
+ itrace = 0;
+ irange = 2015;
+ errset (ierno,inoal,inomes,itrace,&iusadr,irange);
+#endif
+  */
 #ifdef DEBUG
   cout << "p3dfft_setup: adding Empty Type Single" << endl;
 #endif
@@ -269,6 +287,8 @@ void setup(int nslices_)
 
 #ifdef FFTW
   isign = FFTW_FORWARD;
+#elif defined ESSL
+  isign = 1;
 #else
   isign = 0;
 #endif
@@ -286,6 +306,8 @@ void setup(int nslices_)
 
 #ifdef FFTW
   isign = FFTW_FORWARD;
+#elif defined ESSL
+  isign = 1;
 #else
   isign = 0;
 #endif
@@ -304,6 +326,8 @@ void setup(int nslices_)
 
 #ifdef FFTW
   isign = FFTW_BACKWARD;
+#elif defined ESSL
+  isign = -1;
 #else
   isign = 0;
 #endif
@@ -321,6 +345,8 @@ void setup(int nslices_)
 
 #ifdef FFTW
   isign = FFTW_BACKWARD;
+#elif defined ESSL
+  isign = -1;
 #else
   isign = 0;
 #endif
@@ -832,11 +858,22 @@ void cleanup()
 	fftw_destroy_plan((fftw_plan) (*it)->libplan_in[i]);
       if((*it)->libplan_out[i] != NULL) 
 	fftw_destroy_plan((fftw_plan) (*it)->libplan_out[i]);
+      if((*it)->libplan_inout[i] != NULL) 
+	fftw_destroy_plan((fftw_plan) (*it)->libplan_inout[i]);
+#elif defined ESSL
+      //      if((*it)->libplan_in[i] != NULL) 
+      delete [] (*it)->libplan_in[i].aux1;
+	//if((*it)->libplan_out[i] != NULL) 
+      //	delete [] (*it)->libplan_out[i].aux1;
+	// if((*it)->libplan_inout[i] != NULL) 
+      //	delete [] (*it)->libplan_inout[i].aux1;
 #elif defined CUDA
       if((*it)->libplan_in[i] != NULL) 
 	cufftDestroy((cufftHandle) (*it)->libplan_in[i]);
       if((*it)->libplan_out[i] != NULL) 
 	cufftDestroy((cufftHandle) (*it)->libplan_out[i]);
+      if((*it)->libplan_inout[i] != NULL) 
+	cufftDestroy((cufftHandle) (*it)->libplan_inout[i]);
 #endif
     }
     delete [] (*it)->libplan_in,(*it)->libplan_out,(*it)->libplan_inout;
@@ -1187,6 +1224,147 @@ execResult exec_c2c_backward_d(planHandle plan,complex_double *in,complex_double
 }
 #endif
 
+#ifdef ESSL
+
+planResult plan_c2c_d(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign) 
+{
+  if(N <= 8192)
+    plan->naux1 = 30000;
+  else
+    plan->naux1 = 30000 + 1.14 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = isign;
+  plan->N = N;
+  plan->m = m;
+  //  printf("Calling DCFT plan: N=%d,m=%d,isign=%d,istride=%d,idist=%d\n",N,m,isign,istride,idist);
+  dcft(1,NULL,istride,idist,NULL,ostride,odist,N,m,isign,1.0,plan->aux1,plan->naux1,NULL,0);
+}
+
+planResult plan_c2c_s(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign) 
+{
+  if(N <= 8192)
+    plan->naux1 = 30000;
+  else
+    plan->naux1 = 30000 + 1.14 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = isign;
+  plan->N = N;
+  plan->m = m;
+  scft(1,NULL,istride,idist,NULL,ostride,odist,N,m,isign,1.0,plan->aux1,plan->naux1,NULL,0);
+}
+
+planResult plan_r2c_d(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  if(N <= 16384)
+    plan->naux1 = 35000;
+  else
+    plan->naux1 = 30000 + 0.82 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = 1;
+  plan->N = N;
+  plan->m = m;
+  drcft(1,NULL,idist,NULL,odist,N,m,plan->isign,1.0,plan->aux1,plan->naux1,NULL,0);
+}
+
+planResult plan_r2c_s(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  if(N <= 16384)
+    plan->naux1 = 35000;
+  else
+    plan->naux1 = 30000 +0.82 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = 1;
+  plan->N = N;
+  plan->m = m;
+  srcft(1,NULL,idist,NULL,odist,N,m,plan->isign,1.0,plan->aux1,plan->naux1,NULL,0,NULL,0);
+}
+
+planResult plan_c2r_d(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  if(N <= 16384)
+    plan->naux1 = 35000;
+  else
+    plan->naux1 = 30000 + 0.82 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = -1;
+  plan->N = N;
+  plan->m = m;
+  dcrft(1,NULL,idist,NULL,odist,N,m,plan->isign,1.0,plan->aux1,plan->naux1,NULL,0);
+}
+
+planResult plan_c2r_s(planHandle *plan, int N, int m,int *inembed,int istride,int idist,int *onembed,int ostride,int odist) 
+{
+  if(N <= 16384)
+    plan->naux1 = 35000;
+  else
+    plan->naux1 = 30000 +0.82 * N;
+
+  plan->aux1 = new double[plan->naux1];
+  plan->istride = istride;
+  plan->idist = idist;
+  plan->ostride = ostride;
+  plan->odist = odist;
+  plan->isign = -1;
+  plan->N = N;
+  plan->m = m;
+  scrft(1,NULL,idist,NULL,odist,N,m,plan->isign,1.0,plan->aux1,plan->naux1,NULL,0,NULL,0);
+}
+
+
+
+execResult exec_c2c_d(planHandle plan,complex_double *in,complex_double *out)
+{
+  //  printf("Calling DCFT exec: N=%d,m=%d,isign=%d,istride=%d,idist=%d\n",plan.N,plan.m,plan.isign,plan.istride,plan.idist);
+  dcft(0,in,plan.istride,plan.idist,out,plan.ostride,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0);
+}
+execResult exec_c2c_s(planHandle plan,mycomplex *in,mycomplex *out)
+{
+  scft(0,in,plan.istride,plan.idist,out,plan.ostride,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0);
+}
+
+execResult exec_r2c_d(planHandle plan,double *in,complex_double *out)
+{
+  drcft(0,in,plan.idist,out,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0);
+}
+execResult exec_r2c_s(planHandle plan,float *in,mycomplex *out)
+{
+  srcft(0,in,plan.idist,out,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0,NULL,0);
+}
+
+execResult exec_c2r_d(planHandle plan,complex_double *in,double *out)
+{
+  dcrft(0,in,plan.idist,out,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0);
+}
+execResult exec_c2r_s(planHandle plan,mycomplex *in,float *out)
+{
+  scrft(0,in,plan.idist,out,plan.odist,plan.N,plan.m,plan.isign,1.0,plan.aux1,plan.naux1,NULL,0,NULL,0);
+}
+#endif
 
 #ifdef FFTW
 void exec_r2c_s(planHandle plan,float *in,mycomplex *out)

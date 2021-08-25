@@ -1426,12 +1426,30 @@ template <class Type> MPIplan<Type>::~MPIplan()
   delete grid1,grid2;
 }
 
+#ifdef ESSL
+  void copy_plan(planHandle *dest,planHandle *src)
+  {
+    dest->naux1 = src->naux1;
+    dest->aux1 = src->aux1;
+    dest->isign = src->isign;
+    dest->istride = src->istride;
+    dest->ostride = src->ostride;
+    dest->idist = src->idist;
+    dest->odist = src->odist;
+    dest->N = src->N;
+    dest->m = src->m;
+  }
+#endif
+
 
   template <class Type1,class Type2> inline void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
 {
   int i;
   int planID;
   Plantype<Type1,Type2> *pl;
+#ifdef ESSL
+  void copy_plan(planHandle *dest,planHandle *src);
+#endif
   //  Plan *p;
 
 #ifdef DEBUG
@@ -1459,7 +1477,11 @@ template <class Type> MPIplan<Type>::~MPIplan()
       }
   */
 
-  planID = 0;
+  int imo1[3];
+  inv_mo(mo1,imo1);
+  int d1 = dims1[imo1[1]];
+
+    planID = 0;
   for(vector<Plan*>::iterator it=Plans.begin(); it < Plans.end();it++,planID++) {
     //    pl = dynamic_cast<Plantype<Type1,Type2> *> (p);
     //if(pl)
@@ -1467,7 +1489,7 @@ template <class Type> MPIplan<Type>::~MPIplan()
     if(type->dt1 == pl->dt1 && type->dt2 == pl->dt2 && prec == pl-> prec &&
        pl->N == N && pl->m == m && // pl->inplace == inplace &&		
        pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
-       pl->fft_flag == fft_flag) {
+       pl->fft_flag == fft_flag && pl->d1 == d1) {
       if(m > 1) {
 	if(pl->idist == idist && pl->odist == odist &&
 	   *(pl->inembed) == *inembed && *(pl->onembed) == *onembed) {
@@ -1499,12 +1521,9 @@ template <class Type> MPIplan<Type>::~MPIplan()
 #ifdef DEBUG
   cout << "new plantype" << endl;
 #endif
- plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag);
+  plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag,d1);
   Plans.push_back(plan);
   
-    int imo1[3];
-    inv_mo(mo1,imo1);
-    int d1 = dims1[imo1[1]];
 
     Type1 *A;
     size_t size=max_long(sizeof(Type1)*((size_t) istride*N+idist*m),sizeof(Type2)*((size_t) ostride*N+odist*m));
@@ -1638,6 +1657,43 @@ template <class Type> MPIplan<Type>::~MPIplan()
 
     fftw_free(A);
     fftw_free(B);
+
+//=======================================================================================
+#elif defined ESSL
+    
+    if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1)
+	  mysize[i] = 1; 
+	(*plan->doplan)(&(plan->libplan_inout[i]),N,mysize[i],NULL,istride,idist,NULL,ostride,odist,isign);
+	copy_plan(&plan->libplan_in[i],&plan->libplan_inout[i]);
+	copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
+      }
+      (*plan->doplan)(&(plan->libplan_inout[nslices]),N,m,NULL,istride,idist,NULL,ostride,odist,isign);
+      (*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d1,NULL,istride,idist,NULL,ostride,odist,isign);
+      copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
+      copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
+      copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
+      copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
+    }
+    else if(type->dt1 * type->dt2 == 2) { //Real-to-complex or complex-to-real
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] <1)
+	  mysize[i] = 1; 
+	(*plan->doplan)(&(plan->libplan_inout[i]),N,mysize[i],NULL,istride,idist,NULL,ostride,odist);
+	copy_plan(&plan->libplan_in[i],&plan->libplan_inout[i]);
+	copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
+      }
+      (*plan->doplan)(&(plan->libplan_inout[nslices]),N,m,NULL,istride,idist,NULL,ostride,odist);
+      (*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d1,NULL,istride,idist,NULL,ostride,odist);
+      copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
+      copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
+      copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
+      copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
+    }
+    else { // Real-to-real ...
+    }
+
 #elif defined CUDA // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);

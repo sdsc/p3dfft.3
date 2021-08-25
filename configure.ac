@@ -314,7 +314,7 @@ if test "$withessl" != "yes" && test "$withessl" != "" && test "$withessl" != "n
 	AC_MSG_RESULT([$withessl])
 	if [[ -d "$withessl/lib64" ]]; then
 		AC_SUBST(ESSL_INC, "-I$withessl/include")
-    AC_SUBST(ESSL_LIB, "-L$withessl/lib64 -lesslbg -L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64")
+    AC_SUBST(ESSL_LIB, "-L$withessl/lib64 -lessl") #-L$IBM_MAIN_DIR/xlf_r/bg/14.1/lib64")
   else
     AC_MSG_ERROR([essl library was not found in given location!])
 	fi
