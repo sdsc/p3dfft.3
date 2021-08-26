@@ -374,17 +374,16 @@ void setup(int nslices_)
   types1D.push_back(p);
   */
 
-#ifndef CUDA
   // CUFFT does not support real-to-real transforms
+
+#ifdef FFTW
 
 #ifdef DEBUG
   cout << "p3dft_setup: adding Cosine R2R DCT1 single type" << endl;
 #endif
 
   name = "Real-valued Cosine Transform DCT1, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct1_s, (execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DCT1_REAL_S = types_count;
   types_count++;
@@ -394,9 +393,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT1, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct1_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DCT1_REAL_D = types_count;
   types_count++;
@@ -406,9 +403,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT1, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct1_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DCT1_COMPLEX_S = types_count;
   types_count++;
@@ -418,9 +413,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT1, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DCT1_COMPLEX_D = types_count;
   types_count++;
@@ -432,9 +425,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST1, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst1_s,(execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DST1_REAL_S = types_count;
   types_count++;
@@ -444,9 +435,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST1, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst1_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DST1_REAL_D = types_count;
   types_count++;
@@ -457,9 +446,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST1, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst1_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DST1_COMPLEX_S = types_count;
   types_count++;
@@ -469,9 +456,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST1, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DST1_COMPLEX_D = types_count;
   types_count++;
@@ -483,9 +468,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT2, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct2_s, (execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DCT2_REAL_S = types_count;
   types_count++;
@@ -495,9 +478,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT2, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct2_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DCT2_REAL_D = types_count;
   types_count++;
@@ -507,9 +488,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT2, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct2_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DCT2_COMPLEX_S = types_count;
   types_count++;
@@ -519,9 +498,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT2, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct2_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DCT2_COMPLEX_D = types_count;
   types_count++;
@@ -533,9 +510,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST2, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst2_s,(execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DST2_REAL_S = types_count;
   types_count++;
@@ -545,9 +520,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST2, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst2_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DST2_REAL_D = types_count;
   types_count++;
@@ -558,9 +531,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST2, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst2_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DST2_COMPLEX_S = types_count;
   types_count++;
@@ -570,9 +541,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST2, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst2_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DST2_COMPLEX_D = types_count;
   types_count++;
@@ -584,9 +553,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT3, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct3_s, (execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DCT3_REAL_S = types_count;
   types_count++;
@@ -596,9 +563,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT3, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct3_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DCT3_REAL_D = types_count;
   types_count++;
@@ -608,9 +573,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT3, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct3_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DCT3_COMPLEX_S = types_count;
   types_count++;
@@ -620,9 +583,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT3, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct3_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DCT3_COMPLEX_D = types_count;
   types_count++;
@@ -634,9 +595,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST3, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst3_s,(execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DST3_REAL_S = types_count;
   types_count++;
@@ -646,9 +605,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST3, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst3_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DST3_REAL_D = types_count;
   types_count++;
@@ -659,9 +616,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST3, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst3_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DST3_COMPLEX_S = types_count;
   types_count++;
@@ -671,9 +626,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST3, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst3_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DST3_COMPLEX_D = types_count;
   types_count++;
@@ -685,9 +638,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT4, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dct1_s, (execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DCT4_REAL_S = types_count;
   types_count++;
@@ -697,9 +648,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Cosine Transform DCT4, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dct1_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DCT4_REAL_D = types_count;
   types_count++;
@@ -709,9 +658,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT4, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex >(name,(planResult (*)(...) ) plan_dct1_complex_s, (execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DCT4_COMPLEX_S = types_count;
   types_count++;
@@ -721,9 +668,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Cosine Transform DCT4, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dct1_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DCT4_COMPLEX_D = types_count;
   types_count++;
@@ -735,9 +680,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST4, single precision";
-#ifdef FFTW
   p = new trans_type1D<float,float>(name,(planResult (*)(...) ) plan_dst4_s,(execResult (*)(...)) exec_r2r_s);
-#endif
   types1D.push_back(p);
   DST4_REAL_S = types_count;
   types_count++;
@@ -747,9 +690,7 @@ void setup(int nslices_)
 #endif
 
   name = "Real-valued Sine Transform DST4, double precision";
-#ifdef FFTW
   p = new trans_type1D<double,double>(name,(planResult (*)(...) ) plan_dst4_d,(execResult (*)(...)) exec_r2r_d);
-#endif
   types1D.push_back(p);
   DST4_REAL_D = types_count;
   types_count++;
@@ -760,9 +701,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST4, single precision";
-#ifdef FFTW
   p = new trans_type1D<mycomplex,mycomplex>(name,(planResult (*)(...) ) plan_dst4_complex_s,(execResult (*)(...)) exec_r2r_complex_s);
-#endif
   types1D.push_back(p);
   DST4_COMPLEX_S = types_count;
   types_count++;
@@ -772,9 +711,7 @@ void setup(int nslices_)
 #endif
 
   name = "Complex-valued Sine Transform DST4, double precision";
-#ifdef FFTW
   p = new trans_type1D<complex_double,complex_double>(name,(planResult (*)(...) ) plan_dst4_complex_d,(execResult (*)(...)) exec_r2r_complex_d);
-#endif
   types1D.push_back(p);
   DST4_COMPLEX_D = types_count;
   types_count++;
