@@ -1087,24 +1087,24 @@ int dist(int a)
     //  inembed = onembed = (int*) &grid1.Gdims[d];
     if(type->dt1 < type->dt2) { //Real to complex
       N=gr1.Gdims[d];
-    //   m=dims1[0]*dims1[1]*dims1[2]/N;
+      //   m=dims1[0]*dims1[1]*dims1[2]/N;
       idist = N;
       odist = N/2+1;
       /*
-    dims2[0] = dims2[0]/2+1;
+	dims2[0] = dims2[0]/2+1;
     mygrid->Ldims[d] = (mygrid->Ldims[d]+2)/2;
     mygrid->Gdims[d] = (mygrid->Gdims[d]+2)/2;
     mygrid->sz[0][d] = (mygrid->sz[0][d]+2)/2;  
     mygrid->en[0][d] = (mygrid->en[0][d]+2)/2;  
     mygrid->st[0][d] = (mygrid->st[0][d]+2)/2; 
     */
-  }
+    }
     else if(type->dt1 > type->dt2) { //Complex to real
       N=gr2.Gdims[d];
       //   m=dims2[0]*dims2[1]*dims2[2]/N;
       odist = N;
       idist = N/2+1;
-    /*
+      /*
     dims2[0] = dims2[0]*2-2;
     mygrid->Ldims[d] = mygrid->Ldims[d]*2-2;
     mygrid->Gdims[d] = mygrid->Gdims[d]*2-2;
@@ -1133,12 +1133,13 @@ int dist(int a)
       printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
       return;
     }
-      
-    Pgrid = gr1.Pgrid;
-    if(!(*Pgrid == *gr2.Pgrid))
-      printf("Error in transplan: processor grids don't match\n");
-    find_plan(trans_type); 
   }
+  
+  Pgrid = gr1.Pgrid;
+  if(!(*Pgrid == *gr2.Pgrid))
+    printf("Error in transplan: processor grids don't match\n");
+  if(!is_empty)
+    find_plan(trans_type); 
 
   size_t size1 = MULT3(dims1)*sizeof(Type1);
   size_t size2 = MULT3(dims2)*sizeof(Type2);
@@ -1200,33 +1201,47 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 
   int i,m,mc[3],imo1[3],imo2[3],d1[3],d2[3], scheme;    //,rel_change(int [3],int [3],int [3]);
 
-  if(mo1[trans_dim] == 0) 
-    scheme = TRANS_IN;
-  else if(mo2[trans_dim] == 0) 
-    scheme = TRANS_OUT;
-  else {  // Have to use a two-step scheme
-    swap0(mo1,mo1,trans_dim); // Find an intermediate ordering with leading dimension we need 
-    scheme = TRANS_IN;
-  }
-
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
   for(i=0;i<3;i++) {
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
+  
+  if(!arcmp(mo1,mo2,3) && mo1[trans_dim == 0])
+    m = d1[1]*d1[2];
+  else {
 
-  rel_change(imo1,imo2,mc);
+    if(mo1[trans_dim] == 0) 
+      scheme = TRANS_IN;
+    else if(mo2[trans_dim] == 0) 
+      scheme = TRANS_OUT;
+    else {  // Have to use a two-step scheme
+      swap0(mo1,mo1,trans_dim); // Find an intermediate ordering with leading dimension we need 
+      scheme = TRANS_IN;
+    }
+        
+    rel_change(imo1,imo2,mc);
 
 #ifdef CUDA
-  if(mc[0] == 0 && mc[1] == 2 && mc[2] == 1)
-    m = 1;
-  else if(scheme == TRANS_IN)
-    m = d1[1]*d1[2];
-  else
-    m = d2[1]*d2[2];
+    if(mc[0] == 0 && mc[1] == 2 && mc[2] == 1)
+      m = 1;
+    else if(scheme == TRANS_IN)
+      m = d1[1]*d1[2];
+    else
+      m = d2[1]*d2[2];
 #else
-
+    
+    if(cmpmo(mc,021))
+      m = 1;
+    else
+      if(scheme == TRANS_IN) 
+	m = d1[1]; // Need finer grain transform, to reuse cache     
+      else
+	m = d2[1];
+#endif
+  }
+  /*
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
@@ -1269,7 +1284,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     break;
   }
 #endif
-  
+  */  
   return(m);
 
 }
@@ -1480,6 +1495,9 @@ template <class Type> MPIplan<Type>::~MPIplan()
   int imo1[3];
   inv_mo(mo1,imo1);
   int d1 = dims1[imo1[1]];
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  int d2 = dims2[imo2[1]];
 
     planID = 0;
   for(vector<Plan*>::iterator it=Plans.begin(); it < Plans.end();it++,planID++) {
@@ -1488,8 +1506,8 @@ template <class Type> MPIplan<Type>::~MPIplan()
     pl = (Plantype<Type1,Type2> *) *it;
     if(type->dt1 == pl->dt1 && type->dt2 == pl->dt2 && prec == pl-> prec &&
        pl->N == N && pl->m == m && // pl->inplace == inplace &&		
-       pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
-       pl->fft_flag == fft_flag && pl->d1 == d1) {
+      pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
+       pl->fft_flag == fft_flag && pl->d1 == d1  && pl->d2 == d2) {
       if(m > 1) {
 	if(pl->idist == idist && pl->odist == odist &&
 	   *(pl->inembed) == *inembed && *(pl->onembed) == *onembed) {
@@ -1521,32 +1539,36 @@ template <class Type> MPIplan<Type>::~MPIplan()
 #ifdef DEBUG
   cout << "new plantype" << endl;
 #endif
-  plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag,d1);
+  plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag,d1,d2);
   Plans.push_back(plan);
   
 
     Type1 *A;
     size_t size=max_long(sizeof(Type1)*((size_t) istride*N+idist*m),sizeof(Type2)*((size_t) ostride*N+odist*m));
-    size = max_long(size,sizeof(Type1)*N*d1*istride);
-    size = max_long(size,sizeof(Type2)*N*d1*ostride);
+    size = max_long(size,sizeof(Type1)*N*max(d1,d2)*istride);
+    size = max_long(size,sizeof(Type2)*N*max(d1,d2)*ostride);
     size_t size1=(istride*N+idist*m);
-    size1 = max_long(size1,N*d1*istride);
+    size1 = max_long(size1,N*max(d1,d2)*istride);
     size_t size2=(ostride*N+odist*m);
-    size2 = max_long(size2,N*d1*ostride);
+    size2 = max_long(size2,N*max(d1,d2)*ostride);
 
-    plan->libplan_in = new planHandle[nslices+2];
-    plan->libplan_inout = new planHandle[nslices+2];
-    plan->libplan_out = new planHandle[nslices+2];
+    plan->libplan_in = new planHandle[nslices];
+    plan->libplan_inout = new planHandle[nslices];
+    plan->libplan_out = new planHandle[nslices];
 
     int mysize[nslices];
-    int l=m % nslices;
-    int s=m / nslices;
-    for(i=0;i<l;i++)
-      mysize[i] = s+1;
-    for(;i<nslices;i++)
-      mysize[i] = s;
-
-
+    if(!arcmp(mo1,mo2,3)) {
+      int l=m % nslices;
+      int s=m / nslices;
+      for(i=0;i<l;i++)
+	mysize[i] = s+1;
+      for(;i<nslices;i++)
+	mysize[i] = s;
+    }
+    else
+      for(i=0;i<nslices;i++)
+	mysize[i] = m;
+    
 #ifdef FFTW
   // Inplace
     A = (Type1 *) fftw_malloc(size);
@@ -1557,11 +1579,13 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	  //	  mysize[i] = 1;
 	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
       }
-      if(m > 0)
-	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-      //      if(!arcmp(mo1,mo2,3))
+      /*
       if(d1 > 0)
-	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+	*/
     }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0)
@@ -1570,23 +1594,25 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	if(mysize[i] > 0) 
 	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
       }
-      if(m > 0)
-	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
-      //      if(!arcmp(mo1,mo2,3))
+      /*
       if(d1 > 0)
-	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+      */
     }
     else { //R2C or C2R
       for(i=0;i<nslices;i++) {
 	if(mysize[i] > 0)
 	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-      }
-      if(m > 0)
-	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-      //      if(!arcmp(mo1,mo2,3))
+      }/*
       if(d1 > 0)
-	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-    }
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+	}*/
     if(!plan->libplan_in[0])
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
@@ -1613,11 +1639,13 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	if(mysize[i] > 0) 
 	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
       }
-      if(m > 0)
-	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
-      //      if(!arcmp(mo1,mo2,3))
+      /*
       if(d1 > 0)
-	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      */
     }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
       //      if(isign == 0)
@@ -1629,12 +1657,12 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	if(mysize[i] > 0)
 	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
       }
-      if(m > 0)
-	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      /* if(d1 > 0)
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
       //      if(!arcmp(mo1,mo2,3))
-      if(d1 > 0)
-	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
-
+      if(d2 > 0)
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      */
 #ifdef DEBUG
       printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
@@ -1647,11 +1675,13 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	if(mysize[i] > 0) 
 	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
       }
-      if(m > 0)
-	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      /*
+      if(d1 > 0)
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
       //      if(!arcmp(mo1,mo2,3))
-      if(d1 > 0)	
-	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d1,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      if(d2 > 0)	
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      */
 #ifdef DEBUG
       printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
@@ -1676,16 +1706,17 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	  copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
 	}
       }
-      if(m > 0) {
-	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,m,NULL,istride,idist,NULL,ostride,odist,isign);
+      /*
+      if(d1 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,d1,NULL,istride,idist,NULL,ostride,odist,isign);
 	copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
 	copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
       }
-      if(d1 > 0) {
-	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d1,NULL,istride,idist,NULL,ostride,odist,isign);
+      if(d2 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d2,NULL,istride,idist,NULL,ostride,odist,isign);
 	copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
 	copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
-      }
+	}*/
     }
     else if(type->dt1 * type->dt2 == 2) { //Real-to-complex or complex-to-real
       for(i=0;i<nslices;i++) {
@@ -1695,16 +1726,17 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	  copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
 	}
       }
-      if(m > 0) {
-	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,m,NULL,istride,idist,NULL,ostride,odist);
+      /*
+      if(d1 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,d1,NULL,istride,idist,NULL,ostride,odist);
 	copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
 	copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
       }
-      if(d1 > 0) {
-	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d1,NULL,istride,idist,NULL,ostride,odist);
+      if(d2 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d2,NULL,istride,idist,NULL,ostride,odist);
 	copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
 	copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
-      }
+	}*/
     }
     else { // Real-to-real ...
     }
@@ -1745,21 +1777,22 @@ template <class Type> MPIplan<Type>::~MPIplan()
 	}
       }
     }
-    if(m > 0) {
-      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,m);
+    /*
+    if(d1 > 0) {
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,d1);
       if(res != CUFFT_SUCCESS)
 	printf("Error in CUFFT C2C_d\n");
       else
 	plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_inout[nslices];
     }
     //    if(!arcmp(mo1,mo2,3))
-    if(d1 > 0) {
-      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices+1]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,d1);
+    if(d2 > 0) {
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices+1]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,d2);
       if(res != CUFFT_SUCCESS)
 	printf("Error in CUFFT C2C_d\n");
       else
 	plan->libplan_in[nslices+1] = plan->libplan_out[nslices+1] = plan->libplan_inout[nslices+1];
-    }
+	}*/
 
 
     /*

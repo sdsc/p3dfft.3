@@ -1939,9 +1939,23 @@ ProcGrid::ProcGrid(const ProcGrid &rhs)
     Dmap[i] = dmap[i];
     Pdims[i] = Pgrid->ProcDims[Dmap[i]];
     MemOrder[i] = mem_order[i];
+    if(mem_order[i] < 0 || mem_order[i] > 2)
+      printf("Error in DataGrid: incorrect value for memory order[%d]=%d\n",i,mem_order[i]);
+    for(j=i+1;j<3;j++)
+      if(mem_order[i] == mem_order[j]) {
+	printf("Error in DataGrid: incorrect value for memory order %d %d %d\n",mem_order[0],mem_order[1],mem_order[2]);
+	break;
+      }	
+    if(dmap[i] < 0 || dmap[i] > 2)
+      printf("Error in DataGrid: incorrect value for data mapping[%d]=%d\n",i,dmap[i]);
+    for(j=i+1;j<3;j++)
+      if(dmap[i] == dmap[j]) {
+	printf("Error in DataGrid: incorrect value for memory order %d %d %d\n",dmap[0],dmap[1],dmap[2]);
+	break;
+      }	
   }
 
-  // Find grid id 3D coordinates of the local grid withint the global grid
+ // Find grid id 3D coordinates of the local grid withint the global grid
   for(i=0;i<3;i++)
     grid_id[i] = Pgrid->grid_id_cart[Dmap[i]];
 

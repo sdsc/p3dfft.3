@@ -314,10 +314,10 @@ void printbuf(char *,int[3],int,int);
 
 #endif
       
-    //#ifdef TIMERS
-    // t = MPI_Wtime();
-    //tmpi = 0.;
-    //#endif    
+#ifdef TIMERS
+ t = MPI_Wtime();
+tmpi = 0.;
+#endif    
 
       if(curr_stage->kind == TRANS_ONLY) {
       // Only transform, no exchange
@@ -501,7 +501,10 @@ void printbuf(char *,int[3],int,int);
       for(i=0;i<3;i++)
 	imo[mo2[i]] = i; 
       sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
-      write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
+      if(dt_2 == dt2)
+	write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
+      else
+	write_buf<Type1>((Type1 *) buf[next],str,curr_stage->dims2,imo);
 #endif
       
       /*
@@ -518,10 +521,10 @@ void printbuf(char *,int[3],int,int);
       next = 1-next;
       curr = 1-curr;
 
-      //#ifdef TIMERS
-      // t = MPI_Wtime()-t;
-      //printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
-      //#endif    
+#ifdef TIMERS
+t = MPI_Wtime()-t;
+printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
+#endif    
       /*     if(currdev >= 0)
 	     checkCudaErrors(cudaFree(DevBuf[currdev]));
     if(DevAlloc2) {
@@ -832,14 +835,14 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
       	
       case 2: //1,2,0
 
-        if(slice < nslices-1)
-          return(NONE);
+	//        if(slice < nslices-1)
+        //  return(NONE);
+	//#ifdef CUDA
+        //if(event_hold != NULL)
+        //  checkCudaErrors(cudaEventSynchronize(*event_hold));
+	//#endif
+        rot120in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
         cmpl = FULL;
-#ifdef CUDA
-        if(event_hold != NULL)
-          checkCudaErrors(cudaEventSynchronize(*event_hold));
-#endif
-        rot120in(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
 	
 	break;
       }
@@ -848,14 +851,14 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
     case 2:
       switch(mc[1]) {
       case 1: //2,1,0
-        if(slice < nslices-1)
-          return(NONE);
+	//        if(slice < nslices-1)
+        //  return(NONE);
         cmpl = FULL;
-#ifdef CUDA
-        if(event_hold != NULL)
-          checkCudaErrors(cudaEventSynchronize(*event_hold));
-#endif
-        rot210in(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
+	//#ifdef CUDA
+        //if(event_hold != NULL)
+        //  checkCudaErrors(cudaEventSynchronize(*event_hold));
+	//#endif
+        rot210in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
 
         break;
 
@@ -863,22 +866,22 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 
       
       case 0: //2,0,1
-        if(slice < nslices-1)
-          return(NONE);
+	//        if(slice < nslices-1)
+        //  return(NONE);
         cmpl = FULL;
-#ifdef CUDA
-        if(event_hold != NULL)
-          checkCudaErrors(cudaEventSynchronize(*event_hold));
-#endif
-        rot201in(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
+	//#ifdef CUDA
+        //if(event_hold != NULL)
+        //  checkCudaErrors(cudaEventSynchronize(*event_hold));
+	//#endif
+        rot201in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
 
 	break;
       }
       break;
  case 0: //0,2,1
     if(mc[1] == 2) {
-      cmpl = FULL;
       if((void *) in == (void *) out) {
+	cmpl = FULL;
         if(slice < nslices-1)
           return(NONE);
 #ifdef CUDA
@@ -887,8 +890,10 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 #endif
         rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf);
       }
-      else 
+      else {
+	cmpl =SLICE;
         rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs);
+      }
       break;
     }
     
@@ -926,37 +931,40 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 
     else if(cmpmo(mc,120)) {
 
-      if(slice < nslices-1)
-	return(NONE);
-      cmpl = FULL;
+      //      if(slice < nslices-1)
+      //	return(NONE);
+      cmpl = SLICE;
 #ifdef CUDA
       if(event_hold != NULL)
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
-      rot120out(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
+      for(i=0;i<nslices;i++)
+	rot120out_slice(in,out,d1,d2,exec,plan,CACHE_BL,i,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+      
     }
     else if(cmpmo(mc,210)) {
-      if(slice < nslices-1)
-	return(NONE);
-      cmpl = FULL;
+      //      if(slice < nslices-1)
+      //return(NONE);
+      cmpl = SLICE;
 #ifdef CUDA
       if(event_hold != NULL)
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
-      rot210out(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
+      for(i=0;i<nslices;i++)
+	rot210out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
     }
     else if(cmpmo(mc,201)) {
-      if(slice < nslices-1)
-	return(NONE);
-      cmpl = FULL;
+      //      if(slice < nslices-1)
+      //return(NONE);
+      cmpl = SLICE;
 #ifdef CUDA
       if(event_hold != NULL)
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
-      rot201out(in,out,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,pack_dim,pack_procs);
+      for(i=0;i<nslices;i++)
+	rot201out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
     }
     else if(cmpmo(mc,021)) {
-      cmpl = FULL;
       if((void *) in == (void *) out) {
         if(slice < nslices-1)
           return(NONE);
@@ -965,9 +973,14 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
           checkCudaErrors(cudaEventSynchronize(*event_hold));	
 #endif
         rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv);
+	cmpl = FULL;
       }
-      else 
-        rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs);
+      else {
+	for(i=0;i<nslices;i++)
+	  rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs);
+	cmpl = SLICE;
+      }
+
     }
   }
 
@@ -1914,7 +1927,8 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
       nslices = 1;
       slice = 0;
     }
-    cmpl = reorder_trans_slice((Type1 *) buf,out,mocurr,mo2,NULL,-1,slice,nslices,event_hold,true,tmpbuf,pack_dim,pack_procs);
+    //cmpl =
+    reorder_trans_slice((Type1 *) buf,out,mocurr,mo2,NULL,-1,slice,nslices,event_hold,true,tmpbuf,pack_dim,pack_procs);
     /*
     if(cmpl == SLICE) reorder_out_slice(buf,out,mocurr,mo2,dims2,slice,nslices,pack_dim,pack_procs);
     else if(cmpl == FULL) reorder_out(buf,out,mocurr,mo2,dims2,pack_dim,pack_procs);

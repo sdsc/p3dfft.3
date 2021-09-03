@@ -101,6 +101,11 @@ const int DEF_FFT_FLAGS=FFTW_ESTIMATE;
 const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #endif
 
+#elif defined ESSL
+#include "essl.h"
+const int DEF_FFT_FLAGS=0;
+extern "C" int enotrm(int &,int &);
+extern "C" typedef int (*FN) (int &,int &);
 #elif defined CUDA
 
 #include <cuda.h>
@@ -200,20 +205,6 @@ extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_C
 
  extern int nslices;
 
-#ifdef FFTW
-//typedef fftwf_complex complex;
-//typedef complex<float> mycomplex;
-//typedef fftw_complex complex_double;
-typedef fftw_plan lib_plan_double_type;
-typedef fftwf_plan lib_plan_type;
-#elif defined CUDA
- typedef cufftHandle lib_plan_double_type;
- typedef cufftHandle lib_plan_type;
- extern const int TILE_DIM;
- extern cudaStream_t *streams;
- typedef cudaEvent_t event_t;
-#endif
-
 #ifndef CUDA
  typedef int event_t;
 #endif
@@ -236,7 +227,7 @@ bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
 size_t max_long(size_t a,size_t b);
- int ar3d_cnt(int d[3],int init,int dim,int pack_procs,int sz,int l,int od);
+ int ar3d_cnt(int init,int pack_procs,int sz,int l,int od);
 template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int pack_dim,int pack_procs);
 int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
 
@@ -251,6 +242,24 @@ int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
  planResult plan_c2r_d(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
  planResult plan_c2c_s(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
  planResult plan_c2c_d(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+
+#elif defined ESSL
+
+  struct essl_plan {
+    double *aux1,*aux2;
+    int naux1,naux2;
+    int N,m,istride,idist,ostride,odist,isign;
+  } ;
+  
+ typedef void planResult;
+ typedef void execResult;
+ typedef struct essl_plan planHandle;
+ planResult plan_r2c_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_r2c_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2c_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign);
+  planResult plan_c2c_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign);
 
 #elif defined FFTW
 
@@ -478,7 +487,7 @@ void dcheb_c(planHandle,complex_double *,complex_double *);
  execResult exec_r2r_complex_s(planHandle,float *,float *);
  execResult exec_r2r_complex_d(planHandle,double *,double *);
 
-#ifdef FFTW
+#if defined FFTW || defined ESSL
 #define exec_c2c_forward_s exec_c2c_s
 #define exec_c2c_backward_s exec_c2c_s
 #define exec_c2c_forward_d exec_c2c_d
@@ -750,9 +759,6 @@ template <class Type1,class Type2>   class transplan : public stage {
  protected:
 
   int prec;
-#ifdef ESSL
-  double *work1,double *work2;
-#endif
   DataGrid *grid1,*grid2;
   ProcGrid *Pgrid;
   int N,m,istride,idist,ostride,odist,isign;
@@ -798,21 +804,21 @@ template <class Type1,class Type2>   class transplan : public stage {
   
   void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot120in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot210in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot201in(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
   void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false,int pack_dim=-1,int pack_procs=0);
 
   void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot120out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot210out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
-  void rot201out(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 
   void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL);
 
@@ -1004,7 +1010,7 @@ template <class Type1,class Type2> class Plantype : public Plan
 {
   int dt1,dt2;
   int prec;
-  int N,m;
+  int N,m,d1,d2;
   //  bool inplace;
   int istride,idist,ostride,odist;
   int *inembed,*onembed;
@@ -1019,13 +1025,15 @@ template <class Type1,class Type2> class Plantype : public Plan
 
   //int rank,const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,
 
-  inline Plantype(planResult (*doplan_)(...),void (*exec_)(...),int N_,int m_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS) 
+  inline Plantype(planResult (*doplan_)(...),void (*exec_)(...),int N_,int m_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS,int d1_=1, int d2_=1) 
   { doplan = doplan_;
     exec = exec_; 
     N = N_;m=m_;istride = istride_;istride = istride_;idist = idist_;
     ostride = ostride_;odist = odist_;isign = isign_;fft_flag = fft_flag_;
     inembed = inembed_;
     onembed = onembed_;
+    d1 = d1_;
+    d2 = d2_;
     int prec2;
     if(typeid(Type1) == typeid(float)) {
       dt1 = 1; prec=4;
