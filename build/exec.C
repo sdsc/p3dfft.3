@@ -964,7 +964,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
       for(i=0;i<nslices;i++)
 	rot201out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
     }
-    else if(cmpmo(mc,021)) {
+    else if(cmpmo(mc,21)) {
       if((void *) in == (void *) out) {
         if(slice < nslices-1)
           return(NONE);

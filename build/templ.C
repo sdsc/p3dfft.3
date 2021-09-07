@@ -1231,8 +1231,8 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     else
       m = d2[1]*d2[2];
 #else
-    
-    if(cmpmo(mc,021))
+
+    if(cmpmo(mc,21))
       m = 1;
     else
       if(scheme == TRANS_IN) 
@@ -1612,8 +1612,9 @@ template <class Type> MPIplan<Type>::~MPIplan()
       //      if(!arcmp(mo1,mo2,3))
       if(d2 > 0)
 	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-	}*/
-    if(!plan->libplan_in[0])
+       */
+    }
+      if(!plan->libplan_in[0])
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
