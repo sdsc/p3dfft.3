@@ -596,7 +596,7 @@ void inv_mo(int mo[3],int imo[3]);
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	    
 	    prev = curr;
-	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
 	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
@@ -1555,7 +1555,8 @@ template <class Type> MPIplan<Type>::~MPIplan()
     plan->libplan_in = new planHandle[nslices];
     plan->libplan_inout = new planHandle[nslices];
     plan->libplan_out = new planHandle[nslices];
-
+    plan->mysize = new int[nslices];
+    
     int mysize[nslices];
     if(!arcmp(mo1,mo2,3)) {
       int l=m % nslices;
@@ -1568,7 +1569,10 @@ template <class Type> MPIplan<Type>::~MPIplan()
     else
       for(i=0;i<nslices;i++)
 	mysize[i] = m;
-    
+
+    for(i=0;i<nslices;i++)
+      plan->mysize[i] = mysize[i];
+
 #ifdef FFTW
   // Inplace
     A = (Type1 *) fftw_malloc(size);

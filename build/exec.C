@@ -1863,23 +1863,23 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 	  d2[mo1[i]] = sdims[mo1[i]] = grid2->Ldims[i];
 	  d1[mo1[i]] = grid1->Ldims[i];
 	}
-	sdims[2] = 1;
+	//	sdims[2] = 1;
 	int kst = offset2[slice]/(d2[0]*d2[1]);
 	int ken = kst + mysize2[slice]/(d2[0]*d2[1]);
-	for(int k=kst;k<ken;k++) {
-	  Type1 *pin = in + k*d1[0]*d1[1];  
-	  Type2 *pout = (Type2 *) tmpbuf +k*d2[0]*d2[1];  
-	  (*(trans_type->exec))(plan->libplan_out[nslices+1],pin,pout);
-	  if(dim_deriv == L)
+	//	for(int k=kst;k<ken;k++) {
+	Type1 *pin = in + kst*d1[0]*d1[1];  
+	Type2 *pout = (Type2 *) tmpbuf +kst*d2[0]*d2[1];  
+	(*(trans_type->exec))(plan->libplan_out[slice],pin,pout);
+	if(dim_deriv == L)
 #ifdef CUDA
 	  //      compute_deriv_loc_cu<<<>>>(out+offset2[slice],out+offset2[slice],sdims);
 #else
-	    compute_deriv_loc(pout,pout,sdims);
+	  compute_deriv_loc(pout,pout,sdims);
 #endif
-	  int mysz = d2[pack_dim]/pack_procs;
-	  Type2 *pout2 = out + k*(d2[1]*d2[0])/d2[pack_dim] * mysz;
-	  pack_ar<Type2>(pout,pout2,d2,sdims,pack_dim,pack_procs);
-	}
+	//	  int mysz = d2[pack_dim]/pack_procs;
+	//Type2 *pout2 = out + k*(d2[1]*d2[0])/d2[pack_dim] * mysz;
+	// pack_ar<Type2>(pout,pout2,d2,sdims,pack_dim,pack_procs);
+	pack_ar<Type2>(pout,out,d2,sdims,kst,ken,pack_dim,pack_procs);
       }
     
 #ifdef CUDA
@@ -1980,7 +1980,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 #endif
 }
 
-template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int pack_dim,int pack_procs)
+template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int kst,int ken,int pack_dim,int pack_procs)
 {
   int i,j,k;
   
@@ -2011,8 +2011,8 @@ template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3
      pout = out+start;
      myen = mystart+mypacksize;
      if(pack_dim == 0) {
-       pin = in+mystart;
-       for(k=0;k<sdims[2];k++)
+       pin = in+mystart+kst*sdims[0]*sdims[1];
+       for(k=kst;k<ken;k++)
 	 for(j=0;j<sdims[1];j++) {
 	   memcpy(pout,pin,mypacksize*sizeof(Type));
 	   pin += ardims[0];
@@ -2020,15 +2020,15 @@ template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3
 	}
      }
      else {
-       pin = in+mystart*sdims[0];
-       for(k=0;k<sdims[2];k++) {
-	  memcpy(pout,pin,mypacksize*sdims[0]*sizeof(Type));
-	  pin += ardims[0]*ardims[1];
-	  pout += mypacksize*ardims[0];
-	}
+       pin = in+mystart*sdims[0]+kst*sdims[0]*sdims[1];
+       for(k=kst;k<ken;k++) {
+	 memcpy(pout,pin,mypacksize*sdims[0]*sizeof(Type));
+	 pin += ardims[0]*ardims[1];
+	 pout += mypacksize*ardims[0];
+       }
      }
      mystart = myen;
-   }
+  }
 
   return;
 

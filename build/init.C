@@ -790,28 +790,32 @@ void cleanup()
   vector<Plan *>::iterator it=Plans.begin();
   while(it != Plans.end()) {
     for(int i=0;i<nslices;i++) {
+      Plantype<double,double> *pl = (Plantype<double,double> *) *it;
+      if(pl->mysize[i] > 0) {
 #ifdef FFTW
-      if((*it)->libplan_in[i] != NULL) 
-	fftw_destroy_plan((fftw_plan) (*it)->libplan_in[i]);
-      if((*it)->libplan_out[i] != NULL) 
-	fftw_destroy_plan((fftw_plan) (*it)->libplan_out[i]);
-      if((*it)->libplan_inout[i] != NULL) 
-	fftw_destroy_plan((fftw_plan) (*it)->libplan_inout[i]);
+	if(pl->libplan_in[i] != NULL)
+	  fftw_destroy_plan((fftw_plan) pl->libplan_in[i]);
+	if(pl->libplan_out[i] != NULL) 
+	  fftw_destroy_plan((fftw_plan) pl->libplan_out[i]);
+	//	if(pl->libplan_inout[i] != NULL) 
+	// fftw_destroy_plan((fftw_plan) pl->libplan_inout[i]);
 #elif defined ESSL
       //      if((*it)->libplan_in[i] != NULL) 
-      delete [] (*it)->libplan_in[i].aux1;
+	delete [] (*it)->libplan_in[i].aux1;
 	//if((*it)->libplan_out[i] != NULL) 
       //	delete [] (*it)->libplan_out[i].aux1;
 	// if((*it)->libplan_inout[i] != NULL) 
       //	delete [] (*it)->libplan_inout[i].aux1;
 #elif defined CUDA
-      if((*it)->libplan_in[i] != NULL) 
-	cufftDestroy((cufftHandle) (*it)->libplan_in[i]);
-      if((*it)->libplan_out[i] != NULL) 
-	cufftDestroy((cufftHandle) (*it)->libplan_out[i]);
-      if((*it)->libplan_inout[i] != NULL) 
-	cufftDestroy((cufftHandle) (*it)->libplan_inout[i]);
+	if(pl->libplan_in[i] != NULL) 
+	  cufftDestroy((cufftHandle) pl->libplan_in[i]);
+	if(pl->libplan_out[i] != NULL) 
+	  cufftDestroy((cufftHandle) pl->libplan_out[i]);
+	//if(pl->libplan_inout[i] != NULL) 
+	// cufftDestroy((cufftHandle) pl->libplan_inout[i]);
 #endif
+      }
+      delete [] pl->mysize;
     }
     delete [] (*it)->libplan_in,(*it)->libplan_out,(*it)->libplan_inout;
 

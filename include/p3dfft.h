@@ -228,7 +228,7 @@ void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
 size_t max_long(size_t a,size_t b);
  int ar3d_cnt(int init,int pack_procs,int sz,int l,int od);
-template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int pack_dim,int pack_procs);
+  template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int kst,int ken,int pack_dim,int pack_procs);
 int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
 
 #ifdef CUDA
@@ -1016,6 +1016,8 @@ template <class Type1,class Type2> class Plantype : public Plan
   int *inembed,*onembed;
   int isign,fft_flag;
   int typeID1,typeID2;
+protected:
+  int *mysize;
 
  public:
   planResult (*doplan)(...);
@@ -1067,7 +1069,7 @@ template <class Type1,class Type2> class Plantype : public Plan
   //template <class _TypeIn,class _TypeOut> 
   friend void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
  //  template <class Type1,class Type2> friend  long trans_MPIplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type);
-
+  friend void cleanup();
 };
 
 
