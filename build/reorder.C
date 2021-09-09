@@ -1303,6 +1303,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
     dmult = MULT3(d2)/d2[pack_dim];
   }
 
+  pout1 = (Type1 *) tmpbuf;
+
   for(k=kst;k < ken;k++) {
     pin = in + k*d1[0]*d1[1];
     if(is_empty && pack_dim != 0 && pack_dim != 1) 
@@ -1313,7 +1315,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
     blas_trans<Type1>(d1[0],d1[1],1.0,pin,d1[0],tmpbuf,d1[1]);
 #else
     for(j=0;j < d1[1];j++) {
-      pout = (Type1 *) tmpbuf +j;
+      pout = pout1 +j;
       for(i=0;i < d1[0];i++) {
 	*pout = *pin++;
 	pout += d1[1];
@@ -1326,7 +1328,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
     else
       pout2 = out + d2[0]*d2[1]*k;
     if(exec)
-      (*(exec))(plan->libplan_out[slice],(Type1 *) tmpbuf,pout2);
+      (*(exec))(plan->libplan_out[slice],pout1,pout2);
     else
       pout2 = (Type2 *) tmpbuf;
     if(deriv)
@@ -1345,15 +1347,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
 	myen = mystart+mypacksize;
 	if(pack_dim == 1) {
 	  pin2 = pout2+d2[0]*mystart; 
-	  for(j=mystart;j < myen;j++) 
-	    for(i=0;i < d2[0];i++) 
-	      *pout3++ = *pin2++;
+	  memcpy(pout3,pin2,d2[0]*mypacksize*sizeof(Type2));
 	}
 	else 
 	  for(j=0;j < d2[1];j++)  {
 	    pin2 = pout2+mystart+j*d2[0]; 
-	    for(i=mystart;i < myen;i++) 
-	      *pout3++ = *pin2++;
+	    memcpy(pout3,pin2,mypacksize*sizeof(Type2));
 	  }
 	mystart = myen;
       }
@@ -1795,7 +1794,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out_slice(
 	for(kk=k; kk < k2; kk++) {
 	  pin = pin1;
 	  pout = pout1;
-	  for(ii=i;i<i2;ii++) {
+	  for(ii=i;ii<i2;ii++) {
 	    *pout = *pin++;
 	    pout += d1[2]*d1[1];
 	  }
