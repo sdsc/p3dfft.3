@@ -314,8 +314,12 @@ void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start
 	  ans = 0.0;
 
 	d = abs(*p++ - ans);
-	if(cdiff < d)
+	if(cdiff < d) {
+	  if(d - cdiff > 0.001)
+	    printf("%f %f at %d %d %d\n",d,cdiff,x,y,z);
 	  cdiff = d;
+	}
+
       }
     }
   }

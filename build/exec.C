@@ -2008,7 +2008,7 @@ template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3
      else
        mypacksize = sz;
      start = mystart * m;
-     pout = out+start;
+     pout = out+start+kst*mypacksize*ardims[0];
      myen = mystart+mypacksize;
      if(pack_dim == 0) {
        pin = in+mystart+kst*sdims[0]*sdims[1];

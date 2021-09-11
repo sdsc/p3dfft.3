@@ -91,21 +91,19 @@ int main(int argc,char **argv)
         printf("Cannot open input file. Setting to default nx=ny=nz=128, dim=0, n=1.\n");
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
-#ifdef CUDA
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&dim,&nslices,&Nrep);
-#else
-       fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
-#endif
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep,&nslices);
         fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
      }
      printf("P3DFFT test, 1D wave input, 1D FFT\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions, %d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions, %d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #endif
+     printf("Memory order initial: %d %d %d\n",mem_order1[0],mem_order1[1],mem_order1[2]);
+     printf("Memory order final: %d %d %d\n",mem_order2[0],mem_order2[1],mem_order2[2]);
    }
 
    // Broadcast input parameters
@@ -117,9 +115,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
-#ifdef CUDA
    MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
-#endif
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
      fp = fopen("dims","r");
