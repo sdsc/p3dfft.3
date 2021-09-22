@@ -1860,7 +1860,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
       else  { // Need to pack
 	int d1[3],d2[3],sdims[3];
 	for(int i=0;i<3;i++) {
-	  d2[mo1[i]] = sdims[mo1[i]] = grid2->Ldims[i];
+	  d2[mo1[i]] = grid2->Ldims[i];
 	  d1[mo1[i]] = grid1->Ldims[i];
 	}
 	//	sdims[2] = 1;
@@ -1874,12 +1874,12 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 #ifdef CUDA
 	  //      compute_deriv_loc_cu<<<>>>(out+offset2[slice],out+offset2[slice],sdims);
 #else
-	  compute_deriv_loc(pout,pout,sdims);
+	  compute_deriv_loc(pout,pout,d2);
 #endif
 	//	  int mysz = d2[pack_dim]/pack_procs;
 	//Type2 *pout2 = out + k*(d2[1]*d2[0])/d2[pack_dim] * mysz;
 	// pack_ar<Type2>(pout,pout2,d2,sdims,pack_dim,pack_procs);
-	pack_ar<Type2>(pout,out,d2,sdims,kst,ken,pack_dim,pack_procs);
+	pack_ar<Type2>(pout,out,d2,kst,ken,pack_dim,pack_procs);
       }
     
 #ifdef CUDA
@@ -1980,16 +1980,16 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 #endif
 }
 
-template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3],int kst,int ken,int pack_dim,int pack_procs)
+template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int kst,int ken,int pack_dim,int pack_procs)
 {
   int i,j,k;
   
   if(pack_dim != 0 && pack_dim != 1) {
-    memcpy(out,in,MULT3(sdims)*sizeof(Type));
+    memcpy(out,in,MULT3(ardims)*sizeof(Type));
     return;
   }
 
-  if(sdims[pack_dim] != ardims[pack_dim]) {
+  if(ardims[pack_dim] != ardims[pack_dim]) {
      printf("Error in pack_ar: dimensions don't match\n");
      return;
   }
@@ -2001,28 +2001,29 @@ template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int sdims[3
   int start,myen,mypacksize;
   Type *pin,*pout;
   int m = (MULT3(ardims)/ardims[pack_dim]);
-
+  int d = m / ardims[2];
+  
   for(int ipack=0;ipack<pack_procs;ipack++) {
      if(ipack >= nl)
        mypacksize = sz+1;
      else
        mypacksize = sz;
      start = mystart * m;
-     pout = out+start+kst*mypacksize*ardims[0];
+     pout = out+start+kst*mypacksize*d;
      myen = mystart+mypacksize;
      if(pack_dim == 0) {
-       pin = in+mystart+kst*sdims[0]*sdims[1];
+       pin = in+mystart;
        for(k=kst;k<ken;k++)
-	 for(j=0;j<sdims[1];j++) {
+	 for(j=0;j<ardims[1];j++) {
 	   memcpy(pout,pin,mypacksize*sizeof(Type));
 	   pin += ardims[0];
 	   pout += mypacksize;
 	}
      }
      else {
-       pin = in+mystart*sdims[0]+kst*sdims[0]*sdims[1];
+       pin = in+mystart*ardims[0];
        for(k=kst;k<ken;k++) {
-	 memcpy(pout,pin,mypacksize*sdims[0]*sizeof(Type));
+	 memcpy(pout,pin,mypacksize*ardims[0]*sizeof(Type));
 	 pin += ardims[0]*ardims[1];
 	 pout += mypacksize*ardims[0];
        }

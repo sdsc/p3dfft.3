@@ -791,15 +791,19 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
     else {  // 2D grid and the final dimension is local - have to start with distributed dimension, and transpose data an extra time
       //      L[0] = gr1.D[0];
       //L[0] = (L[2]+1)%3;
-      int m=2;
-      for(i=0;i<3;i++)
-	if(i != L[2])
-	  if(gr1->MemOrder[i] < m) {
-	    m = gr1->MemOrder[i];
-	    L[0] = i;
-	  }
-      if(m != 0)
+      if(L[2] == gr1->L[0]) {
 	init_steps = true;
+	int m=2;
+	for(i=0;i<3;i++)
+	  if(i != L[2])
+	    if(gr1->MemOrder[i] < m) {
+	      m = gr1->MemOrder[i];
+	      L[0] = i;
+	    }
+	
+      }
+      else
+	L[0] = gr1->L[0];
     }
   }
 
@@ -814,10 +818,31 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 	L[1] = d1;
       else
 	L[1] = excl(d1,L[0]);
+      L[2] = excl(L[0],L[1]);
     }
     else {  // nd=2
-      if(gr1->D[0] == gr2->D[1])
+      // Try to fit L2 for grid2 local
+      if(L[0] != gr2->L[0]) {
+	L[2] = gr2->L[0];
+	L[1] = excl(L[0],L[2]);
+      }
+      else {
+	*reverse_steps = true;
+	int c1 = gr2->D[0];
+	int c2 = gr2->D[1];
+	L[1] = c1;  /// Improve!
+	L[2] = c2;
+      }
+      /*
+      if(gr1->D[0] == gr2->D[1]) {
 	L[1] = gr1->D[0];
+	if(gr1->D[1] == gr2->D[0]) {
+	  int c1 = L[1];
+	  int c2 = gr1->D[1];
+	  if(gr1->MemOrder[c1] > gr1->MemOrder[c2])
+	    L[1] = c2;
+	}
+      }
       else if(gr1->D[1] == gr2->D[0])
 	L[1] = gr1->D[1];
       else { *reverse_steps = true;
@@ -829,6 +854,7 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
       }
       if(gr1->L[0] == gr2->L[0])
 	*reverse_steps = true;
+	*/
       /*	
 
       if(gr1->MemOrder[L[0]] != 0) { //      lead=false;
@@ -840,7 +866,6 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 	  }
       */
     }
-    L[2] = excl(L[0],L[1]);
   }
   /*
   
@@ -904,7 +929,9 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 
   if(gr1->Pdims[L[0]] != 1)
     init_steps = true;
-
+  if(L[2] != gr2->L[0] && (gr1->nd == 2 || L[2] != gr2->L[1]))
+    *reverse_steps = true;
+  
   return init_steps;
 }
 
