@@ -141,11 +141,11 @@ void inv_mo(int mo[3],int imo[3]);
     printf("Error in transform3D: processor grids dont match\n"); 
     MPI_Abort(grid1_.Pgrid->mpi_comm_glob,0);
   }
-
+  /*
   offset=new size_t[nslices];
   mysize=new size_t[nslices];
   divide_work(offset,mysize,(int *) grid1_.Ldims,nslices);
-
+  */
   nd = grid1_.nd;
   grid1 = new DataGrid(grid1_);
   grid2 = new DataGrid(grid2_);
@@ -275,11 +275,22 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
     if(st < 2) { 
-      if(!tmptype->is_empty) 
+      if(mocurr[L[st]] == 0)
+	if(st == 1)
+	  for(i=0;i<3;i++) 
+	    monext[i] = grid2_.MemOrder[i];
+	else
+	  swap0(monext,mocurr,L[st+1]);
+      else
+	//	if(!tmptype->is_empty) {
 	if(st == 1) 
 	  swap0(monext,mocurr,L[st],(int *) grid2_.MemOrder);
 	else 
 	  swap0(monext,mocurr,L[st]);
+      //}
+      //	else
+      //	  swap0(monext,mocurr,L[st]);
+      
       if(tmpgrid0->Pdims[L[st+1]] > 1) {
 	d1 = L[st+1];
 	d2 = L[st];
@@ -1094,19 +1105,24 @@ int dist(int a)
   //  idist,odist;
   isign = type->isign;
 
+  int i2,j2;
   for(int i=0;i<3;i++) {
     dims1[i] = grid1->Ldims[i];
     dims2[i] = grid2->Ldims[i];
     mo1[i] = grid1->MemOrder[i];
     mo2[i] = grid2->MemOrder[i];
+    if(mo1[i] == 2)
+      i2 = i;
+    if(mo2[i] == 2)
+      j2 = i;    
   }
 
   offset1 = new size_t[nslices];
   mysize1 = new size_t[nslices];
   offset2 = new size_t[nslices];
   mysize2 = new size_t[nslices];
-  divide_work(offset1,mysize1,dims1,nslices);
-  divide_work(offset2,mysize2,dims2,nslices);
+  divide_work(offset1,mysize1,dims1,nslices,i2);
+  divide_work(offset2,mysize2,dims2,nslices,j2);
 
   if(trans_type->is_empty)
     is_empty = true;
@@ -1205,20 +1221,23 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
 #endif
 }
 
-void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices)
+void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split_dim)
 {
   int i;
-  size_t size=MULT3(dims);
+  //  size_t size=MULT3(dims);
+  size_t size=dims[split_dim];
+  size_t m = MULT3(dims)/size;
   size_t chunk = size/nslices;
   int l=size % nslices;
   offset[0] = 0;
   for(i=0;i<nslices-1;i++) {
-    mysize[i] = (i < l) ? chunk+1 : chunk;
+    mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
     offset[i+1] = offset[i] + mysize[i];
   }
-  mysize[i] = chunk;
+  mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
 
 }
+
 
 #define TRANS_IN 0
 #define TRANS_OUT 1
