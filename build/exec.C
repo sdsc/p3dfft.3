@@ -1496,10 +1496,10 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #ifdef TIMERS
   double t1=MPI_Wtime();
 #endif
-  
+
   int slice;
   for(slice=0;slice<nslices;slice++) {
-    pack_sendbuf_trans(sendbuf,in,dim_deriv,event_hold,slice,nslices,devbuf,OW,tmpbuf);
+    pack_sendbuf_trans_slice(sendbuf,in,dim_deriv,event_hold,slice,nslices,devbuf,OW,tmpbuf);
 
 #ifdef TIMERS
     //      timers.packsend_trans += MPI_Wtime() -t1;
