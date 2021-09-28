@@ -91,6 +91,7 @@ All Rights Reserved.
 
 
 #ifdef FFTW
+
 #include "fftw3.h"
 #if defined FFTW_FLAG_MEASURE
 const int DEF_FFT_FLAGS=FFTW_MEASURE;
@@ -99,8 +100,41 @@ const int DEF_FFT_FLAGS=FFTW_ESTIMATE;
 #elif defined FFTW_FLAG_PATIENT
 const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #endif
+
+#elif defined ESSL
+#include "essl.h"
+const int DEF_FFT_FLAGS=0;
+extern "C" int enotrm(int &,int &);
+extern "C" typedef int (*FN) (int &,int &);
+#elif defined CUDA
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cufft.h>
+#include <cufftXt.h>
+#include <device_launch_parameters.h>
+#include <curand_mtgp32_kernel.h>
+#ifdef CUTENSOR
+#include <cutensor.h>
+#elif defined CUTT
+#include <cutt.h>
 #endif
 
+const int DEF_FFT_FLAGS=0;
+
+#endif
+
+#define LocDevice 1
+#define LocHost 2
+#define NONE 0
+#define SLICE 1
+#define FULL 2
+
+size_t inline  MULT3(int *X);
+size_t inline  MULT3(int *X)
+{size_t sz=1; for(int i=0;i<3;i++) sz *= X[i]; 
+  return(sz);
+} 
 
 extern int P3DFFT_EMPTY_TYPE_SINGLE,P3DFFT_EMPTY_TYPE_DOUBLE,P3DFFT_EMPTY_TYPE_SINGLE_COMPLEX,P3DFFT_EMPTY_TYPE_DOUBLE_COMPLEX;
 extern int P3DFFT_R2CFFT_S,P3DFFT_R2CFFT_D,P3DFFT_C2RFFT_S,P3DFFT_C2RFFT_D,P3DFFT_CFFT_FORWARD_S,P3DFFT_CFFT_FORWARD_D,P3DFFT_CFFT_BACKWARD_S,P3DFFT_CFFT_BACKWARD_D;
@@ -136,63 +170,10 @@ extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_
 #include <typeinfo>
 #include <complex>
 
-
-namespace p3dfft {
-
-using namespace std;
-
-int arcmp(int *A,int *B,int N);
-
-static int ls;
-
-static const int REAL=1;
-static const int COMPLEX=2;
-
-static const int TRANS_ONLY=1;
-static const int MPI_ONLY=2;
-static const int TRANSMPI=3;
-
-extern int EMPTY_TYPE_SINGLE,EMPTY_TYPE_DOUBLE,EMPTY_TYPE_SINGLE_COMPLEX,EMPTY_TYPE_DOUBLE_COMPLEX;
- extern int R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
- extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
- extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
- extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
- extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
-
-/*
-const int R2CFFT_S=0;
-const int R2CFFT_D=1;
-const int C2RFFT_S=2;
-const int C2RFFT_D=3;
-const int CFFT_FORWARD_S=4;
-const int CFFT_FORWARD_D=5;
-const int CFFT_BACKWARD_S=6;
-const int CFFT_BACKWARD_D=7;
-const int COSTRAN_REAL_S=8;
-const int COSTRAN_REAL_D=9;
-const int COSTRAN_COMPLEX_S=10;
-const int COSTRAN_COMPLEX_D=11;
-const int SINTRAN_REAL_S=12;
-const int SINTRAN_REAL_D=13;
-const int SINTRAN_COMPLEX_S=14;
-const int SINTRAN_COMPLEX_D=15;
-//const int CHEB_REAL_S=8;
-//const int CHEB_REAL_D=9;
-//const int CHEB_COMPLEX_S=10;
-//const int CHEB_COMPLEX_D=11;
-*/
-
-#ifdef FFTW
-//typedef fftwf_complex complex;
-//typedef complex<float> mycomplex;
-//typedef fftw_complex complex_double;
-typedef fftw_plan lib_plan_double_type;
-typedef fftwf_plan lib_plan_type;
+#ifdef CUDA
+#include <helper_cuda.h>
+#include <helper_functions.h>
 #endif
-//#else
-//#include <complex>
-typedef complex<float> mycomplex;
-typedef complex<double> complex_double;
 
 #ifdef MKL_BLAS
 #define MKL_Complex8 mycomplex
@@ -200,35 +181,326 @@ typedef complex<double> complex_double;
 #include <mkl.h>
 #endif
 
+namespace p3dfft {
+
+using namespace std;
+
+static const int REAL=1;
+static const int COMPLEX=2;
+
+static const int TRANS_ONLY=1;
+static const int MPI_ONLY=2;
+static const int TRANSMPI=3;
+const int CACHEPAD=32768;
+const int CACHE_BL=32768;
+const int VECBLOCK=128;
+//static int ls;
+
+extern int EMPTY_TYPE_SINGLE,EMPTY_TYPE_DOUBLE,EMPTY_TYPE_SINGLE_COMPLEX,EMPTY_TYPE_DOUBLE_COMPLEX;
+extern int R2CFFT_S,R2CFFT_D,C2RFFT_S,C2RFFT_D,CFFT_FORWARD_S,CFFT_FORWARD_D,CFFT_BACKWARD_S,CFFT_BACKWARD_D;
+extern int DCT1_REAL_S,DCT1_REAL_D,DST1_REAL_S,DST1_REAL_D,DCT1_COMPLEX_S,DCT1_COMPLEX_D,DST1_COMPLEX_S,DST1_COMPLEX_D;
+extern int DCT2_REAL_S,DCT2_REAL_D,DST2_REAL_S,DST2_REAL_D,DCT2_COMPLEX_S,DCT2_COMPLEX_D,DST2_COMPLEX_S,DST2_COMPLEX_D;
+extern int DCT3_REAL_S,DCT3_REAL_D,DST3_REAL_S,DST3_REAL_D,DCT3_COMPLEX_S,DCT3_COMPLEX_D,DST3_COMPLEX_S,DST3_COMPLEX_D;
+extern int DCT4_REAL_S,DCT4_REAL_D,DST4_REAL_S,DST4_REAL_D,DCT4_COMPLEX_S,DCT4_COMPLEX_D,DST4_COMPLEX_S,DST4_COMPLEX_D;
+
+ extern int nslices;
+
+#ifndef CUDA
+ typedef int event_t;
+#endif
+//#else
+//#include <complex>
+typedef complex<float> mycomplex;
+typedef complex<double> complex_double;
+
+
 #define type_float typeid(float)
 #define type_double typeid(double)
 #define type_complex typeid(mycomplex)
 #define type_complex_double typeid(complex_double)
 
-void setup();
+void setup(int nslices=1);
 void cleanup();
-
-const int CACHEPAD=32768;
-const int CACHE_BL=32768;
- const int VECBLOCK=128;
-
+int arcmp(int *A,int *B,int N);
+void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split_dim);
+void divide_dims(int **offset,int **mysize,int dims[3],int nslices,int split_dim);
+bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
+size_t max_long(size_t a,size_t b);
+ int ar3d_cnt(int init,int pack_procs,int sz,int l,int od);
+  template <class Type>	void  pack_ar(Type *in,Type *out,int ardims[3],int kst,int ken,int pack_dim,int pack_procs);
+int swap0(int new_mo[3],int mo[3],int L,int *next=NULL);
 
-void scheb_r(long,float *,float *);
-void dcheb_r(long,double *,double *);
-void scheb_c(long,mycomplex *,mycomplex *);
-void dcheb_c(long,complex_double *,complex_double *);
-void exec_r2c_s(long,float *,mycomplex *);
-void exec_r2c_d(long,double *,complex_double *);
-void exec_c2r_s(long,mycomplex *,float *);
-void exec_c2r_d(long,complex_double *,double *);
-void exec_c2c_s(long,mycomplex *,mycomplex *);
-void exec_c2c_d(long,complex_double *,complex_double *);
-void exec_r2r_s(long,float *,float *);
-void exec_r2r_d(long,double *,double *);
-void exec_r2r_complex_s(long,float *,float *);
-void exec_r2r_complex_d(long,double *,double *);
+#ifdef CUDA
+
+ typedef cufftResult planResult;
+ typedef cufftResult execResult;
+ typedef cufftHandle planHandle;
+ planResult plan_r2c_s(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_r2c_d(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_s(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_d(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2c_s(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2c_d(cufftHandle *plan, int *N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+
+#elif defined ESSL
+
+  struct essl_plan {
+    double *aux1,*aux2;
+    int naux1,naux2;
+    int N,m,istride,idist,ostride,odist,isign;
+  } ;
+  
+ typedef void planResult;
+ typedef void execResult;
+ typedef struct essl_plan planHandle;
+ planResult plan_r2c_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_r2c_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2r_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist);
+ planResult plan_c2c_s(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign);
+  planResult plan_c2c_d(planHandle *plan, int N, int batch, int *inembed,int istride,int idist,int *onembed,int ostride,int odist, int isign);
+
+#elif defined FFTW
+
+typedef void execResult;
+typedef long planResult;
+typedef long planHandle;
+#define plan_r2c_s fftwf_plan_many_dft_r2c
+#define plan_r2c_d fftw_plan_many_dft_r2c
+#define plan_c2r_s fftwf_plan_many_dft_c2r
+#define plan_c2r_d fftw_plan_many_dft_c2r
+#define plan_c2c_s fftwf_plan_many_dft
+#define plan_c2c_d fftw_plan_many_dft
+planResult plan_dct1_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct1_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst1_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst1_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst1_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst1_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+planResult plan_dct2_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct2_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst2_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst2_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct2_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct2_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst2_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst2_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+planResult plan_dct3_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct3_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst3_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst3_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct3_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct3_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst3_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst3_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+
+planResult plan_dct4_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct4_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst4_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst4_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct4_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dct4_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst4_complex_s(int rank, const int *n,		   
+                         int howmany,					   
+                         float *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         float *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+planResult plan_dst4_complex_d(int rank, const int *n,		   
+                         int howmany,					   
+                         double *in, const int *inembed,			   
+                         int istride, int idist,			   
+                         double *out, const int *onembed,			
+		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
+
+#endif
+
+void scheb_r(planHandle,float *,float *);
+void dcheb_r(planHandle,double *,double *);
+void scheb_c(planHandle,mycomplex *,mycomplex *);
+void dcheb_c(planHandle,complex_double *,complex_double *);
+
+ execResult exec_r2c_s(planHandle,float *,mycomplex *);
+ execResult exec_r2c_d(planHandle,double *,complex_double *);
+ execResult exec_c2r_s(planHandle,mycomplex *,float *);
+ execResult exec_c2r_d(planHandle,complex_double *,double *);
+ execResult exec_r2r_s(planHandle,float *,float *);
+ execResult exec_r2r_d(planHandle,double *,double *);
+ execResult exec_r2r_complex_s(planHandle,float *,float *);
+ execResult exec_r2r_complex_d(planHandle,double *,double *);
+
+#if defined FFTW || defined ESSL
+#define exec_c2c_forward_s exec_c2c_s
+#define exec_c2c_backward_s exec_c2c_s
+#define exec_c2c_forward_d exec_c2c_d
+#define exec_c2c_backward_d exec_c2c_d
+execResult exec_c2c_s(planHandle,mycomplex *,mycomplex *);
+execResult exec_c2c_d(planHandle,complex_double *,complex_double *);
+#else
+execResult exec_c2c_forward_s(planHandle,mycomplex *,mycomplex *);
+execResult exec_c2c_forward_d(planHandle,complex_double *,complex_double *);
+execResult exec_c2c_backward_d(planHandle,complex_double *,complex_double *);
+execResult exec_c2c_backward_s(planHandle,mycomplex *,mycomplex *);
+#endif
 
  template <class Type> void blas_trans(size_t rows,size_t cols,const double alpha,const Type *A,size_t lda,Type *B,size_t ldb);
 
@@ -271,213 +543,6 @@ class gen_trans_type {
 };
 
 
-#ifdef FFTW
-#define plan_r2c_s fftwf_plan_many_dft_r2c
-#define plan_r2c_d fftw_plan_many_dft_r2c
-#define plan_c2r_s fftwf_plan_many_dft_c2r
-#define plan_c2r_d fftw_plan_many_dft_c2r
-#define plan_c2c_s fftwf_plan_many_dft
-#define plan_c2c_d fftw_plan_many_dft
-long plan_dct1_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct1_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst1_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst1_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct1_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct1_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst1_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst1_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-
-
-long plan_dct2_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct2_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst2_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst2_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct2_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct2_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst2_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst2_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-
-
-long plan_dct3_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct3_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst3_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst3_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct3_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct3_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst3_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst3_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-
-
-long plan_dct4_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct4_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst4_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst4_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct4_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dct4_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst4_complex_s(int rank, const int *n,		   
-                         int howmany,					   
-                         float *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         float *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-long plan_dst4_complex_d(int rank, const int *n,		   
-                         int howmany,					   
-                         double *in, const int *inembed,			   
-                         int istride, int idist,			   
-                         double *out, const int *onembed,			
-		int ostride, int odist,unsigned fft_flag = DEF_FFT_FLAGS);
-
-#endif
 
 template <class Type1,class Type2>  class trans_type1D  : public gen_trans_type{
 
@@ -485,14 +550,14 @@ template <class Type1,class Type2>  class trans_type1D  : public gen_trans_type{
   char *name;
   public :
 
-typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,...);
+  //typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,...);
 
- long (*doplan)(...);
+ planResult (*doplan)(...);
 
  // void (*exec)(long,Type1 *,Type2 *);
  void (*exec)(...);
 
-  trans_type1D(const char *name,  long (*doplan_)(...),void (*exec)(...)=NULL,int isign=0);
+ //trans_type1D(const char *name,  planResult (*doplan_)(...),void (*exec)(...)=NULL,int isign=0);
   inline int getID() {return(ID);}
 
   trans_type1D(const trans_type1D &rhs) 
@@ -516,6 +581,113 @@ typedef long (*doplan_type)(const int *n,int howmany,Type1 *in,const int *inembe
     {
       delete [] name;
     }
+  
+// Define a 1D transform type
+//template <class Type1,class Type2>  trans_type1D<Type1,Type2>::
+ trans_type1D(const char *name_,planResult (*doplan_)(...)=NULL,execResult (*exec_)(...)=NULL,bool is_empty=false,int isign=0) : gen_trans_type(isign) {
+  int prec2;
+
+    name = new char[strlen(name_)+1];
+    strcpy(name,name_);
+
+
+  if(typeid(Type1) ==typeid(float)) {
+    dt1 = 1;
+    prec = 4;
+    if(typeid(Type2) ==type_float) {
+	dt2 = 1;
+	prec2 = 4;
+	//	doplan = fftwf_plan_many_r2r;
+	if(exec_) exec = (void (*)(...)) exec_;
+#ifdef FFTW
+	else exec = (void (*)(...)) fftwf_execute_r2r;
+#elif defined CUDA
+	else if(!is_empty) printf("Error in trans_type1D: CUDA does not support R2R transforms\n");
+#endif
+    }
+    else if(typeid(Type2) ==type_complex) {
+	dt2 = 2;
+	prec2 = 4;
+	//doplan = fftwf_plan_many_r2c;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else exec = (void (*)(...)) exec_r2c_s;
+      }
+  }
+  else if(typeid(Type1) ==type_double) {
+      dt1 = 1;
+      prec = 8;
+      if(typeid(Type2) ==type_double) {
+	dt2 = 1;
+	prec2 = 8;
+	//	doplan = fftw_plan_many_r2r;
+	if(exec_) exec = (void (*)(...)) exec_;
+#ifdef FFTW
+	else exec = (void (*)(...))fftw_execute_r2r;
+
+#elif defined CUDA
+	else if(!is_empty) printf("Error in trans_type1D: CUFFT does not support R2R transforms\n");
+#endif
+      }
+      else if(typeid(Type2) ==type_complex_double) {
+	dt2 = 2;
+	prec2 = 8;
+	// doplan = fftw_plan_many_r2c;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else exec = (void (*)(...))exec_r2c_d;
+      }
+  }
+  else if(typeid(Type1) ==type_complex) {
+      dt1 = 2;
+      prec = 4;
+      if(typeid(Type2) ==type_float) {
+	dt2 = 1;
+	prec2 = 4;
+	//doplan = fftwf_plan_many_c2r;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else exec = (void (*)(...))exec_c2r_s;
+      }
+      else if(typeid(Type2) ==type_complex) {
+	dt2 = 2;
+	prec2 = 4;
+	//doplan = fftwf_plan_many;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else if(isign == -1)
+	  exec = (void (*)(...)) exec_c2c_forward_s;
+	else
+	  exec = (void (*)(...)) exec_c2c_backward_s;
+      }
+  }
+  else if(typeid(Type1) ==type_complex_double) {
+
+      dt1 = 2;
+      prec = 8;
+      if(typeid(Type2) ==type_double) {
+	dt2 = 1;
+	prec2 = 8;
+	//doplan = fftw_plan_many_c2r;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else exec = (void (*)(...)) exec_c2r_d;
+      }
+      else if(typeid(Type2) ==type_complex_double) {
+	dt2 = 2;
+	prec2 = 8;
+	//doplan = fftw_plan_many;
+	if(exec_) exec = (void (*)(...)) exec_;
+	else if(isign == -1)
+	  exec = (void (*)(...)) exec_c2c_forward_d;
+	else
+	  exec = (void (*)(...)) exec_c2c_backward_d;
+      }
+    }
+
+
+  doplan = doplan_;
+
+    if(!doplan && !is_empty)
+      cout << "Error in trans_type1D: no suitable doplan" << endl;    
+    if(prec != prec2)
+      cout << "Error in trans_type1D: precisions don't match!" << endl;
+  }
 
 };
 
@@ -538,11 +710,14 @@ class stage {
   //  bool is_set;
   //  bool is_trans = false;
   //bool is_mpi = false;
-  stage *next;
+  stage *next=NULL;
   int kind;
-  stage() {next = NULL;};
   void myexec(char *in,char *out,bool OW);
   void myexec_deriv(char *in,char *out, bool OW);
+
+  stage() {}
+  virtual ~stage() {}
+
 };
 
 
@@ -566,60 +741,119 @@ template <class Type> class MPIplan : public stage {
 
  public :
 
+  size_t WorkSpace;
+
   MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int prec_);
   //MPIplan() {};
-  ~MPIplan() {
-    delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
-    delete grid1,grid2;
-};
-  void exec(char *in,char *out);
+  ~MPIplan();
+  void exec(char *in,char *out,char *tmpbuf=NULL);
   template <class Type1,class Type2> friend class trans_MPIplan;
+  template <class Type11,class Type2> friend  class transform3D;
+
   };
 
  template <class Type1,class Type2>   class trans_MPIplan;
+
 
 template <class Type1,class Type2>   class transplan : public stage {
 
  protected:
 
   int prec;
-#ifdef ESSL
-  double *work1,double *work2;
-#endif
   DataGrid *grid1,*grid2;
   ProcGrid *Pgrid;
   int N,m,istride,idist,ostride,odist,isign;
   int *inembed,*onembed;
   unsigned fft_flag;
   void compute_deriv_loc(Type2 *in,Type2 *out,int dims[3]);
+  //  char *DevBuf,*DevBuf2;
 
   public :
 
+  size_t WorkSpace=0;
+
+#ifdef CUDA
+  //  bool useCuda=false;
+  int InLoc=LocHost;
+  int OutLoc=LocHost;
+  cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
+#endif
+  size_t *offset1,*mysize1;
+  size_t *offset2,*mysize2;
   bool is_empty=false;
   int trans_dim;  // Rank of dimension of the transform
   int mo1[3],mo2[3];
   bool is_set;
   trans_type1D<Type1,Type2> *trans_type;
   Plantype<Type1,Type2> *plan;
-  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d); //, bool inplace_);
-  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d); //, bool inplace_); 
+  transplan(const DataGrid &gr1,const DataGrid &gr2,const gen_trans_type *type,int d,int InLoc_=LocHost,int OutLoc_=LocHost); //, bool inplace_);
+  transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_=LocHost,int OutLoc_=LocHost); //, bool inplace_); 
   void init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d); // bool inplace_) 
   transplan() {};
   ~transplan() {
     delete grid1,grid2; 
+    delete [] offset1,mysize1;
+    delete [] offset2,mysize2;
+#ifdef CUDA
+    cudaEventDestroy(EVENT_EXEC);
+    cudaEventDestroy(EVENT_H2D);
+    cudaEventDestroy(EVENT_D2H);
+#endif
   };
+
+  void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1,int pack_dim=-1,int pack_procs=0);
+  
+  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false,int pack_dim=-1,int pack_procs=0);
+
+  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+
+  void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL);
+
+
+#ifdef CUBLAS
+    void rot102in_cublas(int lda,int ldb,Type2 *A,Type2 *C);
+#endif
+
+#ifdef CUDA
+    void ro120in_cu(dim3 gridDim,dim3 blockSize,Type2 *in,Type2 *out,int d[3]);
+    void ro120out_cu(dim3 gridDim,dim3 blockSize,Type1 *in,Type1 *out,int d[3]);
+#endif
+
+    void exec(char *in,char *out, int dim_deriv,bool OW=false, char *tmpbuf=NULL);
+#ifdef CUDA
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+#else
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+#endif
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3]);
-  void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
-  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
+  //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3],char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  //void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int pack_dim=-1,int pack_procs=0);
+  //void reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int slice,int nslices,int pack_dim=-1,int pack_procs=0);
+  // void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW, char *tmpbuf=NULL);
+  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  //  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void find_plan(trans_type1D<Type1,Type2> *type);
-  void exec(char *in,char *out,bool OW=false);
-  void exec_deriv(char *in,char *out, bool OW=false);
+  //void exec_deriv(char *in,char *out, bool OW=false);
   int find_m(int *mo1,int *mo2,int *dims1,int *dims2,int trans_dim);
 
   //template <class Type1,class Type2>  
   friend class trans_MPIplan<Type1,Type2>;
-
+  template <class Type11,class Type22> friend  class transform3D;
+  
   };
 
 template <class Type1,class Type2>   class trans_MPIplan : public stage {
@@ -627,8 +861,14 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
  private : 
 
-  void pack_sendbuf_trans(Type2 *sendbuf,char *in,bool OW);
-  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
+  int ***sndst,***sndsz,***snden;
+  int ***rcvst,***rcvsz,***rcven;
+  int **SndCnts,**SndStrt,**RcvCnts,**RcvStrt;   
+  
+  void pack_sendbuf_trans_slice(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
+  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
+  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,bool OW);
+  //  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
   
 
@@ -637,11 +877,45 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   bool is_set;
   transplan<Type1,Type2>* trplan;
   MPIplan<Type2>* mpiplan;
+  size_t WorkSpaceHost=0,WorkSpaceDev=0;
+  
+  trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_,int InLoc_); //,bool inplace_);
+  ~trans_MPIplan() {
+    int i,j;
+    for(j=0;j<3;j++ )
+      for(i=0;i<nslices;i++) {
+	delete [] sndst[j][i];
+	delete [] sndsz[j][i];
+	delete [] snden[j][i];
+	delete [] rcvst[j][i];
+	delete [] rcvsz[j][i];
+	delete [] rcven[j][i];
+      }
+    for(int i=0;i<nslices;i++) {
+      delete [] SndCnts[i];
+      delete [] SndStrt[i];
+      delete [] RcvCnts[i];
+      delete [] RcvStrt[i];
+    }
+    delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+    for(j=0;j<3;j++) {
+      delete [] sndst[j];
+      delete [] snden[j];
+      delete [] sndsz[j];
+      delete [] rcvst[j];
+      delete [] rcven[j];
+      delete [] rcvsz[j];
+    }
+    delete [] sndst,sndsz,snden,rcvst,rcvsz,rcven;
+  };
+#ifdef CUDA
+  int InLoc=LocHost;
+#endif
+  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
+  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
+  void unpack_recvbuf_slice(Type2 *out,Type2 * recvbuf,int slice=0,int nslices=1);
 
-  trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_); //,bool inplace_);
-  ~trans_MPIplan() {};
-  void exec(char *in,char *out, bool OW);
-  void exec_deriv(char *in,char *out, bool OW);
+  //  void exec_deriv(char *in,char *out, bool OW);
 
   template <class TypeIn1,class TypeOut1> friend class transplan;
   template <class Type> friend class MPIplan;
@@ -762,36 +1036,41 @@ class Plan {
   */
   //  friend class trans_type1D;
  public :
-  long libplan_in,libplan_out,libplan_inout;
+  planHandle *libplan_in,*libplan_out,*libplan_inout;
   Plan() {};
+  ~Plan() {};
   };
 
 template <class Type1,class Type2> class Plantype : public Plan
 {
   int dt1,dt2;
   int prec;
-  int N,m;
+  int N,m,d1,d2;
   //  bool inplace;
   int istride,idist,ostride,odist;
   int *inembed,*onembed;
   int isign,fft_flag;
   int typeID1,typeID2;
+protected:
+  int *mysize;
 
  public:
-  long (*doplan)(...);
+  planResult (*doplan)(...);
 		 //int rank,const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,...);
   //  void (*exec)(long,Type1 *in,Type2 *out);
   void (*exec)(...);
 
   //int rank,const int *n,int howmany,Type1 *in,const int *inembed,int istride,int idist,Type2 *out,const int *onembed,int ostride,int odist,
 
-  inline Plantype(long (*doplan_)(...),void (*exec_)(...),int N_,int m_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS) 
+  inline Plantype(planResult (*doplan_)(...),void (*exec_)(...),int N_,int m_,int istride_,int idist_,int ostride_,int odist_,int *inembed_=NULL,int *onembed_=NULL,int isign_=0,unsigned fft_flag_=DEF_FFT_FLAGS,int d1_=1, int d2_=1) 
   { doplan = doplan_;
     exec = exec_; 
     N = N_;m=m_;istride = istride_;istride = istride_;idist = idist_;
     ostride = ostride_;odist = odist_;isign = isign_;fft_flag = fft_flag_;
     inembed = inembed_;
     onembed = onembed_;
+    d1 = d1_;
+    d2 = d2_;
     int prec2;
     if(typeid(Type1) == typeid(float)) {
       dt1 = 1; prec=4;
@@ -825,7 +1104,7 @@ template <class Type1,class Type2> class Plantype : public Plan
   //template <class _TypeIn,class _TypeOut> 
   friend void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
  //  template <class Type1,class Type2> friend  long trans_MPIplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type);
-
+  friend void cleanup();
 };
 
 
@@ -885,18 +1164,23 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
   ProcGrid *Pgrid;
   //  int trans_type[7];
   friend class stage;
+#ifdef CUDA
+  int InLoc,OutLoc;
+#endif
+  //  size_t *offset,*mysize;
 
  public:
 
-  void exec(Type1 *in,Type2 *out, bool OW=false);
-  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false);
+  size_t WorkSpaceHost=0,WorkSpaceDev=0;
+  void exec(Type1 *in,Type2 *out, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
+  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
 
-  transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type);
+  transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type,const int InLoc_=0, const int OutLoc_=0);
   ~transform3D();
 };
 
- template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2, int prec);
- template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec);
+ template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2, size_t *workspace, int loc1=0, int loc2=0);
+ template <class Type> DataGrid *final_trans(DataGrid *grid1, const DataGrid &grid2, stage *curr,int prec,size_t *workspace);
 //extern int ntrans;
 //extern int npl;
 //static Ntrans_types=0;
@@ -910,8 +1194,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 extern int padd;
 const int gblock=1;
 
-template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],int dims1[3]);
-template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
+//template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],int dims1[3]);
+//template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
 
 //template <class Type> void compute_deriv_loc(Type *in,Type *out,int dims[3],bool r2c); 
 template <class Type> void compute_deriv(Type *in,Type *out,DataGrid *gr,int idir); 
@@ -969,6 +1253,7 @@ template class trans_type1D<complex_double,complex_double>;
     double packsend_deriv;
     double unpackrecv;
     double alltoall;
+    double gpu_transfer;
   public:
     void init();
     void print(MPI_Comm);
@@ -992,6 +1277,9 @@ template class trans_type1D<complex_double,complex_double>;
 #endif
 
   // Namespace
+
+  //#include "templ.C"
+  //#include "exec.C"
 }
 
 
