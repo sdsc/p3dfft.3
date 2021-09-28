@@ -87,7 +87,7 @@ void inv_mo(int mo[3],int imo[3]);
 
   // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
   // 
-  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const DataGrid& grid1_, const DataGrid& grid2_,const trans_type3D *type)
+  template<class Type1,class Type2> transform3D<Type1,Type2>::transform3D(const DataGrid& grid1_, const DataGrid& grid2_,const trans_type3D *type,const int InLoc_, const int OutLoc_)
 {
 
 
@@ -131,7 +131,6 @@ void inv_mo(int mo[3],int imo[3]);
 
   int dmap1[3],dmap2[3],gdims[3],L[3],st;
   int d1,d2,nd,i;
-  void swap0(int new_mo[3],int mo[3],int L);
   int monext[3];
   int dims1[3],dims2[3];
   gen_trans_type *tmptype;
@@ -143,6 +142,10 @@ void inv_mo(int mo[3],int imo[3]);
     MPI_Abort(grid1_.Pgrid->mpi_comm_glob,0);
   }
 
+  /*  offset=new size_t[nslices];
+  mysize=new size_t[nslices];
+  divide_work(offset,mysize,(int *) grid1_.Ldims,nslices);
+  */
   nd = grid1_.nd;
   grid1 = new DataGrid(grid1_);
   grid2 = new DataGrid(grid2_);
@@ -202,6 +205,11 @@ void inv_mo(int mo[3],int imo[3]);
     printf("%d: Planning stages: %d %d %d\n",Pgrid->taskid,L[0],L[1],L[2]);
 #endif
 
+    WorkSpaceHost = 0;
+    WorkSpaceDev=0;
+    size_t ws,wshost,wsdev;
+    MPIplan<Type1> *mpiplan;
+
     if(init_steps) {
       if(grid1_.Pdims[L[0]] != 1) { // Plan a transpose
 	for(i=0;i<3;i++) {
@@ -218,7 +226,8 @@ void inv_mo(int mo[3],int imo[3]);
 
 	tmpgrid1 = new DataGrid(gdims,grid1_.dim_conj_sym,Pgrid,dmap,monext);
 
-	curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	curr_stage = dynamic_cast<stage*> (mpiplan=new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	WorkSpaceHost += mpiplan->WorkSpace;
 	curr_stage->kind = MPI_ONLY;
 	Stages = prev_stage = curr_stage;
 	delete tmpgrid0;
@@ -227,7 +236,21 @@ void inv_mo(int mo[3],int imo[3]);
 
     }
 
-  // Plan the stages of the algorithm
+    int loc = 0;
+    int loc2 =0;
+#ifdef CUDA
+    InLoc = InLoc_;
+    OutLoc = OutLoc_;
+#ifdef DEBUG
+    printf("%d: InLoc%d,OutLoc=%d\n",Pgrid->taskid,InLoc,OutLoc);
+#endif
+    loc = InLoc;
+#endif
+    // Find max_longimum memory size among all the stages
+    //    max_longDevSize = (size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]	*tmpgrid0->Ldims[2]*dt*prec;
+    size_t size_out = MULT3(grid2->Ldims)*dt2 * prec;
+
+  // Plan the three main (transform) stages of the algorithm
   for(int st=0;st < 3;st++) {
     
     for(i=0;i<3;i++) {
@@ -252,8 +275,22 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
     if(st < 2) { 
-      if(!tmptype->is_empty)
-	swap0(monext,mocurr,L[st]);
+      if(mocurr[L[st]] == 0)
+	if(st == 1)
+	  for(i=0;i<3;i++) 
+	    monext[i] = grid2_.MemOrder[i];
+	else
+	  swap0(monext,mocurr,L[st+1]);
+      else
+	//	if(!tmptype->is_empty) {
+	if(st == 1) 
+	  swap0(monext,mocurr,L[st],(int *) grid2_.MemOrder);
+	else 
+	  swap0(monext,mocurr,L[st]);
+      //}
+      //	else
+      //	  swap0(monext,mocurr,L[st]);
+      
       if(tmpgrid0->Pdims[L[st+1]] > 1) {
 	d1 = L[st+1];
 	d2 = L[st];
@@ -262,7 +299,7 @@ void inv_mo(int mo[3],int imo[3]);
     else   {
       for(i=0;i<3;i++) 
 	monext[i] = grid2_.MemOrder[i];
-      if(monext[L[st]] != 0)
+      if(monext[L[st]] != 0) 
 	swap0(monext,mocurr,L[st]);
     }
 
@@ -293,14 +330,15 @@ void inv_mo(int mo[3],int imo[3]);
 
       if(!tmptype->is_empty) { // Combine transpose with transform
 
-	if(tmpgrid0->MemOrder[L[st]] == 0)
+	//if(tmpgrid0->MemOrder[L[st]] == 0)
 	  intgrid = new DataGrid(*tmpgrid0);
-	else if(tmpgrid1->MemOrder[L[st]] == 0) {
-	  intgrid = new DataGrid(*tmpgrid0);
-	  intgrid->set_mo(tmpgrid1->MemOrder);
-	}
-	else 
-	  printf("Error initializing trans_MPIplan: neither input nor output is lead-dimension local\n");
+	  intgrid->set_mo(monext);//tmpgrid1->MemOrder);
+	  //	else if(tmpgrid1->MemOrder[L[st]] == 0) {
+	  //intgrid = new DataGrid(*tmpgrid0);
+	  // intgrid->set_mo(tmpgrid1->MemOrder);
+	  //	}
+	  //else 
+	  //printf("Error initializing trans_MPIplan: neither input nor output is lead-dimension local\n");
 	
 	if(dt_1 != dt_2) {
 	  intgrid->get_gdims(gdims);
@@ -314,18 +352,41 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef DEBUG
 	printf("Calling init_tran_MPIsplan, trans_dim=%d, d1=%d, d2=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), MemOrder=(%d %d %d)\n",L[st],d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],monext[0],monext[1],monext[2]);
 #endif
+
+#ifdef CUDA
+	//	max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+        //max_longDevSize = max_long(max_longDevSize,(size_t) intgrid->Ldims[0]*intgrid->Ldims[1]*intgrid->Ldims[2]*dt_2*prec);
+#endif
+
+
       // Plan/set up 1D transform combined with MPI exchange for this stage
 	switch(use_type2) {
 	case 1:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  trans_MPIplan<Type1,Type1> *tr11;
+	  curr_stage = dynamic_cast<stage*> (tr11 =new trans_MPIplan<Type1,Type1>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr11->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr11->WorkSpaceDev);
 	  break;
 	case 2:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  trans_MPIplan<Type2,Type2> *tr22;
+	  curr_stage = dynamic_cast<stage*> (tr22 = new trans_MPIplan<Type2,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr22->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr22->WorkSpaceDev);
 	  break;
 	case 12:
-	  curr_stage = dynamic_cast<stage*> (new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st]));
+	  trans_MPIplan<Type1,Type2> *tr12;
+	  curr_stage = dynamic_cast<stage*> (tr12 = new trans_MPIplan<Type1,Type2>(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],loc));
+	  WorkSpaceHost = max_long(WorkSpaceHost, tr12->WorkSpaceHost);
+	  WorkSpaceDev = max_long(WorkSpaceDev,tr12->WorkSpaceDev);
 	  break;
 	}
+
+#ifdef CUDA
+	loc = LocHost;
+#ifdef DEBUG
+	printf("%d: loc=%d\n",Pgrid->taskid,loc);
+#endif
+#endif
 
       //      curr_stage = init_trans_MPIplan(*tmpgrid0,*intgrid,*tmpgrid1,d1,d2,tmptype,L[st],prec);
 	curr_stage->kind = TRANSMPI;
@@ -336,10 +397,17 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef DEBUG
 	printf("Calling init_MPIsplan, d1=%d, d2=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), MemOrder=(%d %d %d)\n",d1,d2,gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],monext[0],monext[1],monext[2]);
 #endif
-	if(dt_1 == dt1)
-	  curr_stage = dynamic_cast<stage*> (new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
-	else
-	  curr_stage = dynamic_cast<stage*> (new MPIplan<Type2>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+
+	if(dt_1 == dt1) {
+	  MPIplan<Type1> *tr;
+	  curr_stage = dynamic_cast<stage*> (tr = new MPIplan<Type1>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	  WorkSpaceHost = max_long(WorkSpaceHost,tr->WorkSpace);
+	}
+	else {
+	  MPIplan<Type2> *tr;
+	  curr_stage = dynamic_cast<stage*> (tr = new MPIplan<Type2>(*tmpgrid0,*tmpgrid1,d1,d2,prec));
+	  WorkSpaceHost = max_long(WorkSpaceHost,tr->WorkSpace);
+	}
 	curr_stage->kind = MPI_ONLY;
       }
     }
@@ -351,24 +419,56 @@ void inv_mo(int mo[3],int imo[3]);
       printf("Calling init_transplan, trans_dim=%d, gdims2=(%d %d %d), Ldims2=(%d %d %d), dmap=(%d %d %d), dim-conj_sym=%d, MemOrder=(%d %d %d)\n",L[st],gdims[0],gdims[1],gdims[2],tmpgrid1->Ldims[0],tmpgrid1->Ldims[1],tmpgrid1->Ldims[2],dmap[0],dmap[1],dmap[2],dim_conj_sym,monext[0],monext[1],monext[2]);
 #endif
 
+#ifdef CUDA
+      //      max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid0->Ldims[0]*tmpgrid0->Ldims[1]*tmpgrid0->Ldims[2]*dt_1*prec);
+      //max_longDevSize = max_long(max_longDevSize,(size_t) tmpgrid1->Ldims[0]*tmpgrid1->Ldims[1]*tmpgrid1->Ldims[2]*dt_2*prec);
+
+      loc2 = (st == 2) ? OutLoc : loc;  
+#endif
+
       // Plan/set up 1D transform, possibly combined with local transpose as needed
       switch(use_type2) {
       case 1:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	transplan<Type1,Type1> *tr11;
+	curr_stage = dynamic_cast<stage*> (tr11 = new transplan<Type1,Type1>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr11->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr11->WorkSpace);
+#endif
 	break;
       case 2:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	  transplan<Type2,Type2> *tr22;
+	curr_stage = dynamic_cast<stage*> (tr22 = new transplan<Type2,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr22->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr22->WorkSpace);
+#endif
 	break;
       case 12:
-	curr_stage = dynamic_cast<stage*> (new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st]));
+	  transplan<Type1,Type2> *tr12;
+	curr_stage = dynamic_cast<stage*> (tr12 = new transplan<Type1,Type2>(*tmpgrid0,*tmpgrid1,tmptype,L[st],loc,loc2));
+#ifdef CUDA
+	WorkSpaceDev = max_long(WorkSpaceDev,tr12->WorkSpace);
+#else
+	WorkSpaceHost = max_long(WorkSpaceHost,tr12->WorkSpace);
+#endif
 	break;
       }
 
-      //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
+      loc = loc2;
 
-      curr_stage->kind = TRANS_ONLY;
-            
-      }
+#ifdef DEBUG
+    printf("%d: loc=%d\n",Pgrid->taskid,loc); 
+#endif
+     //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
+      curr_stage->kind = TRANS_ONLY;            
+    }
+    
+    size_t size2 = MULT3(tmpgrid1->Ldims)*dt_2 * prec;
+    if(size2 > size_out)
+      WorkSpaceHost += size2;
     
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
@@ -389,9 +489,10 @@ void inv_mo(int mo[3],int imo[3]);
       if(dmap[i] != grid2_.Dmap[i] && grid2_.Pdims[i] > 1)
 	reverse_steps = true;
 
-  if(reverse_steps) 
-    curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec);
-
+  if(reverse_steps)  {
+    curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec,&wshost);
+    WorkSpaceHost += wshost;
+  }
   bool iseq = true;
   for(i=0; i < 3; i++) 
     if(monext[i] != grid2_.MemOrder[i]) {
@@ -401,10 +502,19 @@ void inv_mo(int mo[3],int imo[3]);
   
   if(!iseq) { //If not in the final memory ordering
     prev_stage = curr_stage;
-    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_);
+    curr_stage = final_seq<Type2>(*tmpgrid0,grid2_,&ws,LocHost,OutLoc_);
     curr_stage->kind = TRANS_ONLY;
     prev_stage->next = curr_stage;
+#ifdef CUDA
+    WorkSpaceDev += ws;
+#else
+    WorkSpaceHost += ws;
+#endif    
   }
+
+#ifdef DEBUG
+  printf("%d: Workspace=%ld (host) and %ld (dev)\n",Pgrid->taskid,WorkSpaceHost,WorkSpaceDev);
+#endif
 
   delete tmpgrid0;
 
@@ -418,22 +528,24 @@ void inv_mo(int mo[3],int imo[3]);
   
 }
 
-template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2)
+  template <class Type> stage *final_seq(const DataGrid &grid1, const DataGrid &grid2,size_t *workspace,int loc1,int loc2)
 {
   gen_trans_type *t=empty_type<Type>();
   int trans_dim = grid2.L[0];
   if(grid2.nd == 1 && grid1.MemOrder[trans_dim] != 0 && grid2.MemOrder[trans_dim] != 0)
     trans_dim = grid2.L[1];
 #ifdef DEBUG
-  printf("Calling final init_transplan, trans_dim=%d\n",grid2.L[0]);
+  printf("Calling final init_transplan, trans_dim=%d\n",trans_dim);
 #endif
-  return(dynamic_cast<stage*> (new transplan<Type,Type>(grid1,grid2,t,trans_dim)));
+  transplan<Type,Type> *tr = new transplan<Type,Type>(grid1,grid2,t,trans_dim,loc1,loc2);
+  *workspace = tr->WorkSpace;
+  return(dynamic_cast<stage*> (tr));
       //    transplan<Type2,Type2> *tr  = new transplan<Type2,Type2>(*tmpgrid1,*tmpgrid0,t,trans_dim);
   //curr_stage = (stage *) tr;
   // = init_transplan(*tmpgrid1,*tmpgrid0,types1D[EMPTY_TYPE],L2,inpl,prec);
 }
 
-template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2,stage *curr,int prec)
+  template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2,stage *curr,int prec,size_t *workspace)
   {
 #ifdef DEBUG
     cout << "Return steps" << endl;
@@ -454,6 +566,9 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
     Pgrid = tmpgrid1->Pgrid;
     gdims = tmpgrid1->Gdims;
 
+    *workspace = 0;
+    size_t ws;
+    MPIplan<Type> *mpiplan;
 
     if(nd == 2) {
       d2 = tmpgrid1->D[1];
@@ -469,9 +584,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  
 	  tmp = L1;
 	  L1 = d1;
@@ -484,16 +601,18 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	    dmap[L1] = tmp;
 	    
 #ifdef DEBUG
-	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
+	    printf("MPI plan 2 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d2,L1);
 #endif
 	    delete tmpgrid1;
 	    tmpgrid1 = tmpgrid0;
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	    
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
       }
     
@@ -511,9 +630,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 
 	prev = curr;
-	curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
+	curr = dynamic_cast<stage*> (mpiplan);
 	prev->next = curr;
 	curr->kind = MPI_ONLY;
+	*workspace = max_long(*workspace,mpiplan->WorkSpace);
 
 	tmp = L1;
 	L1 = d2;
@@ -526,16 +647,18 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  dmap[L1] = tmp;
 	  
 #ifdef DEBUG
-	    printf("MPI plan 1 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
+	    printf("MPI plan 2 from dmap %d %d %d to %d %d %d, d1=%d,d2=%d\n",tmpgrid1->Dmap[0],tmpgrid1->Dmap[1],tmpgrid1->Dmap[2],dmap[0],dmap[1],dmap[2],d1,L1);
 #endif
 	    delete tmpgrid1;
 	    tmpgrid1 = tmpgrid0;
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	    
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
       }
 	
@@ -551,9 +674,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  delete tmpgrid1;
 	  tmpgrid1 = tmpgrid0;
 	  tmp = L1;
@@ -572,9 +697,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d2,L1,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
+	  *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  delete tmpgrid1;
 	  tmpgrid1 = tmpgrid0;
 	  tmp = L1;
@@ -593,9 +720,11 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	    tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	    prev = curr;
-	    curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec));
+	    mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,L1,prec);
+	    curr = dynamic_cast<stage*> (mpiplan);
 	    prev->next = curr;
 	    curr->kind = MPI_ONLY;
+	    *workspace = max_long(*workspace,mpiplan->WorkSpace);
 	  }
 	}
 	}
@@ -613,7 +742,8 @@ template <class Type> stage *final_trans(DataGrid **grid1, const DataGrid &grid2
 	  tmpgrid0 = new DataGrid(gdims,grid2.dim_conj_sym,Pgrid,dmap,mo);
 	  
 	  prev = curr;
-	  curr = dynamic_cast<stage*> (new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,d2,prec));
+	  mpiplan = new MPIplan<Type>(*tmpgrid1,*tmpgrid0,d1,d2,prec);
+	  curr = dynamic_cast<stage*> (mpiplan);
 	  prev->next = curr;
 	  curr->kind = MPI_ONLY;
 	}
@@ -673,15 +803,19 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
     else {  // 2D grid and the final dimension is local - have to start with distributed dimension, and transpose data an extra time
       //      L[0] = gr1.D[0];
       //L[0] = (L[2]+1)%3;
-      int m=2;
-      for(i=0;i<3;i++)
-	if(i != L[2])
-	  if(gr1->MemOrder[i] < m) {
-	    m = gr1->MemOrder[i];
-	    L[0] = i;
-	  }
-      if(m != 0)
+      if(L[2] == gr1->L[0]) {
 	init_steps = true;
+	int m=2;
+	for(i=0;i<3;i++)
+	  if(i != L[2])
+	    if(gr1->MemOrder[i] < m) {
+	      m = gr1->MemOrder[i];
+	      L[0] = i;
+	    }
+	
+      }
+      else
+	L[0] = gr1->L[0];
     }
   }
 
@@ -696,10 +830,31 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 	L[1] = d1;
       else
 	L[1] = excl(d1,L[0]);
+      L[2] = excl(L[0],L[1]);
     }
     else {  // nd=2
-      if(gr1->D[0] == gr2->D[1])
+      // Try to fit L2 for grid2 local
+      if(L[0] != gr2->L[0]) {
+	L[2] = gr2->L[0];
+	L[1] = excl(L[0],L[2]);
+      }
+      else {
+	*reverse_steps = true;
+	int c1 = gr2->D[0];
+	int c2 = gr2->D[1];
+	L[1] = c1;  /// Improve!
+	L[2] = c2;
+      }
+      /*
+      if(gr1->D[0] == gr2->D[1]) {
 	L[1] = gr1->D[0];
+	if(gr1->D[1] == gr2->D[0]) {
+	  int c1 = L[1];
+	  int c2 = gr1->D[1];
+	  if(gr1->MemOrder[c1] > gr1->MemOrder[c2])
+	    L[1] = c2;
+	}
+      }
       else if(gr1->D[1] == gr2->D[0])
 	L[1] = gr1->D[1];
       else { *reverse_steps = true;
@@ -711,6 +866,7 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
       }
       if(gr1->L[0] == gr2->L[0])
 	*reverse_steps = true;
+	*/
       /*	
 
       if(gr1->MemOrder[L[0]] != 0) { //      lead=false;
@@ -722,7 +878,6 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 	  }
       */
     }
-    L[2] = excl(L[0],L[1]);
   }
   /*
   
@@ -774,7 +929,7 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
       
 	L[2] = gr2->L[0]; // This dimension will be local upon finish
 	if(L[2] == L[0]) {
-	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
+	  *reverse_steps=true; // If start and finish local dimensions are the same, there is no way to complete execution of 3D transform in 3 steps with max_long. 2 exchanges. Additional MPI exchanges will be necessary to make the original local dimension local again in the end.
 	  L[2] = dist(L[0]); // Choose target local dimension for the third step.
 	}
 	L[1] = excl(L[0],L[2]); // When first and third local dimensions are known, the second local dimension is found by exclusion.
@@ -786,29 +941,50 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 
   if(gr1->Pdims[L[0]] != 1)
     init_steps = true;
-
+  if(L[2] != gr2->L[0] && (gr1->nd == 2 || L[2] != gr2->L[1]))
+    *reverse_steps = true;
+  
   return init_steps;
 }
 
-void swap0(int newmo[3],int mo[3],int L)
+  int swap0(int newmo[3],int mo[3],int L, int *next)
 {
   int i,j;
+  int dist_mo(int *mo1,int *mo2);
+
   for(i=0; i< 3; i++)
     newmo[i] = mo[i];
 
   if(newmo[L] == 0)
-    return;
+    return(0);
   if(newmo[L] == 1) {
     for(j=0;j<3;j++)
       if(newmo[j] == 0)
 	break;
     newmo[j] = 1;
     newmo[L] = 0;
-    return;
+    return(abs(L-j));
   }
   // [L]=2
-  for(i=0;i<3;i++)
-    newmo[i] = (newmo[i] +1)%3;
+  if(next) {
+    newmo[L] = 0;
+
+    newmo[(L+1)%3] = 2;
+    newmo[(L+2)%3] = 1;
+    int v1 = dist_mo(next,newmo);
+    newmo[(L+1)%3] = 1;
+    newmo[(L+2)%3] = 2;
+    int v2 = dist_mo(next,newmo);
+    if(v1 < v2) {
+    newmo[(L+1)%3] = 2;
+    newmo[(L+2)%3] = 1;
+    }
+  }
+  else
+    for(i=0;i<3;i++)
+      newmo[i] = (newmo[i] +1)%3;
+
+  return(2);
 
   /*
   if(newmo[L] !=0) {
@@ -834,6 +1010,22 @@ void swap0(int newmo[3],int mo[3],int L)
   */
 }
 
+
+int dist_mo(int *mo1,int *mo2) 
+{
+  int i,same=0;
+
+  for(i=0;i<3;i++)
+    if(mo1[i] == mo2[i])
+      same++;
+  if(same == 1)
+    return(1);
+  if(same == 3)
+    return(0);
+  
+  return(2);
+
+}
 
 template<class Type1,class Type2> transform3D<Type1,Type2>::~transform3D()
 {
@@ -869,12 +1061,20 @@ int dist(int a)
   }
 }
 
+ size_t max_long(size_t a,size_t b)
+ {
+   return(max((long) a,(long) b));
+ }
 
-  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
+  template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d,int InLoc_,int OutLoc_) // bool inplace_) 
   {   init_tr(gr1,gr2, type,d);
+#ifdef CUDA
+    InLoc = InLoc_;
+    OutLoc = OutLoc_;
+#endif
   }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
+  template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const DataGrid &gr1,const DataGrid &gr2, const gen_trans_type *type,int d) // bool inplace_) 
 {
   plan = NULL;fft_flag = DEF_FFT_FLAGS;
   if(!type->is_set) {
@@ -889,6 +1089,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   trans_dim = d; 
   trans_type = (trans_type1D<Type1,Type2> *) type;
 
+#ifdef CUDA
+  cudaEventCreate(&EVENT_H2D);
+  cudaEventCreate(&EVENT_D2H);
+  cudaEventCreate(&EVENT_EXEC);
+#endif
 
   dt1 = type->dt1;
   dt2 = type->dt2;
@@ -901,12 +1106,28 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   //  idist,odist;
   isign = type->isign;
 
+  int i2,j2;
   for(int i=0;i<3;i++) {
     dims1[i] = grid1->Ldims[i];
     dims2[i] = grid2->Ldims[i];
     mo1[i] = grid1->MemOrder[i];
     mo2[i] = grid2->MemOrder[i];
+    if(mo1[i] == 2)
+      i2 = i;
+    if(mo2[i] == 2)
+      j2 = i;    
   }
+
+  //  int imo1[3],imo2[3];
+  //inv_mo(mo1,imo1);
+  //inv_mo(mo2,imo2);
+    
+  offset1 = new size_t[nslices];
+  mysize1 = new size_t[nslices];
+  offset2 = new size_t[nslices];
+  mysize2 = new size_t[nslices];
+  divide_work(offset1,mysize1,dims1,nslices,i2);
+  divide_work(offset2,mysize2,dims2,nslices,j2);
 
   if(trans_type->is_empty)
     is_empty = true;
@@ -914,24 +1135,24 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
     //  inembed = onembed = (int*) &grid1.Gdims[d];
     if(type->dt1 < type->dt2) { //Real to complex
       N=gr1.Gdims[d];
-    //   m=dims1[0]*dims1[1]*dims1[2]/N;
+      //   m=dims1[0]*dims1[1]*dims1[2]/N;
       idist = N;
       odist = N/2+1;
       /*
-    dims2[0] = dims2[0]/2+1;
+	dims2[0] = dims2[0]/2+1;
     mygrid->Ldims[d] = (mygrid->Ldims[d]+2)/2;
     mygrid->Gdims[d] = (mygrid->Gdims[d]+2)/2;
     mygrid->sz[0][d] = (mygrid->sz[0][d]+2)/2;  
     mygrid->en[0][d] = (mygrid->en[0][d]+2)/2;  
     mygrid->st[0][d] = (mygrid->st[0][d]+2)/2; 
     */
-  }
+    }
     else if(type->dt1 > type->dt2) { //Complex to real
       N=gr2.Gdims[d];
       //   m=dims2[0]*dims2[1]*dims2[2]/N;
       odist = N;
       idist = N/2+1;
-    /*
+      /*
     dims2[0] = dims2[0]*2-2;
     mygrid->Ldims[d] = mygrid->Ldims[d]*2-2;
     mygrid->Gdims[d] = mygrid->Gdims[d]*2-2;
@@ -960,15 +1181,37 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
       printf("Error in transplan: dimension too small %d, N=%d\n",dims2[d],N);
       return;
     }
-    
-    Pgrid = gr1.Pgrid;
-    if(!(*Pgrid == *gr2.Pgrid))
-      printf("Error in transplan: processor grids don't match\n");
-    find_plan(trans_type); 
   }
+  
+  Pgrid = gr1.Pgrid;
+  if(!(*Pgrid == *gr2.Pgrid))
+    printf("Error in transplan: processor grids don't match\n");
+  if(!is_empty)
+    find_plan(trans_type); 
+
+  size_t size1 = MULT3(dims1)*sizeof(Type1);
+  size_t size2 = MULT3(dims2)*sizeof(Type2);
+
+#ifdef CUDA
+  if(OutLoc == LocHost)
+    WorkSpace = size2;
+  if(InLoc == LocHost)
+    WorkSpace += size1;
+  if(arcmp(mo1,mo2,3)) 
+    WorkSpace += max_long(size1,size2);
+#else
+  //  if(dt2 > dt1) 
+  //  WorkSpace = size2;
+   if(arcmp(mo1,mo2,3)) 
+     WorkSpace = size1+size2;
+   else
+     WorkSpace = max_long(size1,size2); 
+  if(mo1[d] != 0 && mo2[d] != 0) 
+    WorkSpace += size2;
+#endif  
 }  
 
-template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d) // bool inplace_) 
+template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataGrid &gr1,const DataGrid &gr2,int type_ID,int d,int InLoc_,int OutLoc_)   // bool inplace_) 
 {   
   trans_type = (trans_type1D<Type1,Type2> *) types1D[type_ID];
 
@@ -977,8 +1220,55 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
     return;
   }
   init_tr(gr1,gr2, trans_type,d);
+#ifdef CUDA
+  InLoc = InLoc_;
+  OutLoc = OutLoc_;
+#endif
 }
 
+void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split_dim)
+{
+  int i;
+  //  size_t size=MULT3(dims);
+  size_t size=dims[split_dim];
+  size_t m = MULT3(dims)/size;
+  size_t chunk = size/nslices;
+  int l=size % nslices;
+  offset[0] = 0;
+  for(i=0;i<nslices-1;i++) {
+    mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
+    offset[i+1] = offset[i] + mysize[i];
+  }
+  mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
+
+}
+
+void divide_dims(int **offset,int **mysize,int dims[3],int nslices,int split_dim)
+{
+  int i;
+  //  size_t size=MULT3(dims);
+  size_t size=dims[split_dim];
+  size_t m = MULT3(dims)/size;
+  size_t chunk = size/nslices;
+  int l=size % nslices;
+  int d1 = (split_dim +1)%3;
+  int d2 = (split_dim +2)%3;
+
+  offset[0][split_dim] = 0;
+  for(i=0;i<nslices-1;i++) {
+    mysize[i][split_dim] = ((i < l) ? chunk+1 : chunk)*m;
+    offset[i+1][split_dim] = offset[i][split_dim] + mysize[i][split_dim];
+    mysize[i][d1] = dims[d1];
+    offset[i][d1] = 0;
+    mysize[i][d2] = dims[d2];
+    offset[i][d2] = 0;
+  }
+  mysize[i][split_dim] = ((i < l) ? chunk+1 : chunk)*m;
+  mysize[i][d1] = dims[d1];
+  mysize[i][d2] = dims[d2];
+  offset[i][d1] = 0;
+  offset[i][d2] = 0;
+}
 
 #define TRANS_IN 0
 #define TRANS_OUT 1
@@ -987,16 +1277,6 @@ template <class Type1,class Type2> transplan<Type1,Type2>::transplan(const DataG
 template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,int *mo2,int *dims1,int *dims2, int trans_dim) {
 
   int i,m,mc[3],imo1[3],imo2[3],d1[3],d2[3], scheme;    //,rel_change(int [3],int [3],int [3]);
-  void swap0(int new_mo[3],int mo[3],int L);
-
-  if(mo1[trans_dim] == 0) 
-    scheme = TRANS_IN;
-  else if(mo2[trans_dim] == 0) 
-    scheme = TRANS_OUT;
-  else {  // Have to use a two-step scheme
-    swap0(mo1,mo1,trans_dim); // Find an intermediate ordering with leading dimension we need 
-    scheme = TRANS_IN;
-  }
 
   inv_mo(mo1,imo1);
   inv_mo(mo2,imo2);
@@ -1004,9 +1284,41 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     d1[i] = dims1[imo1[i]];
     d2[i] = dims2[imo2[i]];
   }
+  
+  if(!arcmp(mo1,mo2,3) && mo1[trans_dim == 0])
+    m = d1[1]*d1[2];
+  else {
 
-  rel_change(imo1,imo2,mc);
+    if(mo1[trans_dim] == 0) 
+      scheme = TRANS_IN;
+    else if(mo2[trans_dim] == 0) 
+      scheme = TRANS_OUT;
+    else {  // Have to use a two-step scheme
+      swap0(mo1,mo1,trans_dim); // Find an intermediate ordering with leading dimension we need 
+      scheme = TRANS_IN;
+    }
+        
+    rel_change(imo1,imo2,mc);
 
+#ifdef CUDA
+    if(mc[0] == 0 && mc[1] == 2 && mc[2] == 1)
+      m = 1;
+    else if(scheme == TRANS_IN)
+      m = d1[1]*d1[2];
+    else
+      m = d2[1]*d2[2];
+#else
+
+    if(cmpmo(mc,21))
+      m = 1;
+    else
+      if(scheme == TRANS_IN) 
+	m = d1[1]; // Need finer grain transform, to reuse cache     
+      else
+	m = d2[1];
+#endif
+  }
+  /*
   switch(mc[0]) {
   case 1:
     switch(mc[1]) {
@@ -1023,7 +1335,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
 	m = nb31 * d1[1];
       }
       else
-	m = d2[1];
+	m = 1;// d2[1];
       break;
     }
     break;
@@ -1036,37 +1348,206 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     break;
     
   case 2:
-    //    if(mc[1] == 0) { //2 0 1
+    // if(mc[1] == 0)  //2 0 1
       if(scheme == TRANS_IN) 
 	m = d1[1]*d1[2];
       else
-	m = d2[1]*d2[2];
-      //    }
-      //else //210
-      //m = d2[1]*d2[2];
+	m = 1; //d2[1]*d2[2];
+    //    else //210
+    // if(scheme == TRANS_IN) 
+    //	m = d1[1]*d1[2];
+    // else
+    //	m = 1;
     break;
   }
-  
+#endif
+  */  
   return(m);
 
 }
 
-  template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d) //bool inplace_)   
+ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid, const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int d,int InLoc_) //bool inplace_)   
 {
   kind = TRANSMPI;
+  WorkSpaceHost = 0;
+#ifdef CUDA
+  InLoc = InLoc_;
+  // Make sure data is on host after transplan, no matter where we started
+  trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,InLoc,LocHost); 
+  WorkSpaceDev = trplan->WorkSpace;
+#else
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
+  WorkSpaceHost = trplan->WorkSpace;
+#endif
+
   if(trplan->plan == NULL && !trplan->is_empty)
     cout << "Error in trans_MPIplan: null plan" << endl;
 
   stage_prec = trplan->prec;
+  size_t ws;
   mpiplan = new MPIplan<Type2>(intergrid,gr2,d1,d2,stage_prec);
   is_set = true;
+  size_t size1 = MULT3((int *) intergrid.Ldims)*sizeof(Type2);
+  size_t size2 = MULT3((int *) gr2.Ldims)*sizeof(Type2);
+  WorkSpaceHost += size1 + size2 + max_long(size1,size2);
   //  inplace = inplace_;
   dt1 = trplan->dt1;
   dt2 = trplan->dt2;
   memcpy(dims1,trplan->dims1,3*sizeof(int));
   memcpy(dims2,mpiplan->dims2,3*sizeof(int));
 
+  int i,j,t;
+  
+  sndst = new int**[3];
+  sndsz = new int**[3];
+  snden = new int**[3];
+  rcvst = new int**[3];
+  rcvsz = new int**[3];
+  rcven = new int**[3];
+  SndCnts = new int*[nslices];
+  SndStrt = new int*[nslices];
+  RcvCnts = new int*[nslices];
+  RcvStrt = new int*[nslices];
+  int nt = mpiplan->numtasks;
+  for(j=0;j<3;j++) {
+    rcvst[j] = new int*[nslices];
+    rcvsz[j] = new int*[nslices];
+    rcven[j] = new int*[nslices];
+    sndst[j] = new int*[nslices];
+    sndsz[j] = new int*[nslices];
+    snden[j] = new int*[nslices];
+  }
+  for(i=0;i<nslices;i++) {
+    for(j=0;j<3;j++) {
+      sndst[j][i] = new int[nt];
+      sndsz[j][i] = new int[nt];
+      snden[j][i] = new int[nt];
+      rcvst[j][i] = new int[nt];
+      rcvsz[j][i] = new int[nt];
+      rcven[j][i] = new int[nt];
+    }
+    SndCnts[i] = new int[nt];
+    SndStrt[i] = new int[nt];
+    RcvCnts[i] = new int[nt];
+    RcvStrt[i] = new int[nt];
+  }
+
+  int i2; // Logical dimension of the split across slices
+  for(i=0;i<3;i++)
+    if(trplan->mo2[i] == 2)
+      i2 = i;
+
+  int *offset1[nslices],*offset2[nslices],*mysize1[nslices],*mysize2[nslices];
+  int *offset[nt],*mysize[nt];
+  for(t=0;t<nt;t++) {
+    offset[t] = new int[3];
+    mysize[t] = new int[3];
+  }
+  for(i=0;i<nslices;i++) {
+    offset1[t] = new int[3];
+    mysize1[t] = new int[3];
+    offset2[t] = new int[3];
+    mysize2[t] = new int[3];
+  }    
+  divide_dims(offset1,mysize1,mpiplan->dims1,nslices,i2);
+  divide_dims(offset2,mysize2,mpiplan->dims2,nslices,i2);
+
+  for(i=0;i<nslices;i++) {
+    divide_dims(offset,mysize,mysize1[i],nt,d2);
+    for(j=0;j<3;j++) {
+      int ij = trplan->mo2[j];
+      for(t=0;t<nt;t++) {
+	// save time	sndst[mo2[j]][i][t] = offset1[i][j] + offset[t];
+	sndsz[ij][i][t] = mysize[t][j];
+	//snden[mo2[j]][i][t] = offset1[i][j] + offset[t] + mysize[t];
+      }
+    divide_dims(offset,mysize,mysize2[i],nt,d1);
+    for(j=0;j<3;j++) {
+        int ij = trplan->mo2[j];
+	for(t=0;t<nt;t++) {
+	rcvst[ij][i][t] = offset2[i][j] + offset[t][j];
+	rcvsz[ij][i][t] = mysize[t][j];
+	rcven[ij][i][t] = offset2[i][j] + offset[t][j] + mysize[t][j];
+      }
+    }
+    }
+  }
+  /*
+  for(j=0;j<3;i++)
+    if(mo2[d1] == j) 
+      for(i=0;i<nslices;i++) {
+	//	divide_work(offset,mysize,mpiplan->grid1->sz[d1][t],nslices,i2);
+	divide_work(offset,mysize,mysize2[i],nt,j);
+	for(t=0,t<nt;t++) {
+	  rcvst[j][i][t] = offset2[i][d1] + offset[t];
+	  rcvsz[j][i][t] = mysize[t];
+	  rcven[j][i][t] = rcvst[j][i][t] + rcvsz[j][i][t];
+	}
+	//	divide_work(offset,mysize,mysize1[i],nt,j);
+	for(t=0,t<nt;t++) {
+	  sndst[j][i][t] = offset1[i][d1];
+	  sndsz[j][i][t] = mysize1[i][d1];
+	  snden[j][i][t] = offset1[i][d1] + mysize1[i][d1]; 
+	}
+      }
+    else if(mo2[d2] == j) 
+      for(i=0;i<nslices;i++) {
+	divide_work(offset,mysize,mysize1[i],nt,j);
+	for(t=0,t<nt;t++) {
+	  sndst[j][i][t] = offset1[i][d2] + offset[t];
+	  sndvsz[j][i][t] = mysize[t];
+	  snden[j][i][t] = sndst[j][i][t] + sndsz[j][i][t];
+	}
+	//	divide_work(offset,mysize,dims2[d2][t],nslices,i2);
+	for(t=0,t<nt;t++) {
+	  rcvst[j][i][t] = offset2[i][d2];
+	  rcvsz[j][i][t] = mysize2[i][d2];
+	  rcven[j][i][t] = rcvst[j][i][t] + rcvsz[j][i][t];
+	}
+      }
+
+    else
+      for(i=0;i<nslices;i++) {
+	for(t=0,t<nt;t++) {
+	  //divide_work(offset,mysize,mpiplan->dims1,nslices,i2);
+	  sndst[j][i][t] = offset1[i][d3];
+	  sndsz[j][i][t] = mysize1[i][d3];
+	  snden[j][i][t] = sndst[j][i][t] + sndsz[j][i][t];
+	}
+	//	divide_work(offset,mysize,dims2,nslices,i2);
+	for(t=0,t<nt;t++) {
+	  rcvst[j][i][t] = offset2[i][d3];
+	  rcvsz[j][i][t] = mysize2[i][d3];
+	  rcven[j][i][t] = rcvst[j][i][t] + rcvsz[j][i][t];
+	}
+      }
+  */
+  
+  int sz=sizeof(Type2);
+  int m1 = MULT3(mpiplan->dims1)/mpiplan->dims1[i2];
+  int m2 = MULT3(dims2)/dims2[i2];
+  
+  for(i=0;i<nslices;i++) {
+
+    SndStrt[i][0] = offset1[i][i2]*m1;
+    RcvStrt[i][0] = offset2[i][i2]*m2;
+  
+  //int rank;
+    for(t=0; t< nt-1;t++) {
+    //    comm_coords[l] = j;
+    //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
+      //      SndCnts[i][t] = ((size_t) gr2.sz[d2][j] * dims1[d3]) * ((size_t) dims1[d1] * sz);
+      //      RcvCnts[i][t] = ((size_t) dims2[d2] * gr1.sz[d1][j]) *((size_t) dims2[d3] * sz);
+      SndCnts[i][t] = ((size_t) sndsz[0][i][t]*(size_t) sndsz[1][i][t]*(size_t) sndsz[2][i][t])*sz;
+      RcvCnts[i][t] = ((size_t) rcvsz[0][i][t]*(size_t) rcvsz[1][i][t]*(size_t) rcvsz[2][i][t])*sz;
+      SndStrt[i][t+1] = SndStrt[i][t] + SndCnts[i][t];
+      RcvStrt[i][t+1] = RcvStrt[i][t] + RcvCnts[i][t];
+    }
+  //  comm_coords[l] = p-1;
+  //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
+    SndCnts[i][nt-1] = ((size_t) sndsz[0][i][nt-1]*(size_t) sndsz[1][i][nt-1]*(size_t) sndsz[2][i][nt-1])*sz;
+    RcvCnts[i][nt-1] = ((size_t) rcvsz[0][i][nt-1]*(size_t) rcvsz[1][i][nt-1]*(size_t) rcvsz[2][i][nt-1])*sz;
+  }
   //  is_trans = is_mpi = true;
 }
 
@@ -1078,7 +1559,7 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::~trans_MPIplan()
 }
 */
 
-template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid &gr2, int d1_,int d2_, int prec_)  
+ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid &gr2, int d1_,int d2_, int prec_)  
 {
   int i,d3,l;
 
@@ -1154,21 +1635,21 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   SndStrt[0] = 0;
   RcvStrt[0] = 0;
 
-  int sz=sizeof(Type)/4;
+  int sz=sizeof(Type);
   
   //int rank;
   for(int j=0; j< p-1;j++) {
     //    comm_coords[l] = j;
     //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-    SndCnts[j] = gr2.sz[d2][j] * dims1[d3] *dims1[d1] * sz;
-    RcvCnts[j] = dims2[d2] * gr1.sz[d1][j] *dims2[d3] * sz;
+    SndCnts[j] = ((size_t) gr2.sz[d2][j] * dims1[d3]) * ((size_t) dims1[d1] * sz);
+    RcvCnts[j] = ((size_t) dims2[d2] * gr1.sz[d1][j]) *((size_t) dims2[d3] * sz);
     SndStrt[j+1] = SndStrt[j] + SndCnts[j];
     RcvStrt[j+1] = RcvStrt[j] + RcvCnts[j];
   }
   //  comm_coords[l] = p-1;
   //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
-  SndCnts[p-1] = gr2.sz[d2][p-1] * dims1[d3]*dims1[d1] * sz;
-  RcvCnts[p-1] = dims2[d2] * gr1.sz[d1][p-1]*dims2[d3] * sz;
+  SndCnts[p-1] = ((size_t) gr2.sz[d2][p-1] * dims1[d3])*((size_t) dims1[d1] * sz);
+  RcvCnts[p-1] = ((size_t) dims2[d2] * gr1.sz[d1][p-1])*((size_t) dims2[d3] * sz);
 
   grid1 = new DataGrid(gr1);
   grid2 = new DataGrid(gr2);
@@ -1180,9 +1661,29 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   //  is_trans = false;
   kind = MPI_ONLY;
   dt1 = dt2 = sizeof(Type)/prec;
-
+  WorkSpace =   (MULT3(dims1)+MULT3(dims2))* sizeof(Type);
 }
 
+template <class Type> MPIplan<Type>::~MPIplan()
+{
+  delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+  delete grid1,grid2;
+}
+
+#ifdef ESSL
+  void copy_plan(planHandle *dest,planHandle *src)
+  {
+    dest->naux1 = src->naux1;
+    dest->aux1 = src->aux1;
+    dest->isign = src->isign;
+    dest->istride = src->istride;
+    dest->ostride = src->ostride;
+    dest->idist = src->idist;
+    dest->odist = src->odist;
+    dest->N = src->N;
+    dest->m = src->m;
+  }
+#endif
 
 
   template <class Type1,class Type2> inline void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type)
@@ -1190,6 +1691,9 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
   int i;
   int planID;
   Plantype<Type1,Type2> *pl;
+#ifdef ESSL
+  void copy_plan(planHandle *dest,planHandle *src);
+#endif
   //  Plan *p;
 
 #ifdef DEBUG
@@ -1217,15 +1721,22 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
       }
   */
 
-  planID = 0;
+  int imo1[3];
+  inv_mo(mo1,imo1);
+  int d1 = dims1[imo1[1]];
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  int d2 = dims2[imo2[1]];
+
+    planID = 0;
   for(vector<Plan*>::iterator it=Plans.begin(); it < Plans.end();it++,planID++) {
     //    pl = dynamic_cast<Plantype<Type1,Type2> *> (p);
     //if(pl)
     pl = (Plantype<Type1,Type2> *) *it;
     if(type->dt1 == pl->dt1 && type->dt2 == pl->dt2 && prec == pl-> prec &&
        pl->N == N && pl->m == m && // pl->inplace == inplace &&		
-       pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
-       pl->fft_flag == fft_flag) {
+      pl->istride == istride && pl->ostride == ostride && pl->isign == isign &&
+       pl->fft_flag == fft_flag && pl->d1 == d1  && pl->d2 == d2) {
       if(m > 1) {
 	if(pl->idist == idist && pl->odist == odist &&
 	   *(pl->inembed) == *inembed && *(pl->onembed) == *onembed) {
@@ -1257,44 +1768,97 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
 #ifdef DEBUG
   cout << "new plantype" << endl;
 #endif
- plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag);
+  plan = new Plantype<Type1,Type2>(type->doplan,type->exec,N,m,istride,idist,ostride,odist,inembed,onembed,isign,fft_flag,d1,d2);
   Plans.push_back(plan);
   
-  // Inplace
+
     Type1 *A;
-    int size=max(sizeof(Type1)*(istride*N+idist*m),sizeof(Type2)*(ostride*N+odist*m));
-#ifdef DEBUG
-    printf("in-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",istride,ostride,idist,odist);
-#endif
+    size_t size=max_long(sizeof(Type1)*((size_t) istride*N+idist*m),sizeof(Type2)*((size_t) ostride*N+odist*m));
+    size = max_long(size,sizeof(Type1)*N*max(d1,d2)*istride);
+    size = max_long(size,sizeof(Type2)*N*max(d1,d2)*ostride);
+    size_t size1=(istride*N+idist*m);
+    size1 = max_long(size1,N*max(d1,d2)*istride);
+    size_t size2=(ostride*N+odist*m);
+    size2 = max_long(size2,N*max(d1,d2)*ostride);
+
+    plan->libplan_in = new planHandle[nslices];
+    plan->libplan_inout = new planHandle[nslices];
+    plan->libplan_out = new planHandle[nslices];
+    plan->mysize = new int[nslices];
+    
+    int mysize[nslices];
+    if(!arcmp(mo1,mo2,3)) {
+      int l=m % nslices;
+      int s=m / nslices;
+      for(i=0;i<l;i++)
+	mysize[i] = s+1;
+      for(;i<nslices;i++)
+	mysize[i] = s;
+    }
+    else
+      for(i=0;i<nslices;i++)
+	mysize[i] = m;
+
+    for(i=0;i<nslices;i++)
+      plan->mysize[i] = mysize[i];
+
 #ifdef FFTW
+  // Inplace
     A = (Type1 *) fftw_malloc(size);
     Type2 *B = (Type2 *) A; //fftw_malloc(size *sizeof(Type2));
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) 
+	  //	  mysize[i] = 1;
+	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      }
+      /*
+      if(d1 > 0)
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+	*/
     }
-    else //R2C or C2R
-      plan->libplan_in = (long) (*(plan->doplan))(1,&N,m,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
-
-    if(plan->libplan_in == NULL) 
+    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
+      //      if(isign == 0)
+      //        cout << "Error in find_plan: isign is not set" << endl;
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) 
+	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      }
+      /*
+      if(d1 > 0)
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,isign,fft_flag);
+      */
+    }
+    else { //R2C or C2R
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0)
+	  plan->libplan_in[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      }/*
+      if(d1 > 0)
+	plan->libplan_in[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_in[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,inembed,istride,idist,B,onembed,ostride,odist,fft_flag);
+       */
+    }
+      if(!plan->libplan_in[0])
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
     //    fftw_free(B);
-#endif
 
     // Out of place
-    int size1=(istride*N+idist*m);
-    int size2=(ostride*N+odist*m);
-    //    printf("size1=%d,size2=%d\n",size1,size2);    
+    //    printf("size1=%d,size2=%d\n",size1,size2);
 #ifdef DEBUG
-    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",grid1->Pgrid->taskid,istride,ostride,idist,odist);
+    printf("%d: out-of-place: istride=%d,ostride=%d,idist=%d,odist=%d\n",Pgrid->taskid,istride,ostride,idist,odist);
 #endif
 
-#ifdef FFTW
     A = (Type1 *) fftw_malloc(size1*sizeof(Type1));
     //    A = (Type1 *) fftw_malloc(size1);
     B = (Type2 *) fftw_malloc(size2*sizeof(Type2));
@@ -1302,61 +1866,176 @@ template <class Type> MPIplan<Type>::MPIplan(const DataGrid &gr1,const DataGrid 
     //B = new Type2[size2];
 
 #ifdef DEBUG
-    cout << "Allocated A and B. Types:" << type-> dt1 << " and " << type->dt2 << endl;
+    cout << "Allocated A and B. Types:" << type-> dt1 << " and " << type->dt2<< endl;
 #endif
-    //    A = (Type1 *) fftw_malloc(sizeof(Type1)*size1);
-    //B = (Type2 *) fftw_malloc(sizeof(Type2)*size2);
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) 
+	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      }
+      /*
+      if(d1 > 0)
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      */
+    }
     else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      for(int i=0;i < size1;i++) {
-	A[i] = 0.0;
-	B[i] = 1.0;
-      }       
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
+      //      if(isign == 0)
+      //        cout << "Error in find_plan: isign is not set" << endl;
 #ifdef DEBUG
       printf("Calling doplan\n");
 #endif
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
-
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0)
+	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      }
+      /* if(d1 > 0)
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+      */
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out);
+      printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
     }
     else { //R2C or C2R
 #ifdef DEBUG
       cout << "Calling doplan" << endl;
 #endif
-      plan->libplan_out = (long) (*(plan->doplan))(1,&N,m,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) 
+	  plan->libplan_out[i] = (long) (*(plan->doplan))(1,&N,mysize[i],(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      }
+      /*
+      if(d1 > 0)
+	plan->libplan_out[nslices] = (long) (*(plan->doplan))(1,&N,d1,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      //      if(!arcmp(mo1,mo2,3))
+      if(d2 > 0)	
+	plan->libplan_out[nslices+1] = (long) (*(plan->doplan))(1,&N,d2,(double *) A,NULL,istride,idist,(fftw_complex *) B,NULL,ostride,odist,fft_flag);
+      */
 #ifdef DEBUG
-      printf("%d: Plan created %ld\n",grid1->Pgrid->taskid,plan->libplan_out);
+      printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[0]);
 #endif
     }
     //    delete [] A; // fftw_free
     //delete [] B;
 
-    if(plan->libplan_out == NULL) 
+    if(!plan->libplan_out[0])
       printf("ERror: NULL plan in find_plan: N=%d,m=%d,istride=%d,idist=%d,ostride=%d,odist=%d,fft_flag=%d\n",N,m,istride,idist,ostride,odist,fft_flag);
 
     fftw_free(A);
     fftw_free(B);
-#else // non-FFTW
+
+//=======================================================================================
+#elif defined ESSL
+    
+    if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) {
+	  (*plan->doplan)(&(plan->libplan_inout[i]),N,mysize[i],NULL,istride,idist,NULL,ostride,odist,isign);
+	  copy_plan(&plan->libplan_in[i],&plan->libplan_inout[i]);
+	  copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
+	}
+      }
+      /*
+      if(d1 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,d1,NULL,istride,idist,NULL,ostride,odist,isign);
+	copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
+	copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
+      }
+      if(d2 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d2,NULL,istride,idist,NULL,ostride,odist,isign);
+	copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
+	copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
+	}*/
+    }
+    else if(type->dt1 * type->dt2 == 2) { //Real-to-complex or complex-to-real
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) {
+	  (*plan->doplan)(&(plan->libplan_inout[i]),N,mysize[i],NULL,istride,idist,NULL,ostride,odist);
+	  copy_plan(&plan->libplan_in[i],&plan->libplan_inout[i]);
+	  copy_plan(&plan->libplan_out[i],&plan->libplan_inout[i]);
+	}
+      }
+      /*
+      if(d1 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices]),N,d1,NULL,istride,idist,NULL,ostride,odist);
+	copy_plan(&plan->libplan_in[nslices],&plan->libplan_inout[nslices]);
+	copy_plan(&plan->libplan_out[nslices],&plan->libplan_inout[nslices]);
+      }
+      if(d2 > 0) {
+	(*plan->doplan)(&(plan->libplan_inout[nslices+1]),N,d2,NULL,istride,idist,NULL,ostride,odist);
+	copy_plan(&plan->libplan_in[nslices+1],&plan->libplan_inout[nslices+1]);
+	copy_plan(&plan->libplan_out[nslices+1],&plan->libplan_inout[nslices+1]);
+	}*/
+    }
+    else { // Real-to-real ...
+    }
+
+#elif defined CUDA // non-FFTW
     //    A = (Type1 *) malloc(sizeof(Type1)*size1);
     //B = (Type2 *) malloc(sizeof(Type2)*size2);
-    A = new Type1[size1];
-    B = new Type2[size2];
-    if(type->dt1 == 1 && type->dt2 == 1) //Real-to-real
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
-    else if(type->dt1 == 2 && type->dt2 == 2) { //Complex-to-complex
-      //      if(isign == 0) 
-      //	cout << "Error in find_plan: isign is not set" << endl;
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,isign,fft_flag);
+    //    A = new Type1[size1];
+    //B = new Type2[size2];
+
+    cufftType cType;
+
+    if(type->dt1 == 1 && type->dt2 == 1) { //Real-to-real
+      printf("Error in planning 1D transform: CUDA does not support real-to-real transforms\n");
+      plan->libplan_inout[0] = plan->libplan_out[0] = plan->libplan_out[0] = NULL;
     }
+    else {
+      if(type->dt1 == 2 && type->dt2 == 2)  //Complex-to-complex
+        cType = (prec == 4 ? CUFFT_C2C : CUFFT_Z2Z);
+      else if(type->dt1 == 1 && type->dt2 == 2)  //R2C
+        cType = (prec == 4 ? CUFFT_R2C : CUFFT_D2Z);
+      else  if(type->dt1 == 2 && type->dt2 == 1)  //C2R
+        cType = (prec == 4 ? CUFFT_C2R : CUFFT_Z2D);
+
+      // Plan CUDA transform
+      for(i=0;i<nslices;i++) {
+	if(mysize[i] > 0) { 
+	  cufftResult res = cufftPlanMany(&(plan->libplan_inout[i]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,mysize[i]);
+	  if(res != CUFFT_SUCCESS)
+	    printf("Error in CUFFT planner\n");
+	  else {
+	    plan->libplan_in[i] = plan->libplan_out[i] = plan->libplan_inout[i];
+	    cufftSetStream(plan->libplan_inout[i],streams[i]);
+	  }
+#ifdef DEBUG
+	printf("%d: Plan created %ld\n",Pgrid->taskid,plan->libplan_out[i]);
+#endif
+	}
+      }
+    }
+    /*
+    if(d1 > 0) {
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,d1);
+      if(res != CUFFT_SUCCESS)
+	printf("Error in CUFFT C2C_d\n");
+      else
+	plan->libplan_in[nslices] = plan->libplan_out[nslices] = plan->libplan_inout[nslices];
+    }
+    //    if(!arcmp(mo1,mo2,3))
+    if(d2 > 0) {
+      cufftResult res = cufftPlanMany(&(plan->libplan_inout[nslices+1]),1,&N,inembed,istride,idist,onembed,ostride,odist,cType,d2);
+      if(res != CUFFT_SUCCESS)
+	printf("Error in CUFFT C2C_d\n");
+      else
+	plan->libplan_in[nslices+1] = plan->libplan_out[nslices+1] = plan->libplan_inout[nslices+1];
+	}*/
+
+
+    /*
     else //R2C or C2R
-      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,idist,B,NULL,ostride,odist,fft_flag);
+      plan->libplan_inout = (long) (*(plan->doplan))(1,&N,m,A,NULL,istride,id\
+ist,B,NULL,ostride,odist,fft_flag);
     free(A);
     free(B);
+    */
 #endif
   
   return;
