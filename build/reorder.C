@@ -562,35 +562,34 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
 
 	for(j=0;j < d1[1];j+= nb23) {
 	  j2 = min(j+nb23,d1[1]);
-	      
-	  for(kk=k; kk < k2; kk++) {
-	    pin1 =  (Type2 *) tmpbuf + j * d2[1] + (kk-k) *d2[1]*d2[2];
-	    pout1 =  out + kk + d2[0]* j * d2[1] ;
-	    for(jj=j;jj < j2;jj++) {
-	      pin = pin1;
+
+	  mystart = 0;
+	  for(ipack=0;ipack<pack_procs;ipack++) {
+	    if(ipack < nl)
 	      jsize = sz;
-	      for(i=0;i < lim;i+=sz) {
-		pout = pout1 + i * dmult;
-		for(ii=i;ii < i+sz;ii++) {
-		  *pout = *pin++;
-		  pout += d2[0];
-		}
-	      }
+	    else
 	      jsize = sz+1;
-	      for(;i < d2[1];i+=jsize) {
-		pout = pout1 + i * dmult;
-		for(ii=i;ii < min(d2[1],i+jsize);ii++) {
+	    myen = mystart + jsize;
+	    start = mystart * dmult;
+	    
+	    for(kk=k; kk < k2; kk++) {
+	      pin1 =  (Type2 *) tmpbuf + j * d2[1] + (kk-k) *d2[1]*d2[2] + mystart;
+	      pout1 =  out + start + kk + d2[0]* j * jsize;
+	      for(jj=j;jj < j2;jj++) {
+		pin = pin1;
+		pout = pout1;
+		for(i=mystart;i < myen;i++) {
 		  *pout = *pin++;
 		  pout += d2[0];
 		}
+		pin1 += d2[1];
+		pout1+= d2[0]*jsize;
 	      }
-	      pin1 += d2[1];
-	      pout1+=d2[0]*d2[1];
 	    }
+	    mystart += jsize;
 	  }
 	}
       }
-      
       else if(pack_dim == 0) {
 	
 	for(j=0;j < d1[1];j+= nb23) {
