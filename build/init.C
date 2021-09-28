@@ -789,9 +789,8 @@ void cleanup()
   //  for(vector<Plan *>::iterator it=Plans.begin();it != Plans.end();it++) {
   vector<Plan *>::iterator it=Plans.begin();
   while(it != Plans.end()) {
+    Plantype<double,double> *pl = (Plantype<double,double> *) *it;
     for(int i=0;i<nslices;i++) {
-      Plantype<double,double> *pl = (Plantype<double,double> *) *it;
-      if(pl->mysize[i] > 0) {
 #ifdef FFTW
 	if(pl->libplan_in[i] != NULL)
 	  fftw_destroy_plan((fftw_plan) pl->libplan_in[i]);
@@ -814,9 +813,8 @@ void cleanup()
 	//if(pl->libplan_inout[i] != NULL) 
 	// cufftDestroy((cufftHandle) pl->libplan_inout[i]);
 #endif
-      }
-      delete [] pl->mysize;
     }
+    delete [] pl->mysize;
     delete [] (*it)->libplan_in,(*it)->libplan_out,(*it)->libplan_inout;
 
 

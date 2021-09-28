@@ -330,14 +330,14 @@ void inv_mo(int mo[3],int imo[3]);
 
       if(!tmptype->is_empty) { // Combine transpose with transform
 
-	if(tmpgrid0->MemOrder[L[st]] == 0)
+	//	if(tmpgrid0->MemOrder[L[st]] == 0)
+	/// intgrid = new DataGrid(*tmpgrid0);
+	//else if(tmpgrid1->MemOrder[L[st]] == 0) {
 	  intgrid = new DataGrid(*tmpgrid0);
-	else if(tmpgrid1->MemOrder[L[st]] == 0) {
-	  intgrid = new DataGrid(*tmpgrid0);
-	  intgrid->set_mo(tmpgrid1->MemOrder);
-	}
-	else 
-	  printf("Error initializing trans_MPIplan: neither input nor output is lead-dimension local\n");
+	  intgrid->set_mo(monext);//tmpgrid1->MemOrder);
+	  //}
+	  //else 
+	  //printf("Error initializing trans_MPIplan: neither input nor output is lead-dimension local\n");
 	
 	if(dt_1 != dt_2) {
 	  intgrid->get_gdims(gdims);
