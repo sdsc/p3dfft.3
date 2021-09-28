@@ -222,7 +222,7 @@ typedef complex<double> complex_double;
 void setup(int nslices=1);
 void cleanup();
 int arcmp(int *A,int *B,int N);
-void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices);
+  void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split_dim);
 bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
