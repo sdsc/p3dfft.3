@@ -1256,14 +1256,14 @@ void divide_dims(int **offset,int **mysize,int dims[3],int nslices,int split_dim
 
   offset[0][split_dim] = 0;
   for(i=0;i<nslices-1;i++) {
-    mysize[i][split_dim] = ((i < l) ? chunk+1 : chunk)*m;
+    mysize[i][split_dim] = (i < l) ? chunk+1 : chunk;
     offset[i+1][split_dim] = offset[i][split_dim] + mysize[i][split_dim];
     mysize[i][d1] = dims[d1];
     offset[i][d1] = 0;
     mysize[i][d2] = dims[d2];
     offset[i][d2] = 0;
   }
-  mysize[i][split_dim] = ((i < l) ? chunk+1 : chunk)*m;
+  mysize[i][split_dim] = (i < l) ? chunk+1 : chunk;
   mysize[i][d1] = dims[d1];
   mysize[i][d2] = dims[d2];
   offset[i][d1] = 0;
@@ -1432,9 +1432,14 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     RcvStrt[i] = new int[nt];
   }
 
-  int i2; // Logical dimension of the split across slices
+  int i2,*mo; // Logical dimension of the split across slices
+  if(trplan->mo1[trplan->trans_dim] == 0)
+    mo = trplan->mo1;
+  else
+    mo = trplan->mo2;
+  
   for(i=0;i<3;i++)
-    if(trplan->mo2[i] == 2)
+    if(mo[i] == 2)
       i2 = i;
 
   int *offset1[nslices],*offset2[nslices],*mysize1[nslices],*mysize2[nslices];
@@ -1444,34 +1449,41 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     mysize[t] = new int[3];
   }
   for(i=0;i<nslices;i++) {
-    offset1[t] = new int[3];
-    mysize1[t] = new int[3];
-    offset2[t] = new int[3];
-    mysize2[t] = new int[3];
+    offset1[i] = new int[3];
+    mysize1[i] = new int[3];
+    offset2[i] = new int[3];
+    mysize2[i] = new int[3];
   }    
-  divide_dims(offset1,mysize1,mpiplan->dims1,nslices,i2);
-  divide_dims(offset2,mysize2,mpiplan->dims2,nslices,i2);
-
-  for(i=0;i<nslices;i++) {
-    divide_dims(offset,mysize,mysize1[i],nt,d2);
+  //  offset_snd = new int[nslices];
+  //offset_rcv = new int[nslices];
+  divide_dims(offset1,mysize1,mpiplan->dims1,nt,d2);
+  divide_dims(offset2,mysize2,mpiplan->dims2,nt,d1);
+  int m1 = MULT3(mpiplan->dims1)/mpiplan->dims1[d1];
+  int m2 = MULT3(dims2)/dims2[d2];
+  
+  for(t=0;t<nt;t++) {
+    //    offset_snd[i] = offset1[i][i2]*m1;
+    //offset_rcv[i] = offset2[i][i2]*m2;
+    divide_dims(offset,mysize,mysize1[t],nslices,i2);
     for(j=0;j<3;j++) {
       int ij = trplan->mo2[j];
-      for(t=0;t<nt;t++) {
-	// save time	sndst[mo2[j]][i][t] = offset1[i][j] + offset[t];
-	sndsz[ij][i][t] = mysize[t][j];
-	//snden[mo2[j]][i][t] = offset1[i][j] + offset[t] + mysize[t];
-      }
-    divide_dims(offset,mysize,mysize2[i],nt,d1);
-    for(j=0;j<3;j++) {
-        int ij = trplan->mo2[j];
-	for(t=0;t<nt;t++) {
-	rcvst[ij][i][t] = offset2[i][j] + offset[t][j];
-	rcvsz[ij][i][t] = mysize[t][j];
-	rcven[ij][i][t] = offset2[i][j] + offset[t][j] + mysize[t][j];
+      for(i=0;i<nslices;i++) {
+	sndst[ij][i][t] = offset1[i][j] + offset[i][j];
+	sndsz[ij][i][t] = mysize[i][j];
+	snden[ij][i][t] = offset1[i][j] + offset[i][j] + mysize[i][j];
       }
     }
+    divide_dims(offset,mysize,mysize2[t],nslices,i2);
+    for(j=0;j<3;j++) {
+      int ij = trplan->mo2[j];
+      for(i=0;i<nslices;i++) {
+	rcvst[ij][i][t] = offset2[t][j] + offset[i][j];
+	rcvsz[ij][i][t] = mysize[i][j];
+	rcven[ij][i][t] = offset2[t][j] + offset[i][j] + mysize[i][j];
+      }
     }
   }
+  
   /*
   for(j=0;j<3;i++)
     if(mo2[d1] == j) 
@@ -1524,14 +1536,11 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   */
   
   int sz=sizeof(Type2);
-  int m1 = MULT3(mpiplan->dims1)/mpiplan->dims1[i2];
-  int m2 = MULT3(dims2)/dims2[i2];
   
   for(i=0;i<nslices;i++) {
 
-    SndStrt[i][0] = offset1[i][i2]*m1;
-    RcvStrt[i][0] = offset2[i][i2]*m2;
-  
+    SndStrt[i][0] = sndst[trplan->mo2[i2]][i][0]*m1*sz;
+    RcvStrt[i][0] = rcvst[trplan->mo2[i2]][i][0]*m2*sz;
   //int rank;
     for(t=0; t< nt-1;t++) {
     //    comm_coords[l] = j;
@@ -1548,6 +1557,41 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     SndCnts[i][nt-1] = ((size_t) sndsz[0][i][nt-1]*(size_t) sndsz[1][i][nt-1]*(size_t) sndsz[2][i][nt-1])*sz;
     RcvCnts[i][nt-1] = ((size_t) rcvsz[0][i][nt-1]*(size_t) rcvsz[1][i][nt-1]*(size_t) rcvsz[2][i][nt-1])*sz;
   }
+#ifdef DEBUG
+  printf("SndStrt: ");
+  for(i=0;i<nslices;i++) {
+    printf("(");
+    for(t=0;t<nt;t++)
+      printf("%d ",SndStrt[i][t]);
+    printf(") ");
+  }
+  printf("\n");
+  printf("SndCnts: ");
+  for(i=0;i<nslices;i++) {
+    printf("(");
+    for(t=0;t<nt;t++)
+      printf("%d ",SndCnts[i][t]);
+    printf(") ");
+  }
+  printf("\n");
+  printf("RcvStrt: ");
+  for(i=0;i<nslices;i++) {
+    printf("(");
+    for(t=0;t<nt;t++)
+      printf("%d ",RcvStrt[i][t]);
+    printf(") ");
+  }
+  printf("\n");
+  printf("RcvCnts: ");
+  for(i=0;i<nslices;i++) {
+    printf("(");
+    for(t=0;t<nt;t++)
+      printf("%d ",RcvCnts[i][t]);
+    printf(") ");
+  }
+  printf("\n");
+
+#endif
   //  is_trans = is_mpi = true;
 }
 
