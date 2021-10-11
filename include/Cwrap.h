@@ -97,6 +97,27 @@ struct CDataGrid_struct {
 typedef struct CDataGrid_struct CDataGrid;
 typedef struct CDataGrid_struct Grid;
 
+#ifdef TIMERS
+/*struct timers_struct {
+  double reorder_deriv;
+  double reorder_trans;
+  double reorder_out;
+  double reorder_in;
+  double trans_exec;
+  double trans_deriv;
+  double packsend;
+  double packsend_trans;
+  double packsend_deriv;
+  double unpackrecv;
+  double alltoall;
+  double gpu_transfer;
+};
+extern struct timers_struct Ctimers;
+*/
+void timers_init();
+void timers_print(MPI_Comm mpicomm);
+#endif
+
 
 #ifdef CUDA
 void p3dfft_setup(int nslices);

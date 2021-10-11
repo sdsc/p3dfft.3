@@ -315,7 +315,7 @@ void printbuf(char *,int[3],int,int);
 #endif
       
 #ifdef TIMERS
- t = MPI_Wtime();
+    // t = MPI_Wtime();
 tmpi = 0.;
 #endif    
 
@@ -520,11 +520,12 @@ tmpi = 0.;
 
       next = 1-next;
       curr = 1-curr;
-
+      /*
 #ifdef TIMERS
 t = MPI_Wtime()-t;
 printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
-#endif    
+#endif  
+      */  
       /*     if(currdev >= 0)
 	     checkCudaErrors(cudaFree(DevBuf[currdev]));
     if(DevAlloc2) {

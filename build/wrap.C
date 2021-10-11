@@ -148,6 +148,20 @@ void p3dfft_cleanup() {
 
   /////////////// C wrap functions /////////////////////////////
 
+#ifdef TIMERS
+//struct timers_struct Ctimers;
+
+ void timers_init()
+ {
+   timers.init();
+ }
+
+ void timers_print(MPI_Comm mpicomm)
+ {
+   timers.print(mpicomm);
+ }
+ #endif
+ 
 
   Type3D p3dfft_init_3Dtype(int types[3]) //,char *name)
 {
