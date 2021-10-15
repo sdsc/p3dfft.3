@@ -1492,7 +1492,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   for(int i=0;i<3;i++)
     if(trplan->mo1[i] == 2)
       i2 = i;
-  if(trplan->mo2[mpiplan->d1] == 2 && trplan->mo2[i2] == 2) {
+  if(trplan->mo2[mpiplan->d1] == 2 && trplan->mo2[i2] == 2 && nslices == 1) {
     unpack = false;
     recvbuf = (Type2 *) out;
   }

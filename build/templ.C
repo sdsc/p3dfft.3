@@ -1442,37 +1442,63 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     if(mo[i] == 2)
       i2 = i;
 
-  int *offset1[nslices],*offset2[nslices],*mysize1[nslices],*mysize2[nslices];
-  int *offset[nt],*mysize[nt];
+  int *offset1[nslices],*offset2[nt],*mysize1[nslices],*mysize2[nt];
+  int **offset,**mysize;
+  offset = new int*[nt];
+  mysize = new int*[nt];
   for(t=0;t<nt;t++) {
     offset[t] = new int[3];
     mysize[t] = new int[3];
   }
+  
   for(i=0;i<nslices;i++) {
     offset1[i] = new int[3];
     mysize1[i] = new int[3];
-    offset2[i] = new int[3];
-    mysize2[i] = new int[3];
+    //  offset2[i] = new int[3];
+    //mysize2[i] = new int[3];
   }    
   //  offset_snd = new int[nslices];
   //offset_rcv = new int[nslices];
-  divide_dims(offset1,mysize1,mpiplan->dims1,nt,d2);
-  divide_dims(offset2,mysize2,mpiplan->dims2,nt,d1);
-  int m1 = MULT3(mpiplan->dims1)/mpiplan->dims1[d1];
-  int m2 = MULT3(dims2)/dims2[d2];
+  divide_dims(offset1,mysize1,mpiplan->dims1,nslices,i2);
+  //  divide_dims(offset2,mysize2,mpiplan->dims2,nslices,i2);
+  //int m1 = MULT3(mpiplan->dims1)/mpiplan->dims1[d1];
+  //int m2 = MULT3(dims2)/dims2[d2];
+  int m1,m2;
   
-  for(t=0;t<nt;t++) {
+  for(i=0;i<nslices;i++) {
     //    offset_snd[i] = offset1[i][i2]*m1;
     //offset_rcv[i] = offset2[i][i2]*m2;
-    divide_dims(offset,mysize,mysize1[t],nslices,i2);
+    divide_dims(offset,mysize,mysize1[i],nt,d2);
     for(j=0;j<3;j++) {
       int ij = trplan->mo2[j];
-      for(i=0;i<nslices;i++) {
-	sndst[ij][i][t] = offset1[i][j] + offset[i][j];
-	sndsz[ij][i][t] = mysize[i][j];
-	snden[ij][i][t] = offset1[i][j] + offset[i][j] + mysize[i][j];
+      for(t=0;t<nt;t++) {
+	sndst[ij][i][t] = offset1[i][j] + offset[t][j];
+	sndsz[ij][i][t] = mysize[t][j];
+	snden[ij][i][t] = offset1[i][j] + offset[t][j] + mysize[t][j];
       }
     }
+  }
+  for(t=0;t<nt;t++)
+    delete [] offset[i],mysize[t];
+  for(i=0;i<nslices;i++) 
+    delete [] offset1,mysize1;
+  delete [] offset,mysize,offset1,mysize1;
+  
+  offset = new int*[nslices];
+  mysize = new int*[nslices];
+  for(i=0;i<nslices;i++) {
+    offset[i] = new int[3];
+    mysize[i] = new int[3];
+  }
+  
+  for(t=0;t<nt;t++) {
+    offset2[i] = new int[3];
+    mysize2[i] = new int[3];
+  }
+  
+  divide_dims(offset2,mysize2,mpiplan->dims2,nt,d1);
+ 
+  for(t=0;t<nt;t++) {
     divide_dims(offset,mysize,mysize2[t],nslices,i2);
     for(j=0;j<3;j++) {
       int ij = trplan->mo2[j];
@@ -1484,7 +1510,13 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     }
   }
   
-  /*
+  for(t=0;t<nt;t++)
+    delete [] offset2[t],mysize2[t];
+  for(i=0;i<nslices;i++) 
+    delete [] offset[i],mysize[i];
+  delete [] offset,mysize,offset2,mysize2;
+
+    /*
   for(j=0;j<3;i++)
     if(mo2[d1] == j) 
       for(i=0;i<nslices;i++) {
@@ -1536,12 +1568,20 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   */
   
   int sz=sizeof(Type2);
-  
+  int i0;
+  int snd_start,rcv_start;
+
+  snd_start = rcv_start = 0;
   for(i=0;i<nslices;i++) {
 
-    SndStrt[i][0] = sndst[trplan->mo2[i2]][i][0]*m1*sz;
-    RcvStrt[i][0] = rcvst[trplan->mo2[i2]][i][0]*m2*sz;
-  //int rank;
+    //    i0 = trplan->mo2[i2];
+    //m1 = sndsz[(i0+1)%3][i][0]*sndsz[(i0+2)%3][i][0];
+    //m2 = rcvsz[(i0+1)%3][i][0]*rcvsz[(i0+2)%3][i][0];
+    //SndStrt[i][0] = sndst[i0][i][0]*m1*sz;
+    //RcvStrt[i][0] = rcvst[i0][i][0]*m2*sz;
+    SndStrt[i][0] = snd_start;
+    RcvStrt[i][0] = snd_start;
+    //int rank;
     for(t=0; t< nt-1;t++) {
     //    comm_coords[l] = j;
     //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
@@ -1556,6 +1596,8 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   //MPI_Cart_rank(mpicomm_,comm_coords,&rank); 
     SndCnts[i][nt-1] = ((size_t) sndsz[0][i][nt-1]*(size_t) sndsz[1][i][nt-1]*(size_t) sndsz[2][i][nt-1])*sz;
     RcvCnts[i][nt-1] = ((size_t) rcvsz[0][i][nt-1]*(size_t) rcvsz[1][i][nt-1]*(size_t) rcvsz[2][i][nt-1])*sz;
+    snd_start = SndStrt[i][nt-1] + SndCnts[i][nt-1];
+    rcv_start = RcvStrt[i][nt-1] + RcvCnts[i][nt-1];
   }
 #ifdef DEBUG
   printf("SndStrt: ");
