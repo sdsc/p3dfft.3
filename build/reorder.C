@@ -565,14 +565,14 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
       //else
       if(exec) {
 	for(kk=k;kk < k2;kk++) {
-	  pout = (Type2 *) tmpbuf + d2[1]*d2[2]*(kk-k);
+	  pout = (Type2 *) tmpbuf + d2[1]*d2[2]*kk;
 	  (*exec)(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	  if(deriv)
 	    compute_deriv_loc(pout,pout,sdims);
 	}
       }
       else if((void *) in == (void *) out)
-	memcpy(tmpbuf,in+k*d1[0]*d1[1],d2[2]*d2[1]*(k2-k)*sizeof(Type2));
+	memcpy(tmpbuf+k*d1[0]*d1[1],in+k*d1[0]*d1[1],d2[2]*d2[1]*(k2-k)*sizeof(Type2));
       else
 	tmpbuf = (char *) (in + k*d1[0]*d1[1]);
       
@@ -591,8 +591,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
 	    start = mystart * dmult;
 	    
 	    for(kk=k; kk < k2; kk++) {
-	      pin1 =  (Type2 *) tmpbuf + j * d2[1] + (kk-k) *d2[1]*d2[2] + mystart;
-	      pout1 =  out + start + kk -kst + (ken-kst)* j * jsize;
+	      pin1 =  (Type2 *) tmpbuf + j * d2[1] + kk *d2[1]*d2[2] + mystart;
+	      pout1 =  out + start + kk-kst + (ken-kst)* j * jsize;
 	      for(jj=j;jj < j2;jj++) {
 		pin = pin1;
 		pout = pout1;
@@ -619,8 +619,8 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
 	      isize = sz;
 	    else
 	      isize = sz+1;
-	    pin1 =  (Type2 *) tmpbuf + j * d2[1] + (kk-k) *d2[1]*d2[2];
-	    pout1 =  out + (kk-k0) + isize* j * d2[1] +(k0-kst) * dmult;
+	    pin1 =  (Type2 *) tmpbuf + j * d2[1] + kk *d2[1]*d2[2];
+	    pout1 =  out + (kk-k0) + isize* j * d2[1] + k0 * dmult;
 	    for(jj=j;jj < j2;jj++) {
 	      pin = pin1;
 	      pout = pout1;
@@ -651,7 +651,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
 	  j2 = min(j+nb23,d1[1]);
 	      
 	  for(kk=k; kk < k2; kk++) {
-	    pin1 =  (Type2 *) tmpbuf + j * d2[1] + (kk-k) *d2[1]*d2[2];
+	    pin1 =  (Type2 *) tmpbuf + j * d2[1] + kk *d2[1]*d2[2];
 	    pout1 =  out1 + kk + d0 * j * d2[1] ;
 	    for(jj=j;jj < j2;jj++) {
 	      pin = pin1;
@@ -767,7 +767,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
     
     if(exec) {
       for(kk=k;kk < k2;kk++) {
-	pout = (Type2 *) tmpbuf + d2[1]*d2[2]*(kk-k);
+	pout = (Type2 *) tmpbuf + d2[1]*d2[2]*kk;
 	(*(exec))(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	if(deriv) 
 	  compute_deriv_loc(pout,pout,sdims);
@@ -784,7 +784,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
       for(i=0;i < d2[2];i+=nb13) {
 	i2 = min(i+nb13,d2[2]);
 	for(kk=k; kk < k2; kk++) {
-	  pin1 =  (Type2 *) tmpbuf + (kk-k)*d2[2]*d2[1] +i;
+	  pin1 =  (Type2 *) tmpbuf + kk*d2[2]*d2[1] +i;
 	  pout1 =  out + (kk-kst) ;
 	  j0 = 0;
 	  for(j=0;j < d2[1];j++) {
@@ -812,7 +812,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
 	i2 = min(i+nb13,d2[2]);
 	k0 = kst;//kinit;
 	for(kk=k; kk < k2; kk++) {
-	  pin1 =  (Type2 *) tmpbuf + (kk-k)*d2[2]*d2[1] +i;
+	  pin1 =  (Type2 *) tmpbuf + kk*d2[2]*d2[1] +i;
 	  if(kk < lim)
 	    isize = sz;
 	  else
@@ -848,7 +848,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
       for(i=0;i < d2[2];i+=nb13) {
 	i2 = min(i+nb13,d2[2]);
 	for(kk=k; kk < k2; kk++) {
-	  pin1 =  (Type2 *) tmpbuf + (kk-k)*d2[2]*d2[1] +i;
+	  pin1 =  (Type2 *) tmpbuf + kk*d2[2]*d2[1] +i;
 	  pout1 =  out1 + kk + i *d2[1]*d0;
 	  for(j=0;j < d2[1];j++) {
 	    pin = pin1;
@@ -948,7 +948,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(T
     
     if(exec) {
       for(kk=k;kk < k2;kk++) {
-	pout = (Type2 *) tmpbuf + d2[0]*d2[2]*(kk-k);
+	pout = (Type2 *) tmpbuf + d2[0]*d2[2]*kk;
 	(*(exec))(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	if(deriv) 
 	  compute_deriv_loc(pout,pout,sdims);
@@ -966,7 +966,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(T
 	i2 = min(i+nb13,d2[2]);
 	for(j=0;j <d1[1];j++) {
 	  k0 = kst; //kinit;
-	  pin1 = (Type2 *) tmpbuf + i + j*d2[2];
+	  pin1 = (Type2 *) tmpbuf + i + j*d2[2]+k*d2[0]*d2[2];
 	  pout1 = out + j;
 	  for(kk=k; kk < k2; kk++) {
 	    if(kk < lim)
@@ -997,7 +997,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(T
 	    isize = sz;
 	  else
 	    isize = sz+1;
-	  pin1 = (Type2 *) tmpbuf + i + j*d2[2];
+	  pin1 = (Type2 *) tmpbuf + i + j*d2[2]+k*d2[0]*d2[2];
 	  pout1 =  out + j -j0 +isize*(k-kst + i *(ken-kst)) + j0 * dmult;//ar3d_cnt(jj,pack_procs,sz,l,dmult);;
 	  for(kk=k; kk < k2; kk++) {
 	    pin = pin1;
@@ -1028,7 +1028,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(T
       for(i=0;i < d2[2];i+= nb13) {
 	i2 = min(i+nb13,d2[2]);
 	for(j=0;j <d1[1];j++) {
-	  pin1 = (Type2 *) tmpbuf + i + j*d2[2];
+	  pin1 = (Type2 *) tmpbuf + i + j*d2[2]+k*d2[0]*d2[2];
 	  pout1 =  out1 + j + d2[0]*(k + i * dk);
 	  for(kk=k; kk < k2; kk++) {
 	    pin = pin1;

@@ -37,7 +37,7 @@ using namespace p3dfft;
 
 void init_wave1D(double *,int[3],int *,int[3],int);
 void print_res(double *,int *,int *,int *, int);
-void normalize(double *,long int,int *,int);
+void normalize(double *,size_t,int *,int);
 double check_res(double*,double *, int *);
 void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
@@ -56,7 +56,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int *ldims,*ldims2;
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   int glob_start1[3],glob_start2[3];
   double *OUT;
@@ -72,6 +72,7 @@ int main(int argc,char **argv)
   double gtmax = 0.;
   int pdims[3],nx,ny,nz,n,dim,cnt;
   FILE *fp;
+  int nslices=1;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -90,17 +91,19 @@ int main(int argc,char **argv)
         printf("Cannot open input file. Setting to default nx=ny=nz=128, dim=0, n=1.\n");
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep,&nslices);
         fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
      }
      printf("P3DFFT test, 1D wave input, 1D FFT\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions, %d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions, %d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #endif
+     printf("Memory order initial: %d %d %d\n",mem_order1[0],mem_order1[1],mem_order1[2]);
+     printf("Memory order final: %d %d %d\n",mem_order2[0],mem_order2[1],mem_order2[2]);
    }
 
    // Broadcast input parameters
@@ -112,7 +115,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
-
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
      fp = fopen("dims","r");
@@ -140,7 +143,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  setup();
+  setup(nslices);
 
   //Set up 2 transform types for 3D transforms
 
@@ -181,17 +184,22 @@ int main(int argc,char **argv)
   // For final grid, intended for complex-valued array, there will be conjugate symmetry in the dimension of the transform (dim) since it is a R2C transform
   DataGrid grid2(gdims2,dim,&pgrid,dmap,mem_order2);
 
+#ifdef CUDA
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
+  transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim,LocHost,LocHost);
+  //Now set up the backward transform
+  transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim,LocHost,LocHost);
+#else
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
   transplan<double,complex_double> trans_f(grid1,grid2,type_ids1,dim);
-
   //Now set up the backward transform
-
   transplan<complex_double,double> trans_b(grid2,grid1,type_ids2,dim);
+#endif
 
   //Determine local array dimensions. 
 
   ldims = grid1.Ldims;
-  size1 = ldims[0]*ldims[1]*ldims[2];
+  size1 = MULT3(ldims);//ldims[0]*ldims[1]*ldims[2];
 
   //Now allocate initial and final arrays in physical space (real-valued)
   IN=(double *) malloc(sizeof(double)*size1);
@@ -214,24 +222,24 @@ int main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2.Ldims;
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);//ldims2[0]*ldims2[1]*ldims2[2];
   int ar_dim2 = mem_order2[dim];
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT,false);
+  trans_f.exec((char *) IN,(char *) OUT,-1,false);
 
-  Nglob = gdims[0]*gdims[1]*gdims[2];
+  Nglob = MULT3(gdims);
 
   //  if(myid == 0)
   // printf("Results of forward transform: \n");
   // print_res(OUT,gdims,sdims2,glob_start2,ld);
-  normalize(OUT,sdims2[0]*sdims2[1]*sdims2[2],gdims,ld);
+  normalize(OUT,size2,gdims,ld);
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
-  trans_b.exec((char *) OUT,(char *) FIN,true);
+  trans_b.exec((char *) OUT,(char *) FIN,-1,true);
 
   mydiff = check_res(IN,FIN,sdims1);
 
@@ -249,7 +257,7 @@ int main(int argc,char **argv)
 
   // Clean up all P3DFFT++ data
 
-  p3dfft_cleanup();
+  cleanup();
 
   }
 
@@ -288,9 +296,9 @@ void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int 
 
 }
 
-void normalize(double *A,long int size,int *gdims,int dim)
+void normalize(double *A,size_t size,int *gdims,int dim)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[dim]));
   
   for(i=0;i<size*2;i++)

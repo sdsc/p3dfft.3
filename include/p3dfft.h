@@ -221,9 +221,12 @@ typedef complex<double> complex_double;
 
 void setup(int nslices=1);
 void cleanup();
+
 int arcmp(int *A,int *B,int N);
+int excl(int,int),dist(int);
 void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split_dim);
 void divide_dims(int **offset,int **mysize,int dims[3],int nslices,int split_dim);
+  void compl_mo(int mo[3]);
 bool cmpmo(int mo[3],int rhs);
 void rel_change(int *,int *,int *);
 void inv_mo(int mo[3],int imo[3]);
@@ -864,6 +867,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   int ***sndst,***sndsz,***snden;
   int ***rcvst,***rcvsz,***rcven;
   int **SndCnts,**SndStrt,**RcvCnts,**RcvStrt;   
+  int *offset_snd,*offset_rcv;
   
   void pack_sendbuf_trans_slice(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
   void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
@@ -897,7 +901,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
       delete [] RcvCnts[i];
       delete [] RcvStrt[i];
     }
-    delete [] SndCnts,SndStrt,RcvCnts,RcvStrt;
+    delete [] SndCnts,SndStrt,RcvCnts,RcvStrt,offset_snd,offset_rcv;
     for(j=0;j<3;j++) {
       delete [] sndst[j];
       delete [] snden[j];

@@ -134,7 +134,10 @@ void printbuf(char *,int[3],int,int);
   buf_out = (char *) out;
   int cnt=0;
   int prev_t = 1;
-
+  int nextvar=0;
+  int nvar=0;
+  char *var[2];
+  
   int *dims1 = grid1->Ldims;
   size_t size0 = MULT3(grid1->Ldims);//((size_t) s[0]*s[1]) *((size_t) s[2]*dt1);
   size_t size_out = MULT3(grid2->Ldims);//((size_t) s[0]*s[1]) *((size_t) s[2]*dt1);
@@ -198,7 +201,7 @@ void printbuf(char *,int[3],int,int);
 #endif
 
   stage *st;
-  char *curr_work_host = work_host;
+  //  char *curr_work_host = work_host;
   char *tmp;
   double t,tmpi=0.;
 
@@ -280,9 +283,10 @@ void printbuf(char *,int[3],int,int);
     
 #else //non-CUDA
     
-    else 
-      if(!OW && buf[curr] == buf_in) { //|| size2*dt_2 > size1 *dt_1) {
-	//  out-place
+    else {
+      /* if(!OW && buf[curr] == buf_in || size2*dt_2 > size1 *dt_1) {
+      
+      //  out-place
 	// check if we can use the destination array as the output buffer
 	size_t sz = MULT3(grid2->Ldims) * dt2;//((size_t) dt2 * grid2->Ldims[0]) *((size_t) grid2->Ldims[1] *grid2->Ldims[2]);
 	if(dt_2 * size2 <= sz) {
@@ -295,23 +299,23 @@ void printbuf(char *,int[3],int,int);
 	else if(size2 * dt_2 > size0) { //  allocate a new buffer
 	  buf[next] = work_host;
 	  curr_work_host += size2*dt_2*st->stage_prec;
-	  /*
+      */
 #ifdef DEBUG
-	  printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
+      printf("%d: exec: Allocating new var %d, dims1=(%d %d %d), dims2=(%d %d %d)\n",taskid,size2,curr_stage->dims1[0],curr_stage->dims1[1],curr_stage->dims1[2],curr_stage->dims2[0],curr_stage->dims2[1],curr_stage->dims2[2]);
 #endif
-	  var[nextvar] = new char[size2*dt_2*st->stage_prec];
-	  buf[next] = var[nextvar];
-	  nvar++;
-	  nextvar = 1-nextvar;
-	  */
-	}
-		  
+      var[nextvar] = new char[size2*dt_2*st->stage_prec];
+      buf[next] = var[nextvar];
+      nvar++;
+      nextvar = 1-nextvar;
+    }
+    /*		  
       }
       else { // In-place
 	buf[next] = work_host;
 	curr_work_host = max(curr_work_host,work_host+size2*dt_2*st->stage_prec);
-      }
-
+    }
+    */
+  
 #endif
       
 #ifdef TIMERS
@@ -323,7 +327,7 @@ tmpi = 0.;
       // Only transform, no exchange
       
 	transplan<Type1,Type2> *tr = (transplan<Type1,Type2> *) st;
-
+	
 #ifdef DEBUG
 	  mo2 = tr->mo2;
 #endif
@@ -389,7 +393,7 @@ tmpi = 0.;
 	  }
 	  */
 #else
-	    tmp = curr_work_host;
+	    tmp = work_host;
 	    /*
 	    if(arcmp(tr->mo1,tr->mo2,3)) {
 	      tmp += size2*dt_2*stage_prec;
@@ -453,14 +457,14 @@ tmpi = 0.;
 #ifdef DEBUG
 	  mo2 = tr->mo2;
 #endif
-	  tr->exec(buf[curr],buf[next],curr_work_host);
+	  tr->exec(buf[curr],buf[next],work_host);
 	}
 	else {
 	  MPIplan<Type2> *tr = (MPIplan<Type2> *) curr_stage; 
 #ifdef DEBUG
 	  mo2 = tr->mo2;
 #endif
-	  tr->exec(buf[curr],buf[next],curr_work_host);
+	  tr->exec(buf[curr],buf[next],work_host);
 	}
 	prevLoc = LocHost;
       }
@@ -472,21 +476,21 @@ tmpi = 0.;
 #ifdef DEBUG
 	    mo2 = tr->trplan->mo2;
 #endif
-	    tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char * ) in,curr_work_host,curr_work_dev,&tmpi);
+	    tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char * ) in,work_host,curr_work_dev,&tmpi);
 	  }
 	  else {
 	    trans_MPIplan<Type2,Type2> *tr = (trans_MPIplan<Type2,Type2> *) (transplan<Type2,Type2> *) curr_stage;
 #ifdef DEBUG
 	    mo2 = tr->trplan->mo2;
 #endif
-	    tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in,curr_work_host,curr_work_dev,&tmpi);
+	    tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in,work_host,curr_work_dev,&tmpi);
 	  }
 	else {
 	  trans_MPIplan<Type1,Type2> *tr = (trans_MPIplan<Type1,Type2> *) (transplan<Type1,Type2> *) curr_stage;
 #ifdef DEBUG
 	  mo2 = tr->trplan->mo2;
 #endif
-	  tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in,curr_work_host,curr_work_dev,&tmpi);
+	  tr->exec_nb(buf[curr],buf[next],idir,event_hold,OW  || buf[curr] != (char *) in,work_host,curr_work_dev,&tmpi);
 	  prev_t = 2;
 	}
 #ifdef CUDA
@@ -507,7 +511,6 @@ tmpi = 0.;
 	write_buf<Type1>((Type1 *) buf[next],str,curr_stage->dims2,imo);
 #endif
       
-      /*
       if(nvar > 1) { // Keep track and delete buffers that are no longer used
 #ifdef CUDA
 	checkCudaErrors(cudaFreeHost(var[nextvar]));
@@ -516,14 +519,13 @@ tmpi = 0.;
 #endif
 	nvar--;
       }
-      */
 
       next = 1-next;
       curr = 1-curr;
 
 #ifdef TIMERS
 t = MPI_Wtime()-t;
-printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
+//printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
 #endif    
       /*     if(currdev >= 0)
 	     checkCudaErrors(cudaFree(DevBuf[currdev]));
@@ -1497,36 +1499,38 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
     recvbuf = (Type2 *) out;
   }
 
-#ifdef TIMERS
-  double t1=MPI_Wtime();
-#endif
 
   int slice;
+  double t1;
   for(slice=0;slice<nslices;slice++) {
+#ifdef TIMERS
+  t1=MPI_Wtime();
+#endif
     pack_sendbuf_trans_slice(sendbuf+SndStrt[slice][0]/sizeof(Type2),in,dim_deriv,event_hold,slice,nslices,devbuf,OW,tmpbuf);
 
 #ifdef TIMERS
-    //      timers.packsend_trans += MPI_Wtime() -t1;
+    timers.packsend_trans += MPI_Wtime() -t1;
 #endif
   //  else
   //  tmpbuf += MULT3(tmpdims)*sizeof(Type2);
 
 #ifdef TIMERS
-    //t1=MPI_Wtime();
+    t1=MPI_Wtime();
 #endif
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
     //    char *pin = ((char *) sendbuf)+SndStrt[slice][0];
     //char *pout = ((char *) recvbuf)+RcvStrt[slice][0];
     MPI_Ialltoallv(sendbuf,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id],&req[slice]);
-#ifdef TIMERS
-    //  timers.alltoall += MPI_Wtime() -t1;
-  //*tmpi += MPI_Wtime() - t1;
-#endif
 
   }
   
   for(int cnt=0;cnt < nslices; cnt++) {
     MPI_Waitany(nslices,req,&slice,MPI_STATUS_IGNORE);
+#ifdef TIMERS
+    // Only meaningful if nslices=1
+    timers.alltoall += MPI_Wtime() -t1;
+    *tmpi += MPI_Wtime() - t1;
+#endif
   
     if(unpack) {
       //  delete [] sendbuf;
@@ -1665,11 +1669,12 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   //  checkCudaErrors(cudaMemcpyAsync(buf,trplan->DevBuf2, 65536,cudaMemcpyDeviceToHost,streams[0]));
 #endif
 
+  /*
 #ifdef TIMERS
   double t1,t2;
   t1 = MPI_Wtime();
 #endif
-
+  */
 
 #ifdef CUDA
   for(i=0;i<nslices;i++)
@@ -1686,13 +1691,14 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   trplan->exec_slice(src,(char *) sendbuf,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks);
 #endif
 
+  /*
 #ifdef TIMERS
   t2 = MPI_Wtime();
   timers.packsend_trans -= t2-t1;
   timers.trans_exec += t2-t1;
 #endif
 
-  
+  */
 
 #ifdef DEBUG
   tmpdims = trplan->grid2->Ldims;

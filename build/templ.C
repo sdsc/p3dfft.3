@@ -275,18 +275,30 @@ void inv_mo(int mo[3],int imo[3]);
     }
 
     if(st < 2) { 
-      if(mocurr[L[st]] == 0)
+      for(i=0;i<3;i++)
+	monext[i] = -1;
+      if(mocurr[L[st]] == 0) {
+	monext[L[st]]=grid2_.MemOrder[L[st]];
+	monext[L[st+1]] = 0;
+      }
+      /*	
 	if(st == 1)
 	  for(i=0;i<3;i++) 
 	    monext[i] = grid2_.MemOrder[i];
 	else
-	  swap0(monext,mocurr,L[st+1]);
-      else
+	swap0(monext,mocurr,L[st+1]); */
+      else {
+	monext[L[st]] = 0;
 	//	if(!tmptype->is_empty) {
-	if(st == 1) 
+	monext[L[st+1]] = 1;
+      }
+      compl_mo(monext);
+
+	  /*	if(st == 1) {
 	  swap0(monext,mocurr,L[st],(int *) grid2_.MemOrder);
 	else 
 	  swap0(monext,mocurr,L[st]);
+	  */
       //}
       //	else
       //	  swap0(monext,mocurr,L[st]);
@@ -465,10 +477,12 @@ void inv_mo(int mo[3],int imo[3]);
      //      curr_stage = init_transplan(*tmpgrid0,*tmpgrid1,tmptype,L[st],prec);
       curr_stage->kind = TRANS_ONLY;            
     }
-    
+
+    /*
     size_t size2 = MULT3(tmpgrid1->Ldims)*dt_2 * prec;
     if(size2 > size_out)
       WorkSpaceHost += size2;
+    */
     
     dt_prev = tmptype->dt2;
     delete tmpgrid0;
@@ -491,7 +505,7 @@ void inv_mo(int mo[3],int imo[3]);
 
   if(reverse_steps)  {
     curr_stage = final_trans<Type2>(&tmpgrid0,grid2_,curr_stage,prec,&wshost);
-    WorkSpaceHost += wshost;
+    WorkSpaceHost = max(WorkSpaceHost,wshost);
   }
   bool iseq = true;
   for(i=0; i < 3; i++) 
@@ -508,7 +522,7 @@ void inv_mo(int mo[3],int imo[3]);
 #ifdef CUDA
     WorkSpaceDev += ws;
 #else
-    WorkSpaceHost += ws;
+    WorkSpaceHost = max(WorkSpaceHost,ws);
 #endif    
   }
 
@@ -758,7 +772,6 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   int i,d1,d2;
   bool init_steps=false;
   gen_trans_type *tmptype; 
-  int excl(int,int),dist(int);
   *reverse_steps = false;
 
   for(i=0;i<3;i++) 
@@ -947,6 +960,14 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   return init_steps;
 }
 
+  void compl_mo(int mo[3])
+  {
+    int i;
+    for(i=0;i<3;i++)
+      if(mo[i] <0)
+	mo[i] = excl(mo[(i+1)%3],mo[(i+2)%3]);
+  }
+  
   int swap0(int newmo[3],int mo[3],int L, int *next)
 {
   int i,j;
@@ -1234,12 +1255,13 @@ void divide_work(size_t *offset,size_t *mysize,int dims[3],int nslices,int split
   size_t m = MULT3(dims)/size;
   size_t chunk = size/nslices;
   int l=size % nslices;
+  int nl = nslices - l;
   offset[0] = 0;
   for(i=0;i<nslices-1;i++) {
-    mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
+    mysize[i] = ((i < nl) ? chunk : chunk +1)*m;
     offset[i+1] = offset[i] + mysize[i];
   }
-  mysize[i] = ((i < l) ? chunk+1 : chunk)*m;
+  mysize[i] = ((i < nl) ? chunk : chunk +1)*m;
 
 }
 
@@ -1251,19 +1273,20 @@ void divide_dims(int **offset,int **mysize,int dims[3],int nslices,int split_dim
   size_t m = MULT3(dims)/size;
   size_t chunk = size/nslices;
   int l=size % nslices;
+  int nl = nslices - l;
   int d1 = (split_dim +1)%3;
   int d2 = (split_dim +2)%3;
 
   offset[0][split_dim] = 0;
   for(i=0;i<nslices-1;i++) {
-    mysize[i][split_dim] = (i < l) ? chunk+1 : chunk;
+    mysize[i][split_dim] = (i < nl) ? chunk : chunk +1;
     offset[i+1][split_dim] = offset[i][split_dim] + mysize[i][split_dim];
     mysize[i][d1] = dims[d1];
     offset[i][d1] = 0;
     mysize[i][d2] = dims[d2];
     offset[i][d2] = 0;
   }
-  mysize[i][split_dim] = (i < l) ? chunk+1 : chunk;
+  mysize[i][split_dim] = (i < nl) ? chunk : chunk+1;
   mysize[i][d1] = dims[d1];
   mysize[i][d2] = dims[d2];
   offset[i][d1] = 0;
@@ -1389,7 +1412,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   is_set = true;
   size_t size1 = MULT3((int *) intergrid.Ldims)*sizeof(Type2);
   size_t size2 = MULT3((int *) gr2.Ldims)*sizeof(Type2);
-  WorkSpaceHost += size1 + size2 + max_long(size1,size2);
+  WorkSpaceHost += size1 + size2;// + max_long(size1,size2);
   //  inplace = inplace_;
   dt1 = trplan->dt1;
   dt2 = trplan->dt2;
@@ -1479,9 +1502,9 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     }
   }
   for(t=0;t<nt;t++)
-    delete [] offset[i],mysize[t];
+    delete [] offset[t],mysize[t];
   for(i=0;i<nslices;i++) 
-    delete [] offset1,mysize1;
+    delete [] offset1[i],mysize1[i];
   delete [] offset,mysize,offset1,mysize1;
   
   offset = new int*[nslices];
@@ -1492,8 +1515,8 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
   }
   
   for(t=0;t<nt;t++) {
-    offset2[i] = new int[3];
-    mysize2[i] = new int[3];
+    offset2[t] = new int[3];
+    mysize2[t] = new int[3];
   }
   
   divide_dims(offset2,mysize2,mpiplan->dims2,nt,d1);

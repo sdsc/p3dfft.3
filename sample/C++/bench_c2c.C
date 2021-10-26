@@ -62,8 +62,6 @@ int main(int argc,char **argv)
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
-  {
-
    if(myid == 0) {
      printf("P3DFFT++ C++ test program. Running on %d cores\n",nprocs);
      printf("GitVersion = %s\n", GIT_VERSION);
@@ -92,37 +90,7 @@ int main(int argc,char **argv)
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
-   if(ndim == 1) {
-     pdims[0] = 1; pdims[1] = nprocs;
-     if(myid == 0)
-       printf("Using one-dimensional decomposition\n");
-   }
-   else if(ndim == 2) {
-     if(myid == 0)
-       printf("Using two-dimensional decomposition\n");
-     fp = fopen("dims","r");
-     if(fp != NULL) {
-       if(myid == 0)
-         printf("Reading proc. grid from file dims\n");
-       fscanf(fp,"%d %d\n",pdims,pdims+1);
-       fclose(fp);
-       if(pdims[0]*pdims[1] != nprocs)
-          pdims[1] = nprocs / pdims[0];
-     }
-     else {
-       if(myid == 0)
-          printf("Creating proc. grid with mpi_dims_create\n");
-       pdims[0]=pdims[1]=0;
-       MPI_Dims_create(nprocs,2,pdims);
-       if(pdims[0] > pdims[1]) {
-          pdims[0] = pdims[1];
-          pdims[1] = nprocs/pdims[0];
-       }
-     }
-   }
 
-   if(myid == 0)
-      printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
   setup(nslices);
@@ -141,27 +109,9 @@ int main(int argc,char **argv)
     mem_order1[i] = i; // The simplest case of sequential ordering
   }
 
-  p1 = pdims[0];
-  p2 = pdims[1];
-
-  // Define the processor grid. In this case, it's a 2D pencil, with 1st dimension local and the 2nd and 3rd split by iproc and jproc tasks respectively
-
-  pdims[0] = 1;
-  pdims[1] = p1;
-  pdims[2] = p2;
-
-  ProcGrid pgrid(pdims,MPI_COMM_WORLD);
 
   int dmap1[] = {0,1,2}; // Mapping data dimension X onto processor dimension X, and so on - 
                      // this is an X pencil, since Px =1
-
-  // Initialize the initial grid
-
-  DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order1);
-
-  //Define the final processor grid. The final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
-
-  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array interchanged. This helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering any of the six ways, including the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
 
   int mem_order2[] = {1,2,0};
 
@@ -171,111 +121,140 @@ int main(int argc,char **argv)
                      // Y onto Z and Z onto X
                      // this is a Z-pencil, since Px =1 - or at least one way to define it 
                      // (the other would be (2,1,0))
+  pdims[0] = 1;
+  int p,pmin = -1;
+  int sdims1[3],glob_start1[3];
+  double tmin=10000000.;
 
-  DataGrid Zpencil(gdims,-1,&pgrid,dmap2,mem_order2);
+  for(p=1;p<=nprocs;p++) {
+
+    if(nprocs%p)
+      continue;
+
+    pdims[1] = p;
+    pdims[2] = nprocs/p;
+    
+    ProcGrid pgrid(pdims,MPI_COMM_WORLD);
+    if(myid == 0)
+      printf("Using processor grid %d x %d\n",pdims[1],pdims[2]);
+
+  // Initialize the initial grid
+
+    DataGrid Xpencil(gdims,-1,&pgrid,dmap1,mem_order1);
+
+  //Define the final processor grid. The final grid may have different processor distribution and memory ordering, since for example many applications with convolution and those solving partial differential equations do not need the initial grid configuration in Fourier space. The flow of these applications is typically 1) transform from physical to Fourier space, 2) apply convolution or derivative calculation in Fourier space, and 3) inverse FFT to physical space. Since forward FFT's last step is 1D FFT in the third dimension, it is more efficient to leave this dimension local and stride-1, and since the first step of the inverse FFT is to start with the third dimension 1D FFT, this format naturally fits the algorithm and results in big savings of time due to elimination of several extra transposes.
+
+  // Set up memory order for the final grid layout (for complex array in Fourier space). It is more convenient to have the storage order of the array interchanged. This helps save on memory access bandwidth, and shouldn't affect the operations in the Fourier space very much, requiring basically a change in the loop order. However, note that as an alternative, it is possible to define the memory ordering any of the six ways, including the same as default (0,1,2). Note that the memory ordering is specified in C indices, i.e. starting from 0.
+
+
+    DataGrid Zpencil(gdims,-1,&pgrid,dmap2,mem_order2);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
 
-  int sdims1[3],glob_start1[3];
-  for(i=0;i<3;i++) {
-    glob_start1[mem_order1[i]] = Xpencil.GlobStart[i];
-    sdims1[mem_order1[i]] = Xpencil.Ldims[i];
-  }
+    for(i=0;i<3;i++) {
+      glob_start1[mem_order1[i]] = Xpencil.GlobStart[i];
+      sdims1[mem_order1[i]] = Xpencil.Ldims[i];
+    }
 
-  int size1 = MULT3(sdims1);//sdims1[0]*sdims1[1]*sdims1[2];
+    int size1 = sdims1[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
-  complex_double *IN=new complex_double[size1];
-  complex_double *FIN=new complex_double[size1];
+    complex_double *IN=new complex_double[size1];
+    complex_double *FIN=new complex_double[size1];
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,sdims1,glob_start1);
+    init_wave(IN,gdims,sdims1,glob_start1);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
-  int sdims2[3],glob_start2[3];
-  for(i=0;i<3;i++) {
-    glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
-    sdims2[mem_order2[i]] = Zpencil.Ldims[i];
-    gsdims[mem_order2[i]] = gdims[i];
-  }
-
-  long int size2 = MULT3(sdims1);//sdims2[0]*sdims2[1]*sdims2[2];
+    int sdims2[3],glob_start2[3];
+    for(i=0;i<3;i++) {
+      glob_start2[mem_order2[i]] = Zpencil.GlobStart[i];
+      sdims2[mem_order2[i]] = Zpencil.Ldims[i];
+      gsdims[mem_order2[i]] = gdims[i];
+    }
+    
+    long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
   // Allocate input/outpu array for in-place tansform, using the larger size of the two
-  complex_double *OUT=new complex_double[size2];
+    complex_double *OUT=new complex_double[size2];
   
 #ifdef CUDA
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward,LocHost,LocHost);
+    transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward,LocHost,LocHost);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward,LocHost,LocHost);
+    transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward,LocHost,LocHost);
 #else
   // Set up 3D transforms, including stages and plans, for forward trans.
-  transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward);
+    transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward);
   // Set up 3D transforms, including stages and plans, for backward trans.
-  transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
+    transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
 #endif
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  //  trans_f.exec(IN,OUT,false);
+    trans_f.exec(IN,OUT,false);
 
-  double t=0.;
-  Nglob = MULT3(gdims);
+    double t=0.;
+    Nglob = gdims[0]*gdims[1];
+    Nglob *= gdims[2];
 
   // timing loop
 
 #ifdef TIMERS
-  timers.init();
+    timers.init();
 #endif
-  for(i=0; i < Nrep;i++) {
-    MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
+    for(i=0; i < Nrep;i++) {
+      trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
+      trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
+    }
+    
     t += MPI_Wtime();
-    MPI_Barrier(MPI_COMM_WORLD);
     //if(myid == 0)
       //      cout << "Results of forward transform: "<< endl;
     //    print_res(OUT,gdims,sdims2,glob_start2);
-    normalize(OUT,size2,gdims);
-    check_res_forward(OUT,sdims2,glob_start2,gsdims,myid);
-    MPI_Barrier(MPI_COMM_WORLD);
-    t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
-    t += MPI_Wtime();
-  }
 
-  double mydiff = check_res(IN,FIN,sdims1);
-  double diff = 0.0;
-  MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
-  if(myid == 0) {
-    if(diff > 1.0e-14 * Nglob *0.25)
-      cout << "Results are incorrect" << endl;
-    else
-      cout << "Results are correct" << endl;
-    cout << "Max. diff. =" << diff << endl;
-  }
+    normalize(FIN,size1,gdims);
 
-  double gtavg=0.;
-  double gtmin=INFINITY;
-  double gtmax = 0.;
-  t /= Nrep;
-  MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-  MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
-  MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
-  if(myid == 0)
-    printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
+    double mydiff = check_res(IN,FIN,sdims1);
+    double diff = 0.0;
+    MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+    if(myid == 0) {
+      if(diff > 1.0e-14 * Nglob *0.25)
+	cout << "Results are incorrect" << endl;
+      //      else
+      //	cout << "Results are correct" << endl;
+      //cout << "Max. diff. =" << diff << endl;
+    }
+
+    double gtavg=0.;
+    double gtmin=INFINITY;
+    double gtmax = 0.;
+    t /= Nrep;
+    MPI_Reduce(&t,&gtavg,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    MPI_Reduce(&t,&gtmin,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
+    MPI_Reduce(&t,&gtmax,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+    if(myid == 0) {
+      printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
+      if(gtmax < tmin) {
+	tmin = gtmax;
+	pmin = p;
+      }
+    }
 #ifdef TIMERS
-  timers.print(MPI_COMM_WORLD);
+    timers.print(MPI_COMM_WORLD);
 #endif
-
-  delete [] IN,OUT,FIN;
+    
+    delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures
-  
-  cleanup();
-  }
+
+  } 
+  if(myid == 0) 
+    printf("Best grid (%d,%d), timing %lg\n",pmin,nprocs/pmin,tmin);
+
+  //  cleanup();
 
   MPI_Finalize();
 
@@ -336,7 +315,7 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int 
 void normalize(complex_double *A,long int size,int *gdims)
 {
   long int i;
-  double f = 1.0/MULT3(gdims);
+  double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
   for(i=0;i<size;i++)
     A[i] = A[i] * f;

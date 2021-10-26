@@ -52,7 +52,7 @@
       integer type_ids1,type_ids2,trans_f,trans_b,pdims(3),glob_start1(3),glob_start2(3)
       integer(8) size1,size2
       integer(C_INT) ldims1(3),ldims2(3),mem_order1(3),mem_order2(3),dmap(3),pgrid,gdims1(3),gdims2(3)
-      integer(C_INT) grid1,grid2
+      integer(C_INT) grid1,grid2,workspace,nslices
       integer mpicomm,myid
       integer mydims1(3),mydims2(3),ar_dim,ar_dim2,gstart2(3)
 
@@ -70,11 +70,11 @@
          endif
          dim = 1
 
-        read (3,*) nx,ny,nz,dim,n,mem_order1(1:3),mem_order2(1:3)
+        read (3,*) nx,ny,nz,dim,nslices,n,mem_order1(1:3),mem_order2(1:3)
         dim = dim +1
 	print *,'P3DFFT test, 3D wave input, 1D R2C FFT'
         write (*,*) "procs=",nproc," nx=",nx, &
-                " ny=", ny," nz=", nz,"dim=",dim," repeat=", n
+                " ny=", ny," nz=", nz,"dim=",dim," repeat=", n,"nslices= ",nslices
         write (*,*) "mem_order on input: ",mem_order1
         write (*,*) "mem_order on output: ",mem_order2
        endif
@@ -88,6 +88,7 @@
       call MPI_Bcast(dim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(mem_order1,3,MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(mem_order2,3,MPI_INTEGER,0,mpi_comm_world,ierr)
+      call MPI_Bcast(nslices,1, MPI_INTEGER,0,mpi_comm_world,ierr)
 
 ! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
@@ -123,13 +124,13 @@
 
 ! Set up work structures for P3DFFT
 
-      call p3dfft_setup
+      call p3dfft_setup_f(nslices)
 
 ! Set up 2 transform types for 1D transforms
 
-      type_ids1 = P3DFFT_R2CFFT_D;
+      type_ids1 = P3DFFT_R2CFFT_D
 
-      type_ids2 = P3DFFT_C2RFFT_D;
+      type_ids2 = P3DFFT_C2RFFT_D
 
 ! Set up global dimensions of the grid
 
@@ -176,10 +177,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1)
+      call p3dfft_plan_1Dtrans(trans_f,grid1,grid2,type_ids1,dim-1,workspace)
 
 ! Now set up the backward transform
-      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1)
+      call p3dfft_plan_1Dtrans(trans_b,grid2,grid1,type_ids2,dim-1,workspace)
 
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
@@ -203,9 +204,10 @@
       allocate(AEND(mydims2(1),mydims2(2),mydims2(3)))
 
 ! Warm-up call to execute forward 3D FFT transform
-      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,0)
+      call p3dfft_1Dtrans_double(trans_f,BEG,AEND,-1,0)
 
-      Ntot = ldims2(1)*ldims2(2)*ldims2(3)
+      Ntot = ldims2(1)*ldims2(2)
+      Ntot = Ntot*ldims2(3)
 
 ! Start the timing loop
 
@@ -218,7 +220,7 @@
 
       call check_res_forward(AEND,mydims2,ar_dim2,gstart2)
 
-      call p3dfft_1Dtrans_double(trans_b,AEND,C,1)
+      call p3dfft_1Dtrans_double(trans_b,AEND,C,-1,1)
 
 ! Free work space
       call p3dfft_cleanup
@@ -322,17 +324,16 @@
         call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
 
       cdiff=0.0d0
-      do 20 z=1,mydims(3)
-         do 20 y=1,mydims(2)
-            do 20 x=1,mydims(1)
-            if(cdiff .lt. abs(A(x,y,z)-B(x,y,z))) then
-               cdiff = abs(A(x,y,z)-B(x,y,z))
-!               print *,'x,y,z,cdiff=',x,y,z,cdiff
-            endif
- 20   continue
-            
-!      print *,'My diff=',cdiff
-      
+      do  z=1,mydims(3)
+         do  y=1,mydims(2)
+            do  x=1,mydims(1)
+               if(cdiff .lt. abs(A(x,y,z)-B(x,y,z))) then
+                  cdiff = abs(A(x,y,z)-B(x,y,z))
+               endif
+            enddo
+         enddo
+      enddo
+       
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)
 

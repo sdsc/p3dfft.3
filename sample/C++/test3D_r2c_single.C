@@ -35,7 +35,7 @@ using namespace p3dfft;
 
   void init_wave(float *,int[3],int *,int[3]);
 void print_res(complex<float> *,int *,int *,int *);
-void normalize(complex<float> *,long int,int *);
+void normalize(complex<float> *,size_t,int *);
 float check_res(float*,float *,int *);
 void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
 
@@ -55,6 +55,8 @@ int main(int argc,char **argv)
   void write_buf(float *,char *,int[3],int[3],int);
   int pdims[3],ndim,nx,ny,nz;
   FILE *fp;
+  int nslices=1;
+  size_t workspace_host,workspace_dev;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -71,17 +73,18 @@ int main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
         fclose(fp);
      }
      printf("P3DFFT test R2C, 3D wave input\n");
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions %d slices\n",nx,ny,nz,ndim,Nrep,nslices);
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -118,7 +121,7 @@ int main(int argc,char **argv)
       printf("Using processor grid %d x %d\n",pdims[0],pdims[1]);
 
   // Set up work structures for P3DFFT
-  setup();
+  setup(nslices);
   // Set up transform types for 3D transform: real-to-complex and complex-to-real
   int type_ids1[3] = {R2CFFT_S,CFFT_FORWARD_S,CFFT_FORWARD_S};
   int type_ids2[3] = {C2RFFT_S,CFFT_BACKWARD_S,CFFT_BACKWARD_S};
@@ -180,7 +183,7 @@ int main(int argc,char **argv)
     glob_start1[mem_order[i]] = Xpencil.GlobStart[i];
   }
 
-  int size1 = sdims1[0]*sdims1[1]*sdims1[2];
+  size_t size1 = MULT3(sdims1);//[0]*sdims1[1]*sdims1[2];
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
@@ -199,23 +202,28 @@ int main(int argc,char **argv)
     sdims2[mem_order2[i]] = Zpencil.Ldims[i];
   }
 
-  long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
+  size_t size2 = MULT3(sdims2);//[0]*sdims2[1]*sdims2[2];
   //  cout << "allocating OUT" << endl;
   complex<float> *OUT=new complex<float>[size2];
   
+
+#ifdef CUDA
+  // Set up 3D transforms, including stages and plans, for forward trans.
+  transform3D<float,complex<float> > trans_f(Xpencil,Zpencil,&type_rcc,LocHost,LocHost);
+  // Set up 3D transforms, including stages and plans, for backward trans.
+  transform3D<complex<float>,float> trans_b(Zpencil,Xpencil,&type_ccr,LocHost,LocHost);
+#else
   // Set up 3D transforms, including stages and plans, for forward trans.
   transform3D<float,complex<float> > trans_f(Xpencil,Zpencil,&type_rcc);
   // Set up 3D transforms, including stages and plans, for backward trans.
   transform3D<complex<float>,float> trans_b(Zpencil,Xpencil,&type_ccr);
-
+#endif
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
   trans_f.exec(IN,OUT,false);
 
   double t=0.;
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
-
+  Nglob = MULT3(gdims);
   // timing loop
 
 #ifdef TIMERS
@@ -306,8 +314,12 @@ void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start
 	  ans = 0.0;
 
 	d = abs(*p++ - ans);
-	if(cdiff < d)
+	if(cdiff < d) {
+	  if(d - cdiff > 0.001)
+	    printf("%f %f at %d %d %d\n",d,cdiff,x,y,z);
 	  cdiff = d;
+	}
+
       }
     }
   }
@@ -326,9 +338,9 @@ void  check_res_forward(complex<float> *OUT,int sdims[3],int dimx,int glob_start
 
 }
 
-void normalize(complex<float> *A,long int size,int *gdims)
+void normalize(complex<float> *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   float f = 1.0/(((float) gdims[0])*((float) gdims[1])*((float) gdims[2]));
   
   for(i=0;i<size;i++)

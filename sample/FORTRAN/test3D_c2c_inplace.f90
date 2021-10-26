@@ -50,7 +50,7 @@
       integer(8) size1,size2
       integer(C_INT), dimension(3) :: pdims,ldims1,ldims2,mem_order1
       integer(C_INT), dimension(3) :: mem_order2,dmap1,dmap2,gdims1,gdims2
-      integer(C_INT) grid1,grid2,pgrid
+      integer(C_INT) grid1,grid2,pgrid,workspace,nslices
       integer mpicomm,myid,iproc,jproc
       integer mydims1(3),mydims2(3)
 
@@ -72,10 +72,10 @@
          endif
          ndim = 2
 
-        read (3,*) nx, ny, nz, ndim,n
+        read (3,*) nx, ny, nz, ndim,n,nslices
 	print *,'P3DFFT test, 3D wave input, 3D complex FFT (in-place)'
         write (*,*) "procs=",nproc," nx=",nx, &
-                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n
+                " ny=", ny," nz=", nz,"ndim=",ndim," repeat=", n," nslices=",nslices
        endif
 
 ! Broadcast parameters
@@ -85,6 +85,7 @@
       call MPI_Bcast(nz,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(n,1, MPI_INTEGER,0,mpi_comm_world,ierr)
       call MPI_Bcast(ndim,1, MPI_INTEGER,0,mpi_comm_world,ierr)
+      call MPI_Bcast(nslices,1, MPI_INTEGER,0,mpi_comm_world,ierr)
 
 ! Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -125,7 +126,7 @@
 
 ! Set up work structures for P3DFFT
 
-      call p3dfft_setup
+      call p3dfft_setup_f(nslices)
 
 ! Set up 2 transform types for 3D transforms
 
@@ -192,10 +193,10 @@
 
 ! Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization.
 
-      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward)
+      call p3dfft_plan_3Dtrans(trans_f,grid1,grid2,type_forward,workspace)
 
 ! Now set up the backward transform
-      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward)
+      call p3dfft_plan_3Dtrans(trans_b,grid2,grid1,type_backward,workspace)
 
 ! Determine local array dimensions. These are defined taking into account memory ordering. 
 
@@ -206,8 +207,10 @@
          gstart2(mem_order2(i)+1) = glob_start2(i)
       enddo
 
-      size1 = mydims1(1)*mydims1(2)*mydims1(3)
-      size2 = mydims2(1)*mydims2(2)*mydims2(3)
+      size1 = mydims1(1)*mydims1(2)
+      size1 = size1*mydims1(3)
+      size2 = mydims2(1)*mydims2(2)
+      size2 = size2*mydims2(3)
 
 ! Now allocate initial and final arrays in physical space (real-valued)
 ! In this example we allocate one-dimensional arrays with enough space to store
@@ -225,7 +228,8 @@
          INOUT(i) = BEG(i)
       enddo
 
-      Ntot = ldims2(1)*ldims2(2)*ldims2(3)
+      Ntot = ldims2(1)*ldims2(2)
+      Ntot = Ntot *ldims2(3)
       Nglob = dble(nx * ny)
       Nglob = Nglob * nz
       factor = 1.0d0/Nglob
@@ -390,17 +394,18 @@
       enddo
 
       cdiff=0.0d0
-      do 20 z=glob_start(3)+1,glob_start(3)+ldims(3)
-         do 20 y=glob_start(2)+1,glob_start(2)+ldims(2)
+      do z=glob_start(3)+1,glob_start(3)+ldims(3)
+         do y=glob_start(2)+1,glob_start(2)+ldims(2)
             sinyz=siny(y)*sinz(z)
-            do 20 x=glob_start(1)+1,glob_start(1)+ldims(1)
-            ans=sinx(x)*sinyz
-            d = abs(C(x,y,z)-cmplx(ans,0.0d0,8))
-            if(cdiff .lt. d) then
-               cdiff = d
-!               print *,'x,y,z,cdiff=',x,y,z,cdiff
-            endif
- 20   continue
+            do x=glob_start(1)+1,glob_start(1)+ldims(1)
+               ans=sinx(x)*sinyz
+               d = abs(C(x,y,z)-cmplx(ans,0.0d0,8))
+               if(cdiff .lt. d) then
+                  cdiff = d
+               endif
+            enddo
+         enddo
+      enddo
 
       call MPI_Reduce(cdiff,ccdiff,1,MPI_DOUBLE_PRECISION,MPI_MAX,0, &
         MPI_COMM_WORLD,ierr)

@@ -32,7 +32,7 @@ Setting it to 1 corresponds to one-dimensional decomposition.
 
 void init_wave(double *,int[3],int *,int[3]);
 void print_res(double *,int *,int *,int *);
-void normalize(double *,long int,int *);
+void normalize(double *,size_t,int *);
 double check_res(double*,double *,int *);
 void write_buf(double *buf,char *label,int sz[3],int mo[3], int taskid);
 void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid);
@@ -57,7 +57,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int ldims1[3],ldims2[3];
-  long int size1,size2;
+  size_t size1,size2;
   double *IN,*INOUT;
   Grid *Xpencil,*Zpencil;
   int glob_start1[3],glob_start2[3];
@@ -73,6 +73,8 @@ int main(int argc,char **argv)
   int pdims[3],nx,ny,nz,n,ndim;
   Plan3D trans_f,trans_b;
   FILE *fp;
+  size_t workspace_host,workspace_dev;
+  int nslices=1;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -88,21 +90,23 @@ int main(int argc,char **argv)
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
         nx=ny=nz=128; Nrep=1;ndim=2;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
         fclose(fp);
      }
-     printf("P3DFFT test, 3D wave input\n");
+     printf("P3DFFT test, 3D wave input, 3D complex FFT\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n%d proc. dimensions\n%d repetitions\n%d slices\n",nx,ny,nz,ndim,Nrep,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n%d proc. dimensions\n%d repetitions\n%d slices\n",nx,ny,nz,ndim,Nrep,nslices);
 #endif
+
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -141,7 +145,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup();
+   p3dfft_setup(nslices); // Use 8 streams/slices
 
   //Set up 2 transform types for 3D transforms
 
@@ -183,12 +187,17 @@ int main(int argc,char **argv)
 
   Zpencil = p3dfft_init_data_grid(gdims,-1,Pgrid,dmap2,mem_order2);
 
+#ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
-  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_forward);
-
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_forward,&workspace_host,&workspace_dev,LocHost,LocHost);
   //Now set up the backward transform
-
-  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_backward);
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_backward,&workspace_host,&workspace_dev,LocHost,LocHost);
+#else
+  //Set up the forward transform, based on the predefined 3D transform type and Xpencil and Zpencil. This is the planning stage, needed once as initialization.
+  trans_f = p3dfft_plan_3Dtrans(Xpencil,Zpencil,type_forward,&workspace_host);
+  //Now set up the backward transform
+  trans_b = p3dfft_plan_3Dtrans(Zpencil,Xpencil,type_backward,&workspace_host);
+#endif
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
@@ -198,7 +207,7 @@ int main(int argc,char **argv)
     ldims1[mem_order1[i]] = Xpencil->Ldims[i];
   }
 
-  size1 = ldims1[0]*ldims1[1]*ldims1[2];
+  size1 = MULT3(ldims1);//[0]*ldims1[1]*ldims1[2];
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -207,7 +216,7 @@ int main(int argc,char **argv)
     ldims2[mem_order2[i]] = Zpencil->Ldims[i];
   }
 
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);//[0]*ldims2[1]*ldims2[2];
 
   //Now allocate input/output array with the larger of the two sizes
   INOUT= (double *) malloc(sizeof(double) *((size1>size2)?size1:size2)*2);
@@ -221,8 +230,7 @@ int main(int argc,char **argv)
 for(i=0;i<size1*2;i++)
   INOUT[i] = IN[i];
 
-  Nglob = gdims[0]*gdims[1];
-  Nglob *= gdims[2];
+ Nglob = MULT3(gdims);
 
   // timing loop
 
@@ -322,9 +330,9 @@ void  check_res_forward(double *OUT,int sdims[3],int glob_start[3], int gdims[3]
 
 }
 
-void normalize(double *A,long int size,int *gdims)
+void normalize(double *A,size_t size,int *gdims)
 {
-  long int i;
+  size_t i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
   for(i=0;i<size*2;i++)

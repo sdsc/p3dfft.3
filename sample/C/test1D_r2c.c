@@ -36,7 +36,7 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 
 void init_wave1D(double *IN,int *mydims,int *gstart, int ar_dim);
 void print_res(double *A,int *mydims,int *gstart, int N     );
-void normalize(double *,long int,double);
+void normalize(double *,size_t,double);
 double check_res(double *A,double *B,int *mydims);
 void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int myid);
 
@@ -53,7 +53,7 @@ int main(int argc,char **argv)
   double Nglob;
   int imo1[3];
   int *ldims1,*ldims2;
-  long int size1,size2;
+  size_t size1,size2;
   double *IN;
   Grid *grid1,*grid2;
   int glob_start1[3],glob_start2[3];
@@ -71,6 +71,8 @@ int main(int argc,char **argv)
   int pdims[3],nx,ny,nz,n,dim,cnt,ar_dim,ar_dim2,sdims1[3],sdims2[3];
   Plan3D trans_f,trans_b;
   FILE *fp;
+  size_t workspace;
+  int nslices=1;
 
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -87,7 +89,7 @@ int main(int argc,char **argv)
         printf("Cannot open input file. Setting to default nx=ny=nz=128, dim=0, n=1.\n");
         nx=ny=nz=128; Nrep=1;dim=0;
      } else {
-        fscanf(fp,"%d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep);
+       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&dim,&Nrep,&nslices);
         fscanf(fp,"%d %d %d\n",mem_order1,mem_order1+1,mem_order1+2);
         fscanf(fp,"%d %d %d\n",mem_order2,mem_order2+1,mem_order2+2);
         fclose(fp);
@@ -95,9 +97,9 @@ int main(int argc,char **argv)
      }
      printf("P3DFFT test, 1D wave input, 1D R2C FFT\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n dimension of transform: %d\n%d repetitions\n%d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #else
-     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n",nx,ny,nz,dim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n dimension of transform %d\n%d repetitions\n%d slices\n",nx,ny,nz,dim,Nrep,nslices);
 #endif
    }
 
@@ -110,6 +112,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&dim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order1,3,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&mem_order2,3,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
 
   //! Establish 2D processor grid decomposition, either by readin from file 'dims' or by an MPI default
 
@@ -138,7 +141,7 @@ int main(int argc,char **argv)
 
   // Set up work structures for P3DFFT
 
-  p3dfft_setup();
+  p3dfft_setup(nslices);
 
   //Set up 2 transform types for 3D transforms
 
@@ -185,18 +188,23 @@ int main(int argc,char **argv)
   // Final grid does have conjugate symmetry in the dimension corresponding to dim
   grid2 = p3dfft_init_data_grid(gdims2,dim,Pgrid,dmap,mem_order2);
 
+#ifdef CUDA
   //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument is for out-of-place transform (input and output spaces different).
-
-  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim);
-
+  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim,&workspace,LocHost,LocHost);
   //Now set up the backward transform
+  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim,&workspace,LocHost,LocHost);
+#else
+  //Set up the forward transform, based on the predefined 3D transform type and grid1 and grid2. This is the planning stage, needed once as initialization. Last argument is for out-of-place transform (input and output spaces different).
+  trans_f = p3dfft_plan_1Dtrans(grid1,grid2,type_ids1,dim,&workspace);
+  //Now set up the backward transform
+  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim,&workspace);
+#endif
 
-  trans_b = p3dfft_plan_1Dtrans(grid2,grid1,type_ids2,dim);
 
   //Determine local array dimensions. 
 
   ldims1 = grid1->Ldims;
-  size1 = ldims1[0]*ldims1[1]*ldims1[2];
+  size1 = MULT3(ldims1);
 
   // Find local dimensions in storage order, and also the starting position of the local array in the global array
   // Note: dimensions and global starts given by grid object are in physical coordinates, which need to be translated into storage coordinates:
@@ -216,7 +224,7 @@ int main(int argc,char **argv)
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
   ldims2 = grid2->Ldims;
-  size2 = ldims2[0]*ldims2[1]*ldims2[2];
+  size2 = MULT3(ldims2);
   OUT=(double *) malloc(sizeof(double) *size2 *2);
 
   for(i=0;i < 3;i++) {
@@ -229,16 +237,16 @@ int main(int argc,char **argv)
   for(i=0;i<Nrep;i++) {
 
   // Execute forward transform
-    p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,0);
+    p3dfft_exec_1Dtrans_double(trans_f,IN,OUT,-1,0);
 
     //  if(myid == 0)
     // printf("Results of forward transform: \n");
     //print_res(OUT,sdims2,glob_start2,sdims2[ar_dim2]);
-  normalize(OUT,(long int) ldims2[0]*ldims2[1]*ldims2[2],1.0/((double) grid1->Gdims[dim]));
+  normalize(OUT,size2,1.0/((double) grid1->Gdims[dim]));
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execute backward transform
-  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,1);
+  p3dfft_exec_1Dtrans_double(trans_b,OUT,FIN,-1,1);
   }
 
   // Check that we recover the input
@@ -301,9 +309,9 @@ void  check_res_forward(double *OUT,int sdims[3],int dim,int glob_start[3], int 
 }
 
 
-void normalize(double *A,long int size,double f)
+void normalize(double *A,size_t size,double f)
 {
-  long int i;
+  size_t i;
   
   for(i=0;i<size*2;i++)
     A[i] = A[i] * f;
