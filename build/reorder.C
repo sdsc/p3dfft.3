@@ -723,12 +723,12 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
 
 
   if(d1[0]*d1[1] >0)
-    nb31 = cache_bl / (sizeof(Type1)*d1[0]*d1[1]);
+    nb31 = cache_bl / (sizeof(Type2)*d1[0]*d1[1]);
   else
     nb31 = 1;
   if(nb31 < 1) nb31 = 1;
   if(d2[0]*d2[1] >0)
-    nb13 = cache_bl / (sizeof(Type1)*d2[0]*d2[1]);
+    nb13 = cache_bl / (sizeof(Type2)*d2[0]*d2[1]);
   else
     nb13 = 1;
   if(nb13 < 1) nb13 = 1;

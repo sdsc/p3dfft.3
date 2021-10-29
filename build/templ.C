@@ -1603,7 +1603,7 @@ template <class Type1,class Type2> int transplan<Type1,Type2>::find_m(int *mo1,i
     //SndStrt[i][0] = sndst[i0][i][0]*m1*sz;
     //RcvStrt[i][0] = rcvst[i0][i][0]*m2*sz;
     SndStrt[i][0] = snd_start;
-    RcvStrt[i][0] = snd_start;
+    RcvStrt[i][0] = rcv_start;
     //int rank;
     for(t=0; t< nt-1;t++) {
     //    comm_coords[l] = j;

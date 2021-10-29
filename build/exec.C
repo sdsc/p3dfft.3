@@ -522,11 +522,11 @@ tmpi = 0.;
 
       next = 1-next;
       curr = 1-curr;
-
+      /*
 #ifdef TIMERS
 t = MPI_Wtime()-t;
-//printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
-#endif    
+printf("%d: Stage %d: Total time %lg, compute time %lg\n",Pgrid->taskid,stage_cnt,t,t-tmpi); 
+#endif  */  
       /*     if(currdev >= 0)
 	     checkCudaErrors(cudaFree(DevBuf[currdev]));
     if(DevAlloc2) {
@@ -1195,6 +1195,28 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvb
   }
 }
 
+#ifdef P2P
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice_p2p(Type2 *dest,Type2 *recvbuf,int rank,int slice,int nslices)
+{
+  int i,ii,x,y,z,k,x2,y2,z2;
+  //  int ds=sizeof(Type)/4;
+  Type2 *p1,*p0,*pin,*pin1,*pout,*pout1;
+  
+  int d[3];
+  for(i=0;i<3;i++) 
+    d[trplan->mo2[i]] = dims2[i];
+  
+  p1 = recvbuf + *(RcvStrt[slice]+rank)/sizeof(Type2);
+  for(z=rcvst[2][slice][rank];z < rcven[2][slice][rank];z++)
+    for(y=rcvst[1][slice][rank];y < rcven[1][slice][rank];y++) {
+      p0 = dest + d[0]*(z*d[1]+y) + rcvst[0][slice][rank]; //istart[i][imo1[0]];
+      memcpy(p0,p1,rcvsz[0][slice][rank]*sizeof(Type2));
+      p1 += rcvsz[0][slice][rank];
+	//	  for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
+	//*p0++ = *p1++;
+    }
+}
+#endif
 
 
 
@@ -1500,11 +1522,17 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   }
 
 
-  int slice;
+  int slice,i;
   double t1;
+#ifdef P2P
+  int np = mpiplan->numtasks;
+  MPI_Request *sendreq = new MPI_Request[nslices*np];
+  MPI_Request *recvreq = new MPI_Request[nslices*np];
+#endif
+  
   for(slice=0;slice<nslices;slice++) {
 #ifdef TIMERS
-  t1=MPI_Wtime();
+    t1=MPI_Wtime();
 #endif
     pack_sendbuf_trans_slice(sendbuf+SndStrt[slice][0]/sizeof(Type2),in,dim_deriv,event_hold,slice,nslices,devbuf,OW,tmpbuf);
 
@@ -1514,13 +1542,17 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //  else
   //  tmpbuf += MULT3(tmpdims)*sizeof(Type2);
 
+    MPI_Comm mycomm=mpiplan->Pgrid->mpicomm[mpiplan->comm_id];
+    
+#ifdef A2A    
+    
 #ifdef TIMERS
     t1=MPI_Wtime();
 #endif
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
     //    char *pin = ((char *) sendbuf)+SndStrt[slice][0];
     //char *pout = ((char *) recvbuf)+RcvStrt[slice][0];
-    MPI_Ialltoallv(sendbuf,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id],&req[slice]);
+    MPI_Ialltoallv(sendbuf,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mycomm,&req[slice]);
 
   }
   
@@ -1535,15 +1567,38 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
     if(unpack) {
       //  delete [] sendbuf;
 #ifdef TIMERS
-      // t1=MPI_Wtime();
+      t1=MPI_Wtime();
 #endif
       unpack_recvbuf_slice((Type2 *) out,recvbuf,slice,nslices);
 #ifdef TIMERS
-    //timers.unpackrecv += MPI_Wtime() -t1;
+     timers.unpackrecv += MPI_Wtime() -t1;
 #endif
     }
   }
-      //  delete [] recvbuf;
+
+#elif defined P2P
+     for(i=0;i<np;i++) {
+       MPI_Irecv((char *) recvbuf + RcvStrt[slice][i],RcvCnts[slice][i],MPI_BYTE,i,slice,mycomm,&recvreq[slice*np+i]);
+       MPI_Isend((char *) sendbuf + SndStrt[slice][i],SndCnts[slice][i],MPI_BYTE,i,slice,mycomm,&sendreq[slice*np+i]);
+     }
+  }
+
+  for(int cnt =0;cnt < nslices*np;cnt++) {
+     MPI_Waitany(nslices*np,recvreq,&i,MPI_STATUS_IGNORE);
+     slice = i/np;
+     int rank = i%np;
+#ifdef TIMERS
+     t1=MPI_Wtime();
+#endif
+     if(unpack)
+       unpack_recvbuf_slice_p2p((Type2 *) out,recvbuf,rank,slice,nslices);
+#ifdef TIMERS
+     timers.unpackrecv += MPI_Wtime() -t1;
+#endif
+  }
+#endif
+
+  //  delete [] recvbuf;
 
 #ifdef DEBUG
   char str[80];
