@@ -78,13 +78,18 @@ All Rights Reserved.
     TRADEMARK OR OTHER RIGHTS.
 */
 
+#ifdef CUDA
+void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *, size_t *,int *, int *);
+void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,size_t *,size_t *, int *,int *);
+#else
+void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *,size_t *);
+  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *,size_t *);
+#endif
   void p3dfft_init_3Dtype_f(int *,int[3]); //,char *);
-  void p3dfft_plan_1Dtrans_f(int *,int *,int *,int *,int *);
-  void p3dfft_plan_3Dtrans_f(int *,int *,int *,Type3D *);
 int p3dfft_init_proc_grid_f(int *pdims,int *mpicomm);
 void p3dfft_init_data_grid_f(int *mygrid,int *ldims,int *glob_start,int *gdims,int *dim_conj_sym,int *pgrid_id,int *dmap,int *mem_order);
-void p3dfft_exec_1Dtrans_double_f(int *,double *,double *, int *);
-void p3dfft_exec_1Dtrans_single_f(int *,float *,float *, int *);
+void p3dfft_exec_1Dtrans_double_f(int *,double *,double *, int *, int *);
+void p3dfft_exec_1Dtrans_single_f(int *,float *,float *, int *, int *);
 void p3dfft_exec_3Dtrans_double_f(Plan3D *,double *,double *, int *);
 void p3dfft_exec_3Dtrans_single_f(Plan3D *,float *,float *, int *);
 void p3dfft_exec_3Dderiv_double_f(Plan3D *,double *,double *,int *, int *);
