@@ -916,10 +916,10 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   int InLoc=LocHost;
 #endif
   void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
-  //  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
+  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
   void unpack_recvbuf_slice(Type2 *out,Type2 * recvbuf,int slice=0,int nslices=1);
 #ifdef P2P
-  void unpack_recvbuf_slice_p2p(Type2 *out,Type2 * recvbuf,int rank,int slice=0,int nslices=1);
+  void unpack_recvbuf_slice_p2p(Type2 *out,Type2 * recvbuf,int rank,int slice=0,int nslices=1,int **rcvstrt=NULL);
 #endif
   //  void exec_deriv(char *in,char *out, bool OW);
 

@@ -505,12 +505,11 @@ tmpi = 0.;
       for(i=0;i<3;i++)
 	imo[mo2[i]] = i; 
       sprintf(str,"exec-out.%d.%d",stage_cnt,taskid);
-      /*
+      
       if(dt_2 == dt2)
 	write_buf<Type2>((Type2 *) buf[next],str,curr_stage->dims2,imo);
       else
 	write_buf<Type1>((Type1 *) buf[next],str,curr_stage->dims2,imo);
-      */
 #endif
       
       if(nvar > 1) { // Keep track and delete buffers that are no longer used
@@ -1201,7 +1200,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvb
 }
 
 #elif defined P2P
-template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice_p2p(Type2 *dest,Type2 *recvbuf,int rank,int slice,int nslices)
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice_p2p(Type2 *dest,Type2 *recvbuf,int rank,int slice,int nslices,int **rcvstrt)
 {
   int i,ii,x,y,z,k,x2,y2,z2;
   //  int ds=sizeof(Type)/4;
@@ -1210,8 +1209,11 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvb
   int d[3];
   for(i=0;i<3;i++) 
     d[trplan->mo2[i]] = dims2[i];
+
+  if(rcvstrt == NULL)
+    rcvstrt = RcvStrt;
   
-  p1 = recvbuf + *(RcvStrt[slice]+rank)/sizeof(Type2);
+  p1 = recvbuf + *(rcvstrt[slice]+rank)/sizeof(Type2);
   for(z=rcvst[2][slice][rank];z < rcven[2][slice][rank];z++)
     for(y=rcvst[1][slice][rank];y < rcven[1][slice][rank];y++) {
       p0 = dest + d[0]*(z*d[1]+y) + rcvst[0][slice][rank]; //istart[i][imo1[0]];
@@ -1505,6 +1507,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
    }
    
   int *tmpdims;
+  MPI_Request req[nslices];
+  static int a2a_cnt = 0;
   
   MPI_Comm mycomm=mpiplan->Pgrid->mpicomm[mpiplan->comm_id];
 
@@ -1517,6 +1521,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   tmpdims = mpiplan->grid2->Ldims;
   //  Type2 *recvbuf = new Type2[tmpdims[0]*tmpdims[1]*tmpdims[2]];
   Type2 *recvbuf = (Type2 *) tmpbuf;
+  sz= MULT3(tmpdims)*sizeof(Type2);
+  tmpbuf += sz;
+
   bool unpack = true;
   int i2;
   for(int i=0;i<3;i++)
@@ -1537,10 +1544,6 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   MPI_Request *sendreq = new MPI_Request[nslices*np];
   MPI_Request *recvreq = new MPI_Request[nslices*np];
   int self = mpiplan->Pgrid->grid_id_cart[mpiplan->grid2->Dmap[mpiplan->d2]];
-  static int a2a_cnt = 0;
-#endif
-#ifdef A2A    
-  MPI_Request req[nslices];
 #endif
   
   for(slice=0;slice<nslices;slice++) {
@@ -1591,7 +1594,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
       {
 	int irecv = slice*(np-1)+(i-self-1+np)%np;
 	MPI_Irecv(((char *) recvbuf) + RcvStrt[slice][i],RcvCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&recvreq[irecv]);
-	MPI_Isend(((char *) sendbuf) + SndStrt[slice][i],SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[slice*np+i]);
+	MPI_Isend(((char *) sendbuf) + SndStrt[slice][i],SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[irecv]);
       }
   }
 // Self
@@ -1600,14 +1603,16 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 #endif
   for(slice=0;slice<nslices;slice++) {
     if(unpack)
-       unpack_recvbuf_slice_p2p((Type2 *) out,sendbuf,self,slice,nslices);
+      unpack_recvbuf_slice_p2p((Type2 *) out,sendbuf,self,slice,nslices,SndStrt);
     else
       memcpy(out + RcvStrt[slice][self],((char *) sendbuf) + SndStrt[slice][self],SndCnts[self][slice]); 
 #ifdef TIMERS
    timers.unpackrecv += MPI_Wtime() -t1;
 #endif
   }
-    // Wait, unpack non-self
+//  MPI_Waitall(nslices*(np-1),recvreq,MPI_STATUSES_IGNORE);
+
+// Wait, unpack non-self
    for(int cnt =0;cnt < nslices*(np-1);cnt++) {
      MPI_Waitany(nslices*(np-1),recvreq,&i,MPI_STATUS_IGNORE);
      slice = i/(np-1);
@@ -1621,7 +1626,11 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
      timers.unpackrecv += MPI_Wtime() -t1;
 #endif
   }
-a2a_cnt++;
+  a2a_cnt++;
+  MPI_Waitall(nslices*(np-1),sendreq,MPI_STATUSES_IGNORE);
+delete [] sendreq,recvreq;
+//MPI_Barrier(mycomm);
+//  MPI_Barrier(mycomm);
 #endif
 
 #else // Blocking
@@ -1656,7 +1665,7 @@ a2a_cnt++;
   sprintf(str,"transmpi.out%d.%d",cnt_trans++,mpiplan->Pgrid->taskid);
   int imo2[3];
   inv_mo(mpiplan->mo2,imo2);
-//  write_buf<Type2>((Type2 *) out,str,tmpdims,imo2);
+  write_buf<Type2>((Type2 *) out,str,tmpdims,imo2);
 #endif
 }
 
@@ -1732,7 +1741,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   //  inv_mo(mo2,imo2);
   // Optimize in the future
   inv_mo(mo1,imo1);
-  //  write_buf<Type2>((Type2 *)src,str,dims1,imo1);
+  write_buf<Type2>((Type2 *)src,str,dims1,imo1);
 #endif
 
 #ifdef CUDA
