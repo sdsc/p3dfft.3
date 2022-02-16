@@ -1172,34 +1172,8 @@ template <class Type> void MPIplan<Type>::pack_sendbuf(Type *sendbuf,Type *src)
 
 }
 
-#ifdef NB
 
-#ifdef A2A
-template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice(Type2 *dest,Type2 *recvbuf,int slice,int nslices)
-{
-  int i,ii,x,y,z,k,x2,y2,z2;
-  //  int ds=sizeof(Type)/4;
-  Type2 *p1,*p0,*pin,*pin1,*pout,*pout1;
-  
-  int d[3];
-  for(i=0;i<3;i++) 
-    d[trplan->mo2[i]] = dims2[i];
-  
-  for(i=0;i < mpiplan->numtasks;i++) {
-    p1 = recvbuf + *(RcvStrt[slice]+i)/sizeof(Type2);
-    for(z=rcvst[2][slice][i];z < rcven[2][slice][i];z++)
-      for(y=rcvst[1][slice][i];y < rcven[1][slice][i];y++) {
-	//	for(y=istart[i][imo1[1]];y < iend[i][imo1[1]];y++) {
-	p0 = dest + d[0]*(z*d[1]+y) + rcvst[0][slice][i]; //istart[i][imo1[0]];
-	memcpy(p0,p1,rcvsz[0][slice][i]*sizeof(Type2));
-	p1 += rcvsz[0][slice][i];
-	//	  for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
-	//*p0++ = *p1++;
-      }
-  }
-}
-
-#elif defined P2P
+#ifdef P2P
 template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice_p2p(Type2 *dest,Type2 *recvbuf,int rank,int slice,int nslices,int **rcvstrt)
 {
   int i,ii,x,y,z,k,x2,y2,z2;
@@ -1223,7 +1197,31 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvb
 	//*p0++ = *p1++;
     }
 }
-#endif
+
+#else 
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::unpack_recvbuf_slice(Type2 *dest,Type2 *recvbuf,int slice,int nslices)
+{
+  int i,ii,x,y,z,k,x2,y2,z2;
+  //  int ds=sizeof(Type)/4;
+  Type2 *p1,*p0,*pin,*pin1,*pout,*pout1;
+  
+  int d[3];
+  for(i=0;i<3;i++) 
+    d[trplan->mo2[i]] = dims2[i];
+  
+  for(i=0;i < mpiplan->numtasks;i++) {
+    p1 = recvbuf + *(RcvStrt[slice]+i)/sizeof(Type2);
+    for(z=rcvst[2][slice][i];z < rcven[2][slice][i];z++)
+      for(y=rcvst[1][slice][i];y < rcven[1][slice][i];y++) {
+	//	for(y=istart[i][imo1[1]];y < iend[i][imo1[1]];y++) {
+	p0 = dest + d[0]*(z*d[1]+y) + rcvst[0][slice][i]; //istart[i][imo1[0]];
+	memcpy(p0,p1,rcvsz[0][slice][i]*sizeof(Type2));
+	p1 += rcvsz[0][slice][i];
+	//	  for(x=istart[i][imo1[0]];x < iend[i][imo1[0]];x++)
+	//*p0++ = *p1++;
+      }
+  }
+}
 #endif
 
 
@@ -1537,7 +1535,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
   int slice,i;
   double t1;
-#ifdef NB
+  //#ifdef NB
 
 #ifdef P2P
   int np = mpiplan->numtasks;
@@ -1558,7 +1556,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //  else
   //  tmpbuf += MULT3(tmpdims)*sizeof(Type2);
 
-#ifdef A2A    
+#ifdef NB_A2A    
     
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
     //    char *pin = ((char *) sendbuf)+SndStrt[slice][0];
@@ -1596,7 +1594,8 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 	MPI_Irecv(((char *) recvbuf) + RcvStrt[slice][i],RcvCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&recvreq[irecv]);
 	MPI_Isend(((char *) sendbuf) + SndStrt[slice][i],SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[irecv]);
       }
-  }
+  } // nslices loop
+
 // Self
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -1628,10 +1627,9 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   }
   a2a_cnt++;
   MPI_Waitall(nslices*(np-1),sendreq,MPI_STATUSES_IGNORE);
-delete [] sendreq,recvreq;
+  delete [] sendreq,recvreq;
 //MPI_Barrier(mycomm);
 //  MPI_Barrier(mycomm);
-#endif
 
 #else // Blocking
 
@@ -1639,7 +1637,8 @@ delete [] sendreq,recvreq;
   t1=MPI_Wtime();
 #endif
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
-  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_BYTE,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
+    MPI_Alltoallv(sendbuf,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mycomm);
+//  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_BYTE,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
 #ifdef TIMERS
   timers.alltoall += MPI_Wtime() -t1;
   *tmpi += MPI_Wtime() - t1;
@@ -1650,13 +1649,14 @@ delete [] sendreq,recvreq;
 #ifdef TIMERS
     t1=MPI_Wtime();
 #endif
-    mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
+      unpack_recvbuf_slice((Type2 *) out,recvbuf,slice,nslices);
+      //    mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
 #ifdef TIMERS
     timers.unpackrecv += MPI_Wtime() -t1;
 #endif
-  }
+    }
+  } // nslices loop
 #endif
-
 
   //  delete [] recvbuf;
 
@@ -1680,10 +1680,33 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
   for(k=0;k<sz[mo[2]];k++)
     for(j=0;j<sz[mo[1]];j++)
       for(i=0;i<sz[mo[0]];i++) {
-	if(abs(*p) > 1.e-7) {
-	  p1 = (complex_double *) p;
-	  fprintf(fp,"(%d %d %d) %lg %lg\n",i,j,k,p1->real(),p1->imag());
+	if(typeid(Type) == type_float) {
+	  if(abs(*p) > 1.e-4) {
+	    float *p1 = (float *) p;
+	    fprintf(fp,"(%d %d %d) %g\n",i,j,k,*p1);
+	  }
 	}
+	else 
+	  if(typeid(Type) == type_double) {
+	    if(abs(*p) > 1.e-7) {
+	      double *p1 = (double *) p;
+	      fprintf(fp,"(%d %d %d) %lg\n",i,j,k,*p1);
+	    }
+	  }
+	  else
+	    if(typeid(Type) == type_complex){
+	      if(abs(*p) > 1.e-4) {
+		complex<float> *p1 = (complex<float> *) p;
+		fprintf(fp,"(%d %d %d) %g %g\n",i,j,k,p1->real(),p1->imag());
+	      }
+	    }
+	      else
+		if(typeid(Type) == type_complex_double)  {
+		  if(abs(*p) > 1.e-7) {
+		    complex<double> *p1 = (complex<double> *) p;
+		    fprintf(fp,"(%d %d %d) %lg %lg\n",i,j,k,p1->real(),p1->imag());
+		  }
+		}
 	p++;
       }
   fclose(fp); 
@@ -1741,7 +1764,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   //  inv_mo(mo2,imo2);
   // Optimize in the future
   inv_mo(mo1,imo1);
-  write_buf<Type2>((Type2 *)src,str,dims1,imo1);
+  write_buf<Type1>((Type1 *)src,str,dims1,imo1);
 #endif
 
 #ifdef CUDA

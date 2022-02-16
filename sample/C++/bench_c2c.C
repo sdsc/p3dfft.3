@@ -126,13 +126,23 @@ int main(int argc,char **argv)
   int sdims1[3],glob_start1[3];
   double tmin=10000000.;
 
-  for(p=1;p<=nprocs;p++) {
+  int dmin = min(min(nx,ny),nz);
+  int phigh = min(dmin,nprocs);
+  int plow = ceil(nprocs/phigh);
+    
+  for(p=plow;p<=phigh;p++) {
 
     if(nprocs%p)
       continue;
 
+    if(dmin / p < nslices)
+      break;
+
     pdims[1] = p;
     pdims[2] = nprocs/p;
+
+    if(dmin /pdims[2] < nslices)
+      continue;
     
     ProcGrid pgrid(pdims,MPI_COMM_WORLD);
     if(myid == 0)

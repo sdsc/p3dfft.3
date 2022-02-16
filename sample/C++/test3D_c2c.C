@@ -313,8 +313,11 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int 
 	  ans = 0.0;
 
 	d = abs(*p++ - ans);
-	if(cdiff < d)
+	if(cdiff < d) {
+	  if(d > 0.00001)
+	    printf("Change from %lg to %lg, %d %d %d\n",cdiff,d,x,y,z);
 	  cdiff = d;
+	}
       }
     }
   }
