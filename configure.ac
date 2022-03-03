@@ -91,6 +91,26 @@ AC_SUBST(CXX_save, "$CXX_save")
 AC_SUBST(FC_save, "$FC_save")
 fourlib=""
 
+AC_MSG_CHECKING([whether to use Non-Blocking version])
+AC_ARG_ENABLE(nonblocking, [AC_HELP_STRING([--enable-nonblocking], [for using nonblocking version])], nbval=$enableval, nbval=no)
+if test "$nbval" = "yes"; then AC_DEFINE(NB, 1, [Define if you want to use nonblocking version])
+fi
+AC_MSG_RESULT([$nbval])
+
+AS_IF([test "$nbval" = "yes"],
+	    withnb="a2a"
+      [AC_MSG_CHECKING([Nonblocking method])
+       AC_ARG_WITH(nonblocking, [AC_HELP_STRING([--with-nonblocking], [nonblocking method])], withnb=$withval, withnb="")]
+       AS_IF([test "$withnb" != ""],				      
+             [AC_MSG_RESULT([$withnb])] 
+	     if test "$withnb" = "p2p"; then AC_DEFINE(P2P, 1, [Point-to-Point NB communication])
+	     fi
+	     if test "$withnb" = "a2a"; then AC_DEFINE(A2A, 1, [All-to-all NB communication])
+	     fi
+	     )
+	     )
+	     
+
 AC_MSG_CHECKING([whether to use TIMERS])
 AC_ARG_ENABLE(timers, [AC_HELP_STRING([--enable-timers], [for using timers (DEBUGGING PURPOSES ONLY)])], timersval=$enableval, timersval=no)
 if test "$timersval" = "yes"; then AC_DEFINE(TIMERS, 1, [Define if you want to use timers])

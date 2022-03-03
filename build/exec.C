@@ -1556,7 +1556,7 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
   //  else
   //  tmpbuf += MULT3(tmpdims)*sizeof(Type2);
 
-#ifdef NB_A2A    
+#ifdef A2A    
     
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
     //    char *pin = ((char *) sendbuf)+SndStrt[slice][0];
