@@ -24,16 +24,16 @@ configs = { "comet": './configure --enable-fftw --with-fftw=$FFTWHOME',
 destdir = "p3dfft++_configs_" + strftime("%d-%m-%Y-%H%M%S", localtime())
 
 def usage_exit(msg):
-	print msg
-	print "USAGE: ./all_configs.py -s comet|bridges|stampede|summit [-c intel|gnu|pgi] [-p] [-f extra flags]"
-	print "Make sure to run this script from one level above your p3dfft.3 source directory!"
-	print "-h displays usage information"
-	print "-s specifies which platform"
-	print "-c to specify non-default compiler"
+	print (msg)
+	print ("USAGE: ./all_configs.py -s comet|bridges|stampede|summit [-c intel|gnu|pgi] [-p] [-f extra flags]")
+	print ("Make sure to run this script from one level above your p3dfft.3 source directory!")
+	print ("-h displays usage information")
+	print ("-s specifies which platform")
+	print ("-c to specify non-default compiler")
 	#print "-m to build -mt branch"
 	#print "-p to build performance test"
-	print "-f extra configure flags"
-	print "-d to specify non-default root directory name"
+	print ("-f extra configure flags")
+	print ("-d to specify non-default root directory name")
 	sys.exit(1)
 
 def main():
@@ -99,10 +99,10 @@ def main():
 		usage_exit(source + " dir does not exist. Make sure you are at the right directory level")
 
 	# start build
-	print configline
-	print "Source Directory: " + source
-	print "Destination Directory: " + dest
-	print "********** Starting build... **********"
+	print (configline)
+	print ("Source Directory: " + source)
+	print ("Destination Directory: " + dest)
+	print ("********** Starting build... **********")
 
 	# Perf is not working!
 	if perf:
@@ -112,7 +112,7 @@ def main():
 			os.mkdir(d)
 			os.mkdir(dd)
 		except Exception as e:
-			print e
+			print (e)
 			sys.exit(1)
 		call('cp -r ' + cwd + '/' + source + '/* ' + dd, shell=True)
 		os.chdir(dd)
@@ -126,7 +126,7 @@ def main():
 		try:
 			os.mkdir(d)
 		except Exception as e:
-			print e
+			print (e)
 			sys.exit(1)
 		# Generates a list of combinations of the options list
 		# Then iterates through that list and builds p3dfft in a new directory for each combination
@@ -137,29 +137,29 @@ def main():
 			try:
 				os.mkdir(dd)
 			except Exception as e:
-				print e
+				print (e)
 				sys.exit(1)
 			call('cp -r ' + cwd + '/' + source + '/* ' + dd, shell=True)
 			os.chdir(dd)
 			c = configline
 			for o in combo:
 				c += ' --enable-' + o
-			print "Configuring " + dd + " with "
-			print "\t" + c
+			print ("Configuring " + dd + " with ")
+			print ("\t" + c)
 			c += " &> config_output"
 			ret = call(c, shell=True)
 			if ret != 0:
-				print "CONFIG FAILED! CHECK config_output for log"
+				print ("CONFIG FAILED! CHECK config_output for log")
 				continue
-			print "Configured " + dd + " successfully"
-			print "Making " + dd
+			print ("Configured " + dd + " successfully")
+			print ("Making " + dd)
 			ret = call('make &> make_output', shell=True)
 			if ret != 0:
-				print "MAKE FAILED! CHECK make_output for log"
+				print ("MAKE FAILED! CHECK make_output for log")
 				continue
-			print "Built " + dd + " successfully"
+			print ("Built " + dd + " successfully")
 
-	print "********** Done. **********"
+	print ("********** Done. **********")
 
 if __name__ == '__main__':
 	main()
