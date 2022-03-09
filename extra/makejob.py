@@ -31,15 +31,15 @@ assert(MT_NUMTHREADS * MT_RANKSPERNODE == TASKSPERNODE)
 
 #Exit message when input error occurs
 def usage_exit(msg):
-	print msg
-	print "USAGE: ./makejob.py -s comet|stampede|bridges|summit -d [directory] [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]"
-	print "Make sure to run this script from one level above your p3dfft.3 source directory!"
-	print "-h displays usage information"
-	print "-d source directory created from configure.py"
-	print "-s specifies which platform"
-	print "-a specifies an account to run the job with"
-	print "-m to build -mt branch" #currently not working and hasn't been tested
-	print "-p to build performance test" #currently not working and hasn't been tested
+	print (msg)
+	print ("USAGE: ./makejob.py -s comet|stampede|bridges|summit -d [directory] [-m] [-p MINCORES MAXCORES [NUMTHREADS if -m is used] [MINGRID MAXGRID]]")
+	print ("Make sure to run this script from one level above your p3dfft.3 source directory!")
+	print ("-h displays usage information")
+	print ("-d source directory created from configure.py")
+	print ("-s specifies which platform")
+	print ("-a specifies an account to run the job with")
+	print ("-m to build -mt branch") #currently not working and hasn't been tested
+	print ("-p to build performance test") #currently not working and hasn't been tested
 	sys.exit(1)
 
 # Return list of all tests of this specific configuration
@@ -422,7 +422,7 @@ def main():
 	# Close the file. Done.
 	batchf.close()
 
-	print "Wrote to " + fname
+	print ("Wrote to " + fname)
 
 if __name__ == '__main__':
 	main()
