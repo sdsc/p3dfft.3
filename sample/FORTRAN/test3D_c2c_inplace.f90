@@ -27,7 +27,7 @@
 
       use p3dfft_plus_plus
       implicit none
-!      include 'mpif.h'
+      include 'mpif.h'
 
       integer i,n,nx,ny,nz
       integer m,x,y,z
