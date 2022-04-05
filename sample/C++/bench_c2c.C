@@ -126,23 +126,25 @@ int main(int argc,char **argv)
   int sdims1[3],glob_start1[3];
   double tmin=10000000.;
 
-  int dmin = min(min(nx,ny),nz);
+  int dmin = min(min(nx,ny),nz)/nslices;
   int phigh = min(dmin,nprocs);
-  int plow = ceil(nprocs/phigh);
+  int plow = nprocs/phigh;
+  if(nprocs % phigh) plow++;
     
+  if(myid == 0) printf("Testing proc grids from %d x %d to %d x %d\n",plow,nprocs/plow,phigh,nprocs/phigh);
   for(p=plow;p<=phigh;p++) {
 
     if(nprocs%p)
       continue;
 
-    if(dmin / p < nslices)
-      break;
+    //    if(dmin / p < nslices)
+    //  break;
 
     pdims[1] = p;
     pdims[2] = nprocs/p;
 
-    if(dmin /pdims[2] < nslices)
-      continue;
+    //    if(dmin /pdims[2] < nslices)
+    //  continue;
     
     ProcGrid pgrid(pdims,MPI_COMM_WORLD);
     if(myid == 0)
@@ -192,19 +194,19 @@ int main(int argc,char **argv)
   
 #ifdef CUDA
   // Set up 3D transforms, including stages and plans, for forward trans.
-    transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward,LocHost,LocHost);
+     auto *trans_f=new transform3D<complex_double,complex_double>(Xpencil,Zpencil,&type_forward,LocHost,LocHost);
   // Set up 3D transforms, including stages and plans, for backward trans.
-    transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward,LocHost,LocHost);
+    auto *trans_b=new transform3D<complex_double,complex_double>(Zpencil,Xpencil,&type_backward,LocHost,LocHost);
 #else
   // Set up 3D transforms, including stages and plans, for forward trans.
-    transform3D<complex_double,complex_double> trans_f(Xpencil,Zpencil,&type_forward);
+    auto *trans_f = new transform3D<complex_double,complex_double>(Xpencil,Zpencil,&type_forward);
   // Set up 3D transforms, including stages and plans, for backward trans.
-    transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
+    auto *trans_b = new transform3D<complex_double,complex_double>(Zpencil,Xpencil,&type_backward);
 #endif
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-    trans_f.exec(IN,OUT,false);
+    trans_f->exec(IN,OUT,false);
 
     double t=0.;
     Nglob = gdims[0]*gdims[1];
@@ -217,8 +219,8 @@ int main(int argc,char **argv)
 #endif
     t -= MPI_Wtime();
     for(i=0; i < Nrep;i++) {
-      trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
-      trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
+      trans_f->exec(IN,OUT,false);  // Execute forward real-to-complex FFT
+      trans_b->exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
     }
     
     t += MPI_Wtime();
@@ -259,7 +261,7 @@ int main(int argc,char **argv)
     
     delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures
-
+    delete trans_f,trans_b;
   } 
   if(myid == 0) 
     printf("Best grid (%d,%d), timing %lg\n",pmin,nprocs/pmin,tmin);
