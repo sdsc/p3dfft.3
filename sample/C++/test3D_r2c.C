@@ -33,11 +33,11 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 
 using namespace p3dfft;
 
-  void init_wave(double *,int[3],int *,int[3]);
-void print_res(complex_double *,int *,int *,int *);
-  void normalize(complex_double *,size_t,int *);
-double check_res(double*,double *,int *);
-void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid);
+void init_wave(double *,int[3],int *,int[3],int);
+void print_res(complex_double *,int *,int *,int *,int);
+void normalize(complex_double *,size_t,int *,int);
+double check_res(double*,double *,int *,int);
+void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid,int nv);
 
 int main(int argc,char **argv)
 {
@@ -53,7 +53,7 @@ int main(int argc,char **argv)
   int imo1[3];
   void inv_mo(int[3],int[3]);
   void write_buf(double *,char *,int[3],int[3],int);
-  int pdims[3],ndim,nx,ny,nz,nslices;
+  int pdims[3],ndim,nx,ny,nz,nslices,nv;
   FILE *fp;
 
   MPI_Init(&argc,&argv);
@@ -69,16 +69,16 @@ int main(int argc,char **argv)
      printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
-        nx=ny=nz=128; Nrep=1;ndim=2;nslices=1;
+        nx=ny=nz=128; Nrep=1;ndim=2;nslices=1;nv=1;
      } else {
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
+       fscanf(fp,"%d %d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices,&nv);
        fclose(fp);
      }
      printf("P3DFFT test R2C, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d variables\n",nx,ny,nz,ndim,Nrep,nv);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n",nx,ny,nz,ndim,Nrep);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d variables\n",nx,ny,nz,ndim,Nrep,nv);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -87,6 +87,7 @@ int main(int argc,char **argv)
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nv,1,MPI_INT,0,MPI_COMM_WORLD);
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -191,12 +192,12 @@ int main(int argc,char **argv)
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
-  double *IN=new double[size1];
-  double *FIN=new double[size1];
+  double *IN=new double[size1*nv];
+  double *FIN=new double[size1*nv];
 
   //Initialize the IN array with a sine wave in 3D  
 
-  init_wave(IN,gdims,sdims1,glob_start1);
+  init_wave(IN,gdims,sdims1,glob_start1,nv);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -207,7 +208,7 @@ int main(int argc,char **argv)
   }
 
   size_t size2 = MULT3(sdims2);//((size_t) sdims2[0]*sdims2[1])*((size_t) sdims2[2]);
-  complex_double *OUT=new complex_double[size2];
+  complex_double *OUT=new complex_double[size2*nv];
 
  
 #ifdef CUDA
@@ -224,7 +225,7 @@ int main(int argc,char **argv)
 
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-  trans_f.exec(IN,OUT,false);
+  trans_f.exec(IN,OUT,nv,false);
 
   double t=0.;
   Nglob = MULT3(gdims);
@@ -237,22 +238,22 @@ int main(int argc,char **argv)
 
   for(i=0; i < Nrep;i++) {
     t -= MPI_Wtime();
-    trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
+    trans_f.exec(IN,OUT,nv,false);  // Execute forward real-to-complex FFT
     t += MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,sdims2,glob_start2);
-    normalize(OUT,size2,gdims);
-    check_res_forward(OUT,sdims2,mem_order2[0],glob_start2,gdims,myid);
+    print_res(OUT,gdims,sdims2,glob_start2,nv);
+    normalize(OUT,size2,gdims,nv);
+    check_res_forward(OUT,sdims2,mem_order2[0],glob_start2,gdims,myid,nv);
 
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
-    trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
+    trans_b.exec(OUT,FIN,nv,true);  // Execute backward (inverse) complex-to-real FFT
     t += MPI_Wtime();
   }
 
-  double mydiff = check_res(IN,FIN,sdims1);
+  double mydiff = check_res(IN,FIN,sdims1,nv);
   double diff = 0.0;
   MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
   if(myid == 0) {
@@ -286,7 +287,7 @@ int main(int argc,char **argv)
 
 }
 
-void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid)
+void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid,int nv)
 {
   int x,y,z;
   double d,diff,cdiff=0;
@@ -294,25 +295,26 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start
   complex_double ans,ans1,ans2;
 
   // Find maximum difference
+  for(int iv=0;iv<nv;iv++) 
   for(z=0;z < sdims[2];z++) {
-    if(z + glob_start[2] == 1) 
+    if(z + glob_start[2] == iv+1) 
       ans1 = complex_double(0.0,0.125);
-    else if(dimx != 2 && z + glob_start[2] == gdims[2]-1)
+    else if(dimx != 2 && z + glob_start[2] == gdims[2]-iv-1)
       ans1 = complex_double(0.0,-0.125);
     else
       ans1 = 0.0;
     for(y=0;y < sdims[1];y++) {
-      if(y + glob_start[1] == 1) 
+      if(y + glob_start[1] == iv+1) 
 	ans2 = ans1;
-      else if(dimx != 1 && y + glob_start[1] == gdims[1]-1)
+      else if(dimx != 1 && y + glob_start[1] == gdims[1]-iv-1)
 	ans2 = -ans1;
       else
 	ans2 = 0.0;
 
       for(x=0;x < sdims[0];x++) {
-	if(x + glob_start[0] == 1) 
+	if(x + glob_start[0] == iv+1) 
 	  ans = ans2;
-	else if(dimx != 0 && x + glob_start[0] == gdims[0]-1)
+	else if(dimx != 0 && x + glob_start[0] == gdims[0]-iv-1)
 	  ans = -ans2;
 	else
 	  ans = 0.0;
@@ -338,17 +340,17 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start
 
 }
 
-void normalize(complex_double *A,size_t size,int *gdims)
+void normalize(complex_double *A,size_t size,int *gdims,int nv)
 {
   size_t i;
   double f = 1.0/MULT3(gdims);
   
-  for(i=0;i<size;i++)
+  for(i=0;i<size*nv;i++)
     A[i] = A[i] * f;
 
 }
 
-void init_wave(double *IN,int *gdims,int *sdims,int *gstart)
+void init_wave(double *IN,int *gdims,int *sdims,int *gstart,int nv)
 {
   double *sinx,*siny,*sinz,sinyz,*p;
   int x,y,z;
@@ -358,25 +360,30 @@ void init_wave(double *IN,int *gdims,int *sdims,int *gstart)
   siny = new double[gdims[1]];
   sinz = new double[gdims[2]];
 
-   for(z=0;z < sdims[2];z++)
-     sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < sdims[1];y++)
-     siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < sdims[0];x++)
-     sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
+  size_t sz = MULT3(sdims);
+  
+   for(int iv=0;iv<nv;iv++) {
 
-   p = IN;
-   for(z=0;z < sdims[2];z++)
-     for(y=0;y < sdims[1];y++) {
-       sinyz = siny[y]*sinz[z];
-       for(x=0;x < sdims[0];x++)
-          *p++ = sinx[x]*sinyz;
-     }
+     for(z=0;z < sdims[2];z++)
+       sinz[z] = sin((z+gstart[2])*(iv+1)*twopi/gdims[2]);
+     for(y=0;y < sdims[1];y++)
+       siny[y] = sin((y+gstart[1])*(iv+1)*twopi/gdims[1]);
+     for(x=0;x < sdims[0];x++)
+       sinx[x] = sin((x+gstart[0])*(iv+1)*twopi/gdims[0]);
+     
+     p = IN+sz*iv;
+     for(z=0;z < sdims[2];z++)
+       for(y=0;y < sdims[1];y++) {
+	 sinyz = siny[y]*sinz[z];
+	 for(x=0;x < sdims[0];x++)
+	   *p++ = sinx[x]*sinyz;
+       }
+   }
 
    delete [] sinx,siny,sinz;
 }
 
-void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart,int nv)
 {
   int x,y,z;
   complex_double *p;
@@ -388,16 +395,19 @@ void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
   Nglob = Nglob *gdims[2];
   p = A;
 
-  for(z=0;z < sdims[2];z++)
-    for(y=0;y < sdims[1];y++)
-      for(x=0;x < sdims[0];x++) {
-	if(std::abs(*p) > Nglob *1.25e-4) 
-	  printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
-	p++;
-      }
+  for(int iv=0;iv<nv;iv++) {
+    printf("Variable %d\n",iv);
+    for(z=0;z < sdims[2];z++)
+      for(y=0;y < sdims[1];y++)
+	for(x=0;x < sdims[0];x++) {
+	  if(std::abs(*p) > Nglob *1.25e-4) 
+	    printf("(%d %d %d) %lg %lg\n",x+gstart[0],y+gstart[1],z+gstart[2],p->real(),p->imag());
+	  p++;
+	}
+  }
 }
 
-double check_res(double *A,double *B,int *sdims)
+   double check_res(double *A,double *B,int *sdims, int nv)
 {
   int x,y,z;
   double *p1,*p2,mydiff;
@@ -405,6 +415,7 @@ double check_res(double *A,double *B,int *sdims)
   p2 = B;
 
   mydiff = 0.;
+  for(int iv=0;iv<nv;iv++) 
   for(z=0;z < sdims[2];z++)
     for(y=0;y < sdims[1];y++)
       for(x=0;x < sdims[0];x++) {

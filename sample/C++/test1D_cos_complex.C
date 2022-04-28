@@ -222,7 +222,7 @@ using namespace p3dfft;
 
   // Execution of forward transform
 
-  trans_f.exec((char *) IN,(char *) OUT,-1,false);
+  trans_f.exec((char *) IN,(char *) OUT,1,-1,false);
 
   Nglob = MULT3(gdims);//gdims[0]*gdims[1]*gdims[2];
 
@@ -233,7 +233,7 @@ using namespace p3dfft;
   check_res_forward(OUT,sdims2,ar_dim2,glob_start2,myid);
 
   // Execution of backward transform
-  trans_b.exec((char *) OUT,(char *) FIN,-1,true);
+  trans_b.exec((char *) OUT,(char *) FIN,1,-1,true);
 
   mydiff = check_res(IN,FIN,sdims1);
 
