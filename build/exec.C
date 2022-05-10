@@ -1556,12 +1556,12 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 
   int slice,i;
   double t1;
+  int np = mpiplan->numtasks;
 
 #ifdef NB
 
 #ifdef P2P 
   static int a2a_cnt = 0;
-  int np = mpiplan->numtasks;
   MPI_Request *sendreq = new MPI_Request[nslices*np*nv];
   MPI_Request *recvreq = new MPI_Request[nslices*np*nv];
   int self = mpiplan->Pgrid->grid_id_cart[mpiplan->grid2->Dmap[mpiplan->d2]];
@@ -1668,30 +1668,70 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 
 #else // Blocking
 
+  for(int iv=0;iv<nv;iv++) 
+  for(slice=0;slice<nslices;slice++) {
 #ifdef TIMERS
-  t1=MPI_Wtime();
+    t1=MPI_Wtime();
 #endif
-  //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
-    MPI_Alltoallv(sendbuf,SndCnts[slice]*nv,SndStrt[slice]*nv,MPI_BYTE,recvbuf,RcvCnts[slice]*nv,RcvStrt[slice]*nv,MPI_BYTE,mycomm);
-//  MPI_Alltoallv(sendbuf,mpiplan->SndCnts,mpiplan->SndStrt,MPI_BYTE,recvbuf,mpiplan->RcvCnts,mpiplan->RcvStrt,MPI_BYTE,mpiplan->Pgrid->mpicomm[mpiplan->comm_id]);
+    pack_sendbuf_trans_slice(sendbuf+SndStrt[slice][0]/sizeof(Type2),in,dim_deriv,event_hold,iv,nv,slice,nslices,devbuf,OW,tmpbuf);
+
 #ifdef TIMERS
-  timers.alltoall += MPI_Wtime() -t1;
-  *tmpi += MPI_Wtime() - t1;
+    timers.packsend_trans += MPI_Wtime() -t1;
 #endif
+  }
+
+  int *sndcnts,*sndstrt,*rcvcnts,*rcvstrt;
+  if(nv > 1) {
+    sndcnts = new int[np];
+    sndstrt = new int[np];
+    rcvcnts = new int[np];
+    rcvstrt = new int[np];
+  }
+  for(i=0;i < nslices;i++) {
+  if(nv > 1) {
+    for(int j=0;j<np;j++) {
+      sndcnts[j] = SndCnts[i][j]*nv;
+      sndstrt[j] = SndStrt[i][j]*nv;
+      rcvcnts[j] = RcvCnts[i][j]*nv;
+      rcvstrt[j] = RcvStrt[i][j]*nv;
+    }
+  
+#ifdef TIMERS
+    t1=MPI_Wtime();
+#endif
+    MPI_Alltoallv(sendbuf,sndcnts,sndstrt,MPI_BYTE,recvbuf,rcvcnts,rcvstrt,MPI_BYTE,mycomm);
+#ifdef TIMERS
+    timers.alltoall += MPI_Wtime() -t1;
+    *tmpi += MPI_Wtime() - t1;
+#endif
+  }
+ 
+  else {
+#ifdef TIMERS
+    t1=MPI_Wtime();
+#endif
+    MPI_Alltoallv(sendbuf,SndCnts[i],SndStrt[i],MPI_BYTE,recvbuf,RcvCnts[i],RcvStrt[i],MPI_BYTE,mycomm);
+#ifdef TIMERS
+    timers.alltoall += MPI_Wtime() -t1;
+    *tmpi += MPI_Wtime() - t1;
+#endif
+  }
 
   if(unpack) {
       //  delete [] sendbuf;
 #ifdef TIMERS
     t1=MPI_Wtime();
 #endif
-    for(iv=0;iv<nv;iv++)
-      unpack_recvbuf_slice((Type2 *) out,recvbuf,iv,nv,slice,nslices);
+    for(int iv=0;iv<nv;iv++)
+      unpack_recvbuf_slice((Type2 *) out,recvbuf,iv,nv,i,nslices);
       //    mpiplan->unpack_recvbuf((Type2 *) out,recvbuf);
 #ifdef TIMERS
     timers.unpackrecv += MPI_Wtime() -t1;
 #endif
-    }
+  }
   } // nslices loop
+  if(nv >1)
+    delete [] sndcnts,rcvcnts,sndstrt,rcvstrt;
 #endif
 
   //  delete [] recvbuf;
