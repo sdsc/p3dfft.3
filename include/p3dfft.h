@@ -738,8 +738,8 @@ template <class Type> class MPIplan : public stage {
   int comm_id; //which communicator is this? 0=row, 1=column etc
   int mo1[3],mo2[3];
 
-  void pack_sendbuf(Type *sendbuf,Type *in);
-  void unpack_recvbuf(Type *out,Type * recvbuf);
+  void pack_sendbuf(Type *sendbuf,Type *in, int nv);
+  void unpack_recvbuf(Type *out,Type * recvbuf, int nv);
   bool is_set;
 
  public :
@@ -749,7 +749,7 @@ template <class Type> class MPIplan : public stage {
   MPIplan(const DataGrid &gr1,const DataGrid &gr2,int d1,int d2, int prec_);
   //MPIplan() {};
   ~MPIplan();
-  void exec(char *in,char *out,char *tmpbuf=NULL);
+  void exec(char *in,char *out,int nv=1,char *tmpbuf=NULL);
   template <class Type1,class Type2> friend class trans_MPIplan;
   template <class Type11,class Type2> friend  class transform3D;
 
@@ -836,7 +836,7 @@ template <class Type1,class Type2>   class transplan : public stage {
     void ro120out_cu(dim3 gridDim,dim3 blockSize,Type1 *in,Type1 *out,int d[3]);
 #endif
 
-    void exec(char *in,char *out, int dim_deriv,bool OW=false, char *tmpbuf=NULL);
+  void exec(char *in,char *out, int dim_deriv,int nv=1,bool OW=false, char *tmpbuf=NULL);
 #ifdef CUDA
   void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 #else
@@ -869,8 +869,8 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   int **SndCnts,**SndStrt,**RcvCnts,**RcvStrt;   
   int *offset_snd,*offset_rcv;
   
-  void pack_sendbuf_trans_slice(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
-  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
+  void pack_sendbuf_trans_slice(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int iv=0, int nv=1,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
+  void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int iv=0,int nv=1,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
   void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,bool OW);
   //  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
   //  void unpack_recv(Type2 *out,Type2 * recvbuf);
@@ -915,11 +915,11 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 #ifdef CUDA
   int InLoc=LocHost;
 #endif
-  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
-  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
-  void unpack_recvbuf_slice(Type2 *out,Type2 * recvbuf,int slice=0,int nslices=1);
+  void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,int nv=1,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
+  //  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
+  void unpack_recvbuf_slice(Type2 *out,Type2 * recvbuf,int iv=0,int nv=1,int slice=0,int nslices=1);
 #ifdef P2P
-  void unpack_recvbuf_slice_p2p(Type2 *out,Type2 * recvbuf,int rank,int slice=0,int nslices=1,int **rcvstrt=NULL);
+  void unpack_recvbuf_slice_p2p(Type2 *out,Type2 * recvbuf,int rank,int iv=0,int nv=1,int slice=0,int nslices=1,int **rcvstrt=NULL);
 #endif
   //  void exec_deriv(char *in,char *out, bool OW);
 
@@ -928,7 +928,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
   };
 
-template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3]);
+  template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3],int nv);
 
  class ProcGrid {
 
@@ -1178,8 +1178,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
  public:
 
   size_t WorkSpaceHost=0,WorkSpaceDev=0;
-  void exec(Type1 *in,Type2 *out, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
-  void exec_deriv(Type1 *in,Type2 *out,int idir, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
+  void exec(Type1 *in,Type2 *out, int nv=1,bool OW=false, char *work_host=NULL, char *work_dev=NULL);
+  void exec_deriv(Type1 *in,Type2 *out,int idir, int nv=1, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
 
   transform3D(const DataGrid &grid1_, const DataGrid &grid2_,const trans_type3D *type,const int InLoc_=0, const int OutLoc_=0);
   ~transform3D();
