@@ -1570,8 +1570,23 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 #endif
 
   int cnt=0;
-  for(int iv=0;iv<nv;iv++) 
-  for(slice=0;slice<nslices;slice++) {
+  for(int iv=0;iv<nv;iv++) {
+    
+#ifdef DEBUG
+    {
+    char str[80];
+    sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,iv,mpiplan->Pgrid->taskid);
+  //  inv_mo(mo2,imo2);
+  // Optimize in the future
+  int *mo1 = trplan->mo1;
+  int imo1[3];
+  inv_mo(mo1,imo1);
+  write_buf<Type1>((Type1 *) in + send_sz*iv ,str,dims1,imo1,1);
+    }
+#endif
+
+    for(slice=0;slice<nslices;slice++) {
+
 #ifdef TIMERS
     t1=MPI_Wtime();
 #endif
@@ -1592,7 +1607,21 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 
   }
   
-  for(i=0;i < nslices*nv; i++) {
+#ifdef DEBUG
+{
+    char str[80];
+  tmpdims = trplan->grid2->Ldims;
+  int *mo2 = trplan->mo2;
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  sprintf(str,"pack_send_trans.out%d.%d.%d",cnt_pack++,iv,mpiplan->Pgrid->taskid);
+  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,1);
+}
+#endif
+
+  } // nv loop
+  
+ for(i=0;i < nslices*nv; i++) {
     MPI_Waitany(nslices*nv,req,&slice,MPI_STATUS_IGNORE);
 #ifdef TIMERS
     // Only meaningful if nslices=1
@@ -1624,7 +1653,21 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 	MPI_Isend(sendbuf + send_sz*iv+ SndStrt[slice][i]/sizeof(Type2),SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[irecv]);
       }
   } // nslices loop
-
+#ifdef DEBUG
+{
+    char str[80];
+  tmpdims = trplan->grid2->Ldims;
+  int *mo2 = trplan->mo2;
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  sprintf(str,"pack_send_trans.out%d.%d.%d",cnt_pack,iv,mpiplan->Pgrid->taskid);
+  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,1);
+}
+#endif
+  }// nv loop
+#ifdef DEBUG
+cnt_pack++;
+#endif
 // Self
 #ifdef TIMERS
   t1=MPI_Wtime();
@@ -1668,6 +1711,17 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
 
 #else // Blocking
 
+#ifdef DEBUG
+  char str[80];
+  sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
+  //  inv_mo(mo2,imo2);
+  // Optimize in the future
+  int *mo1 = trplan->mo1;
+  int imo1[3];
+  inv_mo(mo1,imo1);
+write_buf<Type1>((Type1 *) in,str,dims1,imo1,nv);
+#endif
+  
   for(int iv=0;iv<nv;iv++) 
   for(slice=0;slice<nslices;slice++) {
 #ifdef TIMERS
@@ -1679,6 +1733,17 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
     timers.packsend_trans += MPI_Wtime() -t1;
 #endif
   }
+
+#ifdef DEBUG
+{
+  tmpdims = trplan->grid2->Ldims;
+  int *mo2 = trplan->mo2;
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
+  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,nv);
+}
+#endif
 
   int *sndcnts,*sndstrt,*rcvcnts,*rcvstrt;
   if(nv > 1) {
@@ -1737,11 +1802,11 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   //  delete [] recvbuf;
 
 #ifdef DEBUG
-  char str[80];
-  sprintf(str,"transmpi.out%d.%d",cnt_trans++,mpiplan->Pgrid->taskid);
+  char str1[80];
+  sprintf(str1,"transmpi.out%d.%d",cnt_trans++,mpiplan->Pgrid->taskid);
   int imo2[3];
   inv_mo(mpiplan->mo2,imo2);
-write_buf<Type2>((Type2 *) out,str,tmpdims,imo2,nv);
+write_buf<Type2>((Type2 *) out,str1,tmpdims,imo2,nv);
 #endif
 }
 
@@ -1837,7 +1902,8 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
     tmpbuf += size1;
   }
   */
-#ifdef DEBUG
+  /*
+  #ifdef DEBUG
   char str[80];
   sprintf(str,"pack_send_trans.in%d.%d",cnt_pack,mpiplan->Pgrid->taskid);
   //  inv_mo(mo2,imo2);
@@ -1845,7 +1911,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   inv_mo(mo1,imo1);
   write_buf<Type1>((Type1 *)src,str,dims1,imo1,nv);
 #endif
-
+*/
 #ifdef CUDA
   cudaStream_t *stream;
 
@@ -1908,7 +1974,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   //  checkCudaErrors(cudaFree(trplan->DevBuf));
 #else
   //  for(i=0;i<nslices;i++)
-  trplan->exec_slice(src+size1*iv,(char *) sendbuf + size2*iv,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks);
+  trplan->exec_slice(src+size1*iv,((char *) sendbuf) + size2*iv,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks);
 #endif
 
   /*
@@ -1920,12 +1986,14 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 
   */
 
+  /*
 #ifdef DEBUG
   tmpdims = trplan->grid2->Ldims;
   inv_mo(mo2,imo2);
   sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
   write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,nv);
 #endif
+  */
   
   /*
   if(pack) {
