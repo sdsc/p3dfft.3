@@ -83,6 +83,7 @@ All Rights Reserved.
 namespace p3dfft {
 
 void inv_mo(int mo[3],int imo[3]);
+int find_zero(int ar[3]);
 
 
   // Set up 3D transform, defined by grid1 and grid2 (before and after grid configurations).
@@ -255,10 +256,10 @@ void inv_mo(int mo[3],int imo[3]);
       if(!tmptype->is_empty)
 	swap0(monext,mocurr,L[st]);
       if(tmpgrid0->Pdims[L[st+1]] > 1) {
-	d1 = L[st+1];
-	d2 = L[st];
-      }
-   }
+	  d1 = L[st+1];
+	  d2 = L[st];
+	}
+    }
     else   {
       for(i=0;i<3;i++) 
 	monext[i] = grid2_.MemOrder[i];
@@ -631,6 +632,7 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   int excl(int,int),dist(int);
   *reverse_steps = false;
 
+
   for(i=0;i<3;i++) 
     L[i] = -1;
 
@@ -688,6 +690,12 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 
       // Next choose intermediate and final local dimensions, L[1] and L[2]
   if(L[2] < 0) {// Final dimension not assigned yet 
+    if(gr1->Pgrid->numtasks == 1) {
+      L[2] = find_zero((int *) gr2->MemOrder);
+      L[1] = excl(L[0],L[2]);
+    }
+    else {
+
     if(gr1->nd == 1) { // Special case of 1D proc grid
       int d1=gr1->D[0];
       int d2=gr2->D[0];
@@ -721,8 +729,9 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
 	    break;
 	  }
       */
+      }
+      L[2] = excl(L[0],L[1]);
     }
-    L[2] = excl(L[0],L[1]);
   }
   /*
   
@@ -790,6 +799,18 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   return init_steps;
 }
 
+
+  int find_zero(int ar[3])
+  {
+    int i;
+    for(i=0;i<3;i++)
+      if(ar[i] == 0)
+	return i;
+
+    printf("ERror in find_zero: no zero is found: %d %d %d\n",ar[0],ar[1],ar[2]);
+    return -1;
+  }
+  
 void swap0(int newmo[3],int mo[3],int L)
 {
   int i,j;
