@@ -692,6 +692,8 @@ bool find_order(int L[3],const trans_type3D *tp,const DataGrid *gr1,const DataGr
   if(L[2] < 0) {// Final dimension not assigned yet 
     if(gr1->Pgrid->numtasks == 1) {
       L[2] = find_zero((int *) gr2->MemOrder);
+      if(L[2] == L[0])
+	L[2] = (L[0]+1)%3;
       L[1] = excl(L[0],L[2]);
     }
     else {
