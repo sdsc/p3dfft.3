@@ -34,7 +34,7 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 using namespace p3dfft;
 
 void init_wave(double *,int[3],int *,int[3],int);
-void print_res(complex_double *,int *,int *,int *,int);
+void print_res(complex_double *,int *,int *,int *,int,int);
 void normalize(complex_double *,size_t,int *,int);
 double check_res(double*,double *,int *,int);
 void  check_res_forward(complex_double *OUT,int sdims[3],int dimx,int glob_start[3], int gdims[3],int myid,int nv);
@@ -233,7 +233,7 @@ int main(int argc,char **argv)
   // timing loop
 
 #ifdef TIMERS
-  timers.init();
+  timers.start();
 #endif
 
   for(i=0; i < Nrep;i++) {
@@ -243,7 +243,7 @@ int main(int argc,char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(myid == 0)
       cout << "Results of forward transform: "<< endl;
-    print_res(OUT,gdims,sdims2,glob_start2,nv);
+    print_res(OUT,gdims,sdims2,glob_start2,nv,myid);
     normalize(OUT,size2,gdims,nv);
     check_res_forward(OUT,sdims2,mem_order2[0],glob_start2,gdims,myid,nv);
 
@@ -274,7 +274,7 @@ int main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
 #ifdef TIMERS
-  timers.print(MPI_COMM_WORLD);
+  timers.print_all(MPI_COMM_WORLD);
 #endif
 
   delete [] IN,OUT,FIN;
@@ -383,7 +383,7 @@ void init_wave(double *IN,int *gdims,int *sdims,int *gstart,int nv)
    delete [] sinx,siny,sinz;
 }
 
-void print_res(complex_double *A,int *gdims,int *sdims,int *gstart,int nv)
+void print_res(complex_double *A,int *gdims,int *sdims,int *gstart,int nv,int myid)
 {
   int x,y,z;
   complex_double *p;
@@ -396,7 +396,8 @@ void print_res(complex_double *A,int *gdims,int *sdims,int *gstart,int nv)
   p = A;
 
   for(int iv=0;iv<nv;iv++) {
-    printf("Variable %d\n",iv);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(myid == 0) printf("Variable %d\n",iv);
     for(z=0;z < sdims[2];z++)
       for(y=0;y < sdims[1];y++)
 	for(x=0;x < sdims[0];x++) {

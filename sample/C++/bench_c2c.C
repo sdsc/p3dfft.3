@@ -33,11 +33,13 @@ If you have questions please contact Dmitry Pekurovsky, dmitry@sdsc.edu
 
 using namespace p3dfft;
 
-  void init_wave(complex_double *,int[3],int *,int[3]);
+void init_wave(complex_double *,int[3],int *,int[3],int);
 void print_res(complex_double *,int *,int *,int *);
-  void normalize(complex_double *,long int,int *);
-double check_res(complex_double*,complex_double *,int *);
+void normalize(complex_double *,long int,int *,int);
+double check_res(complex_double*,complex_double *,int *,int);
 void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid);
+
+//template<class Type1,class Type2> char* transform3D<Type1,Type2>::work_host;
 
 int main(int argc,char **argv)
 {
@@ -55,6 +57,7 @@ int main(int argc,char **argv)
   void write_buf(double *,char *,int[3],int[3],int);
   int pdims[3],ndim,nx,ny,nz;
   int nslices=1;
+  int nv=1;
   FILE *fp;
   size_t workspace_host,workspace_dev;
 
@@ -62,23 +65,23 @@ int main(int argc,char **argv)
   MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 
-   if(myid == 0) {
+  if(myid == 0) {
      printf("P3DFFT++ C++ test program. Running on %d cores\n",nprocs);
      printf("GitVersion = %s\n", GIT_VERSION);
      printf("GitDate = %s\n", GIT_DATE);
      printf("Executable, %s, was compiled with %s (version %d) on %s at %s\n", __FILE__, COMPILER_DETECTED, COMPILER_V_DETECTED, __DATE__, __TIME__);
      if((fp=fopen("stdin", "r"))==NULL){
         printf("Cannot open file. Setting to default nx=ny=nz=128, ndim=2, n=1.\n");
-        nx=ny=nz=128; Nrep=1;ndim=2;
+        nx=ny=nz=128; Nrep=1;ndim=2;nslices=1;nv=1;
      } else {
-       fscanf(fp,"%d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices);
-        fclose(fp);
+       fscanf(fp,"%d %d %d %d %d %d %d\n",&nx,&ny,&nz,&ndim,&Nrep,&nslices,&nv);
+       fclose(fp);
      }
      printf("P3DFFT test C2C, 3D wave input\n");
 #ifndef SINGLE_PREC
-     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices/streams\n",nx,ny,nz,ndim,Nrep,nslices);
+     printf("Double precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices\n%d variables\n",nx,ny,nz,ndim,Nrep,nslices,nv);
 #else
-     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices/streams\n",nx,ny,nz,ndim,Nrep,nslices);
+     printf("Single precision\n (%d %d %d) grid\n %d proc. dimensions\n%d repetitions\n%d slices\n%d variables\n",nx,ny,nz,ndim,Nrep,nslices,nv);
 #endif
    }
    MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -87,6 +90,8 @@ int main(int argc,char **argv)
    MPI_Bcast(&Nrep,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&ndim,1,MPI_INT,0,MPI_COMM_WORLD);
    MPI_Bcast(&nslices,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&nv,1,MPI_INT,0,MPI_COMM_WORLD);
+
 
   // Establish 2D processor grid decomposition, either by reading from file 'dims' or by an MPI default
 
@@ -129,7 +134,7 @@ int main(int argc,char **argv)
   int dmin = min(min(nx,ny),nz);
   int phigh = min(dmin,nprocs);
   int plow = ceil(nprocs/phigh);
-    
+
   for(p=plow;p<=phigh;p++) {
 
     if(nprocs%p)
@@ -170,12 +175,12 @@ int main(int argc,char **argv)
 
   // Allocate initial and final arrays in physical space, as 1D array space containing a 3D contiguous local array
 
-    complex_double *IN=new complex_double[size1];
-    complex_double *FIN=new complex_double[size1];
+    complex_double *IN=new complex_double[size1*nv];
+    complex_double *FIN=new complex_double[size1*nv];
 
   //Initialize the IN array with a sine wave in 3D  
 
-    init_wave(IN,gdims,sdims1,glob_start1);
+    init_wave(IN,gdims,sdims1,glob_start1,nv);
 
   //Determine local array dimensions and allocate fourier space, complex-valued out array
 
@@ -188,7 +193,7 @@ int main(int argc,char **argv)
     
     long int size2 = sdims2[0]*sdims2[1]*sdims2[2];
   // Allocate input/outpu array for in-place tansform, using the larger size of the two
-    complex_double *OUT=new complex_double[size2];
+    complex_double *OUT=new complex_double[size2*nv];
   
 #ifdef CUDA
   // Set up 3D transforms, including stages and plans, for forward trans.
@@ -202,9 +207,10 @@ int main(int argc,char **argv)
     transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
 #endif
 
+    //    transform3D<complex_double,complex_double>::work_host = new char[trans_f.WorkSpaceHost * 16 * nv];
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
-    trans_f.exec(IN,OUT,false);
+    trans_f.exec(IN,OUT,nv,false);
 
     double t=0.;
     Nglob = gdims[0]*gdims[1];
@@ -213,12 +219,12 @@ int main(int argc,char **argv)
   // timing loop
 
 #ifdef TIMERS
-    timers.init();
+    timers.start();
 #endif
     t -= MPI_Wtime();
     for(i=0; i < Nrep;i++) {
-      trans_f.exec(IN,OUT,false);  // Execute forward real-to-complex FFT
-      trans_b.exec(OUT,FIN,true);  // Execute backward (inverse) complex-to-real FFT
+      trans_f.exec(IN,OUT,nv,false);  // Execute forward real-to-complex FFT
+      trans_b.exec(OUT,FIN,nv,true);  // Execute backward (inverse) complex-to-real FFT
     }
     
     t += MPI_Wtime();
@@ -226,9 +232,9 @@ int main(int argc,char **argv)
       //      cout << "Results of forward transform: "<< endl;
     //    print_res(OUT,gdims,sdims2,glob_start2);
 
-    normalize(FIN,size1,gdims);
+    normalize(FIN,size1,gdims,nv);
 
-    double mydiff = check_res(IN,FIN,sdims1);
+    double mydiff = check_res(IN,FIN,sdims1,nv);
     double diff = 0.0;
     MPI_Reduce(&mydiff,&diff,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
     if(myid == 0) {
@@ -254,11 +260,11 @@ int main(int argc,char **argv)
       }
     }
 #ifdef TIMERS
-    timers.print(MPI_COMM_WORLD);
+    timers.print_all(MPI_COMM_WORLD);
 #endif
     
     delete [] IN,OUT,FIN;
-  // Clean up P3DFFT++ structures
+    // Clean up P3DFFT++ structures
 
   } 
   if(myid == 0) 
@@ -322,17 +328,18 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int 
 
 }
 
-void normalize(complex_double *A,long int size,int *gdims)
+ void normalize(complex_double *A,long int size,int *gdims,int nv)
 {
   long int i;
   double f = 1.0/(((double) gdims[0])*((double) gdims[1])*((double) gdims[2]));
   
-  for(i=0;i<size;i++)
+  for(i=0;i<size*nv;i++)
     A[i] = A[i] * f;
 
 }
 
-void init_wave(complex_double *IN,int *gdims,int *sdims,int *gstart)
+ 
+void init_wave(complex_double *IN,int *gdims,int *sdims,int *gstart, int nv)
 {
   double *sinx,*siny,*sinz,sinyz;
   complex_double *p;
@@ -343,21 +350,26 @@ void init_wave(complex_double *IN,int *gdims,int *sdims,int *gstart)
   siny = new double[gdims[1]];
   sinz = new double[gdims[2]];
 
-   for(z=0;z < sdims[2];z++)
-     sinz[z] = sin((z+gstart[2])*twopi/gdims[2]);
-   for(y=0;y < sdims[1];y++)
-     siny[y] = sin((y+gstart[1])*twopi/gdims[1]);
-   for(x=0;x < sdims[0];x++)
-     sinx[x] = sin((x+gstart[0])*twopi/gdims[0]);
+  size_t sz = MULT3(sdims);
+  
+   for(int iv=0;iv<nv;iv++) {
 
-   p = IN;
-   for(z=0;z < sdims[2];z++)
-     for(y=0;y < sdims[1];y++) {
-       sinyz = siny[y]*sinz[z];
-       for(x=0;x < sdims[0];x++)
-	 *p++ = complex<double>(sinx[x]*sinyz,0.0);
-     }
-
+     for(z=0;z < sdims[2];z++)
+       sinz[z] = sin((z+gstart[2])*(iv+1)*twopi/gdims[2]);
+     for(y=0;y < sdims[1];y++)
+       siny[y] = sin((y+gstart[1])*(iv+1)*twopi/gdims[1]);
+     for(x=0;x < sdims[0];x++)
+       sinx[x] = sin((x+gstart[0])*(iv+1)*twopi/gdims[0]);
+     
+     p = IN+sz*iv;
+     for(z=0;z < sdims[2];z++)
+       for(y=0;y < sdims[1];y++) {
+	 sinyz = siny[y]*sinz[z];
+	 for(x=0;x < sdims[0];x++)
+	   *p++ = complex<double>(sinx[x]*sinyz,0.0);
+       }
+   }
+   
    delete [] sinx,siny,sinz;
 }
 
@@ -381,7 +393,7 @@ void print_res(complex_double *A,int *gdims,int *sdims,int *gstart)
       }
 }
 
-double check_res(complex_double *A,complex_double *B,int *sdims)
+double check_res(complex_double *A,complex_double *B,int *sdims,int nv)
 {
   int x,y,z;
   complex_double *p1,*p2;
@@ -390,6 +402,7 @@ double check_res(complex_double *A,complex_double *B,int *sdims)
   p2 = B;
 
   mydiff = 0.;
+  for(int iv=0;iv<nv;iv++)
   for(z=0;z < sdims[2];z++)
     for(y=0;y < sdims[1];y++)
       for(x=0;x < sdims[0];x++) {

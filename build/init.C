@@ -1771,7 +1771,7 @@ planResult plan_dst4_complex_d(int rank, const int *n,
 #endif
 
 
-
+/*
 #ifdef TIMERS
 
 void timer::init()
@@ -1851,7 +1851,7 @@ void timer::print(MPI_Comm comm)
   extern  timer timers;
 
 #endif
-
+*/
 
 template <class Type> MPIplan<Type>::~MPIplan()
 {
@@ -1864,7 +1864,7 @@ ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
   int i,j,k;
 
   nd = 0;
-  MPI_Comm_dup(mpi_comm_init,&mpi_comm_glob);
+  //  MPI_Comm_dup(mpi_comm_init,&mpi_comm_glob);
   for(i=0;i <3; i++) {
     if((ProcDims[i] = procdims[i]) > 1)
       nd++;
@@ -1872,8 +1872,8 @@ ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
   if(nd == 0)
     nd = 1;
 
-  MPI_Comm_rank(mpi_comm_glob,&taskid);
-  MPI_Comm_size(mpi_comm_glob,&numtasks);
+  MPI_Comm_rank(mpi_comm_init,&taskid);
+  MPI_Comm_size(mpi_comm_init,&numtasks);
 
   // Set up communicators for pencils or 3D decomposition
   // if(nd >1) {
@@ -1882,7 +1882,7 @@ ProcGrid::ProcGrid(int procdims[3],MPI_Comm mpi_comm_init)
   
   for(i=0;i < 3;i++)
     periodic[i]=1;
-  MPI_Cart_create(mpi_comm_glob,3,ProcDims,periodic,reorder,&mpi_comm_cart);
+  MPI_Cart_create(mpi_comm_init,3,ProcDims,periodic,reorder,&mpi_comm_cart);
   MPI_Cart_coords(mpi_comm_cart,taskid,3,grid_id_cart);
   
   MPI_Comm mpi_comm_tmp;
@@ -1912,7 +1912,7 @@ ProcGrid::ProcGrid(const ProcGrid &rhs)
     int i,j,m,l;
     nd = rhs.nd;
     //    mpi_comm_glob = rhs.mpi_comm_glob;
-    MPI_Comm_dup(rhs.mpi_comm_glob,&mpi_comm_glob);
+    //    MPI_Comm_dup(rhs.mpi_comm_glob,&mpi_comm_glob);
     MPI_Comm_dup(rhs.mpi_comm_cart,&mpi_comm_cart);
     for(i=0;i<3;i++)
       MPI_Comm_dup(rhs.mpicomm[i],&mpicomm[i]);
@@ -2044,7 +2044,7 @@ ProcGrid::~ProcGrid()
   for(int i=0;i<3;i++)
     MPI_Comm_free(&mpicomm[i]);
   MPI_Comm_free(&mpi_comm_cart);
-  MPI_Comm_free(&mpi_comm_glob);
+  //  MPI_Comm_free(&mpi_comm_glob);
 }
 
 

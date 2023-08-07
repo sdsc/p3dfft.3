@@ -253,7 +253,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_cublas(
 #endif
 
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslices,bool deriv, char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslices,bool deriv, char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
   //    Type2 *tmp;
@@ -331,14 +331,25 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(T
 	 //	 if((void *) in != (void *) out || dt2 <= dt1)
          if(exec == NULL) 
 	   tmpbuf = (char *) (in + offset1[slice] + k*d2[0]*d2[1]); 
-	 else 
+	 else {
 	   /*
 	   if((void *) in == (void *) out && dt2 > dt1)  {
 	     (*exec)(plan->libplan_out[nslices],in+k*d1[0]*d1[1],(Type2 *) tmpbuf+k*d2[0]*d2[1]);
 	     continue;
 	     }
 	     else*/ 
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	     (*exec)(plan->libplan_out[slice],in+k*d1[0]*d1[1],(Type2 *) tmpbuf);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
+	 }
 	 
 #ifdef MKL_BLAS
 	 pout = out+k*d2[0]*d2[1];
@@ -458,7 +469,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(T
 }	 
 	 
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
   
@@ -564,12 +575,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in_slice(T
       // }
       //else
       if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	for(kk=k;kk < k2;kk++) {
 	  pout = (Type2 *) tmpbuf + d2[1]*d2[2]*kk;
 	  (*exec)(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	  if(deriv)
 	    compute_deriv_loc(pout,pout,sdims);
 	}
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
       }
       else if((void *) in == (void *) out)
 	memcpy(tmpbuf+k*d1[0]*d1[1],in+k*d1[0]*d1[1],d2[2]*d2[1]*(k2-k)*sizeof(Type2));
@@ -685,7 +706,7 @@ inline int ar3d_cnt(int init,int pack_procs,int sz,int l,int od)
     return(od*(lim + ((init-lim)/(sz+1))*(sz+1) ));
 }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 #ifdef CUDA  
@@ -766,12 +787,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
     k2 = min(k+nb31,ken);
     
     if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
       for(kk=k;kk < k2;kk++) {
 	pout = (Type2 *) tmpbuf + d2[1]*d2[2]*kk;
 	(*(exec))(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	if(deriv) 
 	  compute_deriv_loc(pout,pout,sdims);
       }
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
     }
     else if((void *) in == (void *) out)
       memcpy(tmpbuf,in+k*d1[0]*d1[1],d2[2]*d2[1]*(k2-k)*sizeof(Type2));
@@ -868,7 +899,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in_slice(T
 #endif
 }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 #ifdef CUDA  
@@ -947,12 +978,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in_slice(T
     k2 = min(k+nb31,ken);
     
     if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
       for(kk=k;kk < k2;kk++) {
 	pout = (Type2 *) tmpbuf + d2[0]*d2[2]*kk;
 	(*(exec))(plan->libplan_out[slice],in+kk*d1[0]*d1[1],pout);
 	if(deriv) 
 	  compute_deriv_loc(pout,pout,sdims);
       }
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
     }
     else if((void *) in == (void *) out)
       memcpy(tmpbuf,in+k*d1[0]*d1[1],d2[2]*d2[0]*(k2-k)*sizeof(Type2));
@@ -1065,7 +1106,7 @@ int find_disp(int dim,int slice,int nslices)
   return(d);
 }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv, int pack_dim, int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice,int nslices,bool deriv, int pack_dim, int pack_procs, double *timer_tot,double *timer_exec)
 {
 
   if((void *) in == (void *) out) {
@@ -1109,10 +1150,20 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(
 	  for(jj=j; jj < j2; jj++) {
 	    pin_t1 = in +kk*d1[0]*d1[1] +jj*d1[0];
 	    if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	      pout = tmpbuf;
 	      (*(exec))(plan->libplan_out[slice],pin_t1,pout);
 	      if(deriv) 
 		compute_deriv_loc(pout,pout,sdims);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
 	    }
 	    else
 	      pout = (Type2 *) pin_t1;
@@ -1157,9 +1208,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(
 	    pin_t1 = in +kk*d1[0]*d1[1] +jj*d1[0];
 	    pout2 = pout + kk * d2[0] + jj * d2[0]*jsize;
 	    if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	      (*(exec))(plan->libplan_out[slice],pin_t1,pout2);
 	      if(deriv) 
 		compute_deriv_loc(pout2,pout2,sdims);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
 	    }
 	    else
 	      memcpy(pout2,pin_t1,d2[0]*sizeof(Type2));
@@ -1187,9 +1248,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(
 	    pin_t1 = in +kk*d1[0]*d1[1] +jj*d1[0];
 	    pout2 = out1 + kk * d2[0] + jj * d2[0]*dk;
 	    if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	      (*(exec))(plan->libplan_out[slice],pin_t1,pout2);
 	      if(deriv) 
 		compute_deriv_loc(pout2,pout2,sdims);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
 	    }
 	    else
 	      memcpy(pout2,pin_t1,d2[0]*sizeof(Type2));
@@ -1200,7 +1271,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_op_slice(
   }
 }
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv, char *tmpbuf)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,bool deriv, char *tmpbuf, double *timer_tot,double *timer_exec)
 {
     /*
     if(dt2 <= dt1) {
@@ -1275,9 +1346,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_ip(Type1 
 	for(jj=j; jj < j2; jj++) {
 	  pout = (Type2 *) tmpbuf+d2[0]*(kk+jj*d2[1]);
 	  if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	    (*(exec))(plan->libplan_out[0],in+d1[0]*(jj+kk*d1[1]),pout);
 	    if(deriv) 
 	      compute_deriv_loc(pout,pout,sdims);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
 	  }
 	  else
 	    memcpy(pout,in+d1[0]*(jj+kk*d1[1]),d2[0]*sizeof(Type2));
@@ -1295,7 +1376,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_ip(Type1 
 }
  
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 
@@ -1397,8 +1478,20 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
     else
       pout2 = out + d2[0]*d2[1]*k;
     
-    if(exec)
+    if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
       (*(exec))(plan->libplan_out[slice],pout1,pout2);
+#ifdef TIMERS
+      t=MPI_Wtime();
+      *timer_tot -= t;
+      *timer_exec += t;
+#endif
+    }
+
     else
       pout2 = (Type2 *) tmpbuf;
     if(deriv)
@@ -1438,7 +1531,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102out_slice(
  
 
 // Assume IN != OUT
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 #ifdef CUDA  
@@ -1549,8 +1642,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out_slice(
 	  else
 	    pout2 = out + jj*d2[0]*d2[1];
 	  
-	  if(exec)	    
+	  if(exec) {	    
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	    (*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
+	  }	    
 	  else
 	    memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
 	  if(deriv) 
@@ -1603,8 +1707,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out_slice(
 	  pout2 = out + (j-jst)*d2[0]*d2[1];
 	else
 	  pout2 = out + j*d2[0]*d2[1];
-	if(exec)	    
+	if(exec) {
+#ifdef TIMERS
+	  double t=MPI_Wtime();
+	  *timer_tot += t;
+	  *timer_exec -= t;
+#endif
 	  (*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	  t=MPI_Wtime();
+	  *timer_tot -= t;
+	  *timer_exec += t;
+#endif
+	}
 	else
 	  memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
 	if(deriv) 
@@ -1650,7 +1765,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out_slice(
 
 
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 
@@ -1752,8 +1867,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out_slice(
 	pout2 = out + kk*d2[0]*d2[1];
       pin = pout0 + kk*d1[2]*d1[1];
       
-      if(exec)
+      if(exec) {
+#ifdef TIMERS
+	double t=MPI_Wtime();
+	*timer_tot += t;
+	*timer_exec -= t;
+#endif
 	(*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	t=MPI_Wtime();
+	*timer_tot -= t;
+	*timer_exec += t;
+#endif
+      }
       else
 	memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
       if(deriv)
@@ -1801,8 +1927,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out_slice(
 
       pin = pout0 + kk*d1[2]*d1[1];
       
-      if(exec)
+      if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	(*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
+      }	
       else
 	memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
       if(deriv)
@@ -1840,7 +1977,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out_slice(
 }
 	
 
-template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice, int nslices,bool deriv,char *tmpbuf,int pack_dim,int pack_procs, double *timer_tot,double *timer_exec)
 {
 
 #ifdef CUDA  
@@ -1935,8 +2072,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out_slice(
 	else
 	  pout2 = out + ii*d2[0]*d2[1];
 	pin = pout0 + d1[1]*d1[2]*ii;
-	if(exec)
+	if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
 	  (*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
+	}	  
 	else
 	  memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
 	if(deriv)
@@ -1981,8 +2129,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out_slice(
       else
 	pout2 = out + ii*d2[0]*d2[1];
       pin = pout0+d1[1]*d1[2]*ii;
-      if(exec)
-	(*(exec))(plan->libplan_out[slice],pin,pout2);
+      if(exec) {
+#ifdef TIMERS
+	    double t=MPI_Wtime();
+	    *timer_tot += t;
+	    *timer_exec -= t;
+#endif
+ 	(*(exec))(plan->libplan_out[slice],pin,pout2);
+#ifdef TIMERS
+	    t=MPI_Wtime();
+	    *timer_tot -= t;
+	    *timer_exec += t;
+#endif
+      }	
       else
 	memcpy(pout2,pin,d2[0]*d2[1]*sizeof(Type2));
       if(deriv)

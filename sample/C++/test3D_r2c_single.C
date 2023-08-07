@@ -229,7 +229,7 @@ int main(int argc,char **argv)
   // timing loop
 
 #ifdef TIMERS
-  timers.init();
+  timers.start();
 #endif
 
   for(i=0; i < Nrep;i++) {
@@ -269,7 +269,7 @@ int main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf\n",gtavg/nprocs,gtmin,gtmax);
 #ifdef TIMERS
-  timers.print(MPI_COMM_WORLD);
+  timers.print_all(MPI_COMM_WORLD);
 #endif
 
   delete [] IN,OUT,FIN;

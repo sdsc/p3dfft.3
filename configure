@@ -745,7 +745,8 @@ enable_pgi
 enable_cray
 enable_gnu
 enable_nonblocking
-with_nonblocking
+enable_alltoall
+enable_p2p
 enable_timers
 enable_fftw
 enable_cuda
@@ -1403,7 +1404,9 @@ Optional Features:
   --enable-pgi            compile P3DFFT using PGI compiler
   --enable-cray           compile P3DFFT using IBM compiler
   --enable-gnu            compile P3DFFT using GNU compiler
-  --enable-nonblocking    for using nonblocking version 
+  --enable-nonblocking    for using nonblocking version
+  --enable-alltoall       for using alltoall communication
+  --enable-p2p            for using point-to-point version
   --enable-timers         for using timers (DEBUGGING PURPOSES ONLY)
   --enable-fftw           for using the FFTW library
   --enable-cuda           for using the CUDA library
@@ -1419,7 +1422,6 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-nonblocking      nonblocking method
   --with-fftw             path to location of FFTW directory
   --with-cuda             path to location of CUDA library
   --with-cutensor         path to location of cuTensor library
@@ -3129,6 +3131,9 @@ CXX_save="$CXX_save"
 FC_save="$FC_save"
 
 fourlib=""
+p2pval="no"
+a2aval="no"
+nbval="no"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use Non-Blocking version" >&5
 $as_echo_n "checking whether to use Non-Blocking version... " >&6; }
@@ -3146,33 +3151,44 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $nbval" >&5
 $as_echo "$nbval" >&6; }
 
-if test "$nbval" = "yes"; then :
-  withnb="a2a"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking Nonblocking method" >&5
-$as_echo_n "checking Nonblocking method... " >&6; }
-
-# Check whether --with-nonblocking was given.
-if test "${with_nonblocking+set}" = set; then :
-  withval=$with_nonblocking; withnb=$withval
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use All-to-all communication" >&5
+$as_echo_n "checking whether to use All-to-all communication... " >&6; }
+# Check whether --enable-alltoall was given.
+if test "${enable_alltoall+set}" = set; then :
+  enableval=$enable_alltoall; a2aval=$enableval
 else
-  withnb=""
+  a2aval=no
 fi
 
-       if test "$withnb" != ""; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $withnb" >&5
-$as_echo "$withnb" >&6; }
-	     if test "$withnb" = "p2p"; then
-$as_echo "#define P2P 1" >>confdefs.h
-
-	     fi
-	     if test "$withnb" = "a2a"; then
+if test "$p2pval" = "yes"; then as_fn_error $? "Choose either Alltoall or Point-to-point implementation!" "$LINENO" 5
+fi
+if test "$a2aval" = "yes"; then
 $as_echo "#define A2A 1" >>confdefs.h
 
-	     fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $a2aval" >&5
+$as_echo "$a2aval" >&6; }
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use Point-to-Point communication" >&5
+$as_echo_n "checking whether to use Point-to-Point communication... " >&6; }
+# Check whether --enable-p2p was given.
+if test "${enable_p2p+set}" = set; then :
+  enableval=$enable_p2p; p2pval=$enableval
+else
+  p2pval=no
 fi
 
+if test "$p2pval" = "yes"; then
+if test "$a2aval" = "yes"; then as_fn_error $? "Choose either Alltoall or Point-to-point implementation!" "$LINENO" 5
 fi
+
+$as_echo "#define P2P 1" >>confdefs.h
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $p2pval" >&5
+$as_echo "$p2pval" >&6; }
+
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use TIMERS" >&5

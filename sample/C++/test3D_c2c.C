@@ -37,7 +37,9 @@ void init_wave(complex_double *,int[3],int *,int[3],int);
 void print_res(complex_double *,int *,int *,int *,int,int);
 void normalize(complex_double *,long int,int *,int);
 double check_res(complex_double*,complex_double *,int *,int);
-void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid,int);
+void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid,int,int);
+
+//template<class Type1,class Type2> char* transform3D<Type1,Type2>::work_host;
 
 int main(int argc,char **argv)
 {
@@ -219,6 +221,8 @@ int main(int argc,char **argv)
   transform3D<complex_double,complex_double> trans_b(Zpencil,Xpencil,&type_backward);
 #endif
 
+  //  transform3D<complex_double,complex_double>::work_host = new char[trans_f.WorkSpaceHost * 16 * nv];
+  
   // Warm-up: execute forward 3D transform once outside the timing loop "to warm up" the system
 
   trans_f.exec(IN,OUT,nv,false);
@@ -229,7 +233,7 @@ int main(int argc,char **argv)
   // timing loop
 
 #ifdef TIMERS
-  timers.init();
+  timers.start();
 #endif
   for(i=0; i < Nrep;i++) {
     MPI_Barrier(MPI_COMM_WORLD);
@@ -241,7 +245,7 @@ int main(int argc,char **argv)
       //      cout << "Results of forward transform: "<< endl;
     //    print_res(OUT,gdims,sdims2,glob_start2,myid);
     normalize(OUT,size2,gdims,nv);
-    check_res_forward(OUT,sdims2,glob_start2,gsdims,myid,nv);
+    check_res_forward(OUT,sdims2,glob_start2,gsdims,myid,nv,myid);
     MPI_Barrier(MPI_COMM_WORLD);
     t -= MPI_Wtime();
     trans_b.exec(OUT,FIN,nv,true);  // Execute backward (inverse) complex-to-real FFT
@@ -269,20 +273,22 @@ int main(int argc,char **argv)
   if(myid == 0)
     printf("Transform time (avg/min/max): %lf %lf %lf",gtavg/nprocs,gtmin,gtmax);
 #ifdef TIMERS
-  timers.print(MPI_COMM_WORLD);
+  timers.print_all(MPI_COMM_WORLD);
 #endif
 
   delete [] IN,OUT,FIN;
   // Clean up P3DFFT++ structures
   
   cleanup();
+
+  //  delete [] transform3D<complex_double,complex_double>::work_host;
   }
 
   MPI_Finalize();
 
 }
 
-void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid,int nv)
+void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int gdims[3],int myid,int nv,int taskid)
 {
   int x,y,z;
   double d,diff,cdiff=0;
@@ -314,12 +320,13 @@ void  check_res_forward(complex_double *OUT,int sdims[3],int glob_start[3], int 
 	else
 	  ans = 0.0;
 
-	d = abs(*p++ - ans);
+	d = abs(*p - ans);
 	if(cdiff < d) {
 	  if(d > 0.00001)
-	    printf("Change from %lg to %lg, %d %d %d %d\n",cdiff,d,iv,x,y,z);
+	    printf("%d: Change from %lg to %lg, iv=%d,xyz= %d %d %d,ar=(%lg %lg),ans=(%lg %lg)\n",taskid,cdiff,d,iv,x,y,z,p->real(),p->imag(),ans.real(),ans.imag());
 	  cdiff = d;
 	}
+	p++;
       }
     }
   }

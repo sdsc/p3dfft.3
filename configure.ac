@@ -90,6 +90,9 @@ fi
 AC_SUBST(CXX_save, "$CXX_save")
 AC_SUBST(FC_save, "$FC_save")
 fourlib=""
+p2pval="no"
+a2aval="no"
+nbval="no"
 
 AC_MSG_CHECKING([whether to use Non-Blocking version])
 AC_ARG_ENABLE(nonblocking, [AC_HELP_STRING([--enable-nonblocking], [for using nonblocking version])], nbval=$enableval, nbval=no)
@@ -97,19 +100,25 @@ if test "$nbval" = "yes"; then AC_DEFINE(NB, 1, [Define if you want to use nonbl
 fi
 AC_MSG_RESULT([$nbval])
 
-AS_IF([test "$nbval" = "yes"],
-	    withnb="a2a"
-      [AC_MSG_CHECKING([Nonblocking method])
-       AC_ARG_WITH(nonblocking, [AC_HELP_STRING([--with-nonblocking], [nonblocking method])], withnb=$withval, withnb="")]
-       AS_IF([test "$withnb" != ""],				      
-             [AC_MSG_RESULT([$withnb])] 
-	     if test "$withnb" = "p2p"; then AC_DEFINE(P2P, 1, [Point-to-Point NB communication])
-	     fi
-	     if test "$withnb" = "a2a"; then AC_DEFINE(A2A, 1, [All-to-all NB communication])
-	     fi
-	     )
-	     )
-	     
+AC_MSG_CHECKING([whether to use All-to-all communication])
+AC_ARG_ENABLE(alltoall, [AC_HELP_STRING([--enable-alltoall], [for using alltoall communication])], a2aval=$enableval, a2aval=no)
+if test "$p2pval" = "yes"; then AC_MSG_ERROR([Choose either Alltoall or Point-to-point implementation!])
+fi
+if test "$a2aval" = "yes"; then AC_DEFINE(A2A, 1, [Define if you want to use alltoall communication])
+fi
+AC_MSG_RESULT([$a2aval])
+
+AC_MSG_CHECKING([whether to use Point-to-Point communication])
+AC_ARG_ENABLE(p2p, [AC_HELP_STRING([--enable-p2p], [for using point-to-point version])], p2pval=$enableval, p2pval=no)
+if test "$p2pval" = "yes"; then
+if test "$a2aval" = "yes"; then AC_MSG_ERROR([Choose either Alltoall or Point-to-point implementation!])
+fi
+AC_DEFINE(P2P, 1, [Define if you want to use point-to-point communication])
+fi
+AC_MSG_RESULT([$p2pval])	     
+
+
+
 
 AC_MSG_CHECKING([whether to use TIMERS])
 AC_ARG_ENABLE(timers, [AC_HELP_STRING([--enable-timers], [for using timers (DEBUGGING PURPOSES ONLY)])], timersval=$enableval, timersval=no)

@@ -88,7 +88,7 @@ All Rights Reserved.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
+#include <unordered_map>
 
 #ifdef FFTW
 
@@ -804,27 +804,27 @@ template <class Type1,class Type2>   class transplan : public stage {
 #endif
   };
 
-  void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1,int pack_dim=-1,int pack_procs=0);
+  void reorder_in_slice(Type1 *in,int mo1[3],int mo2[3],int dims1[3], int slice=0,int nslices=1,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
   
-  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot120in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot210in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot201in_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false,int pack_dim=-1,int pack_procs=0);
+  void rot021_op_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),Plantype<Type1,Type2> *plan, int cache_bl, int slice=0,int nslices=1,bool deriv=false,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot102out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan, int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot120out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot210out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void rot201out_slice(Type1 *in,Type2 *out,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl,int slice=0,int nslices=1,bool deriv=false,char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
 
-  void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL);
+  void rot021_ip(Type1 *in,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int cache_bl, bool deriv=false,char *tmpbuf=NULL,double *timer_tot=NULL,double *timer_exec=NULL);
 
 
 #ifdef CUBLAS
@@ -840,14 +840,14 @@ template <class Type1,class Type2>   class transplan : public stage {
 #ifdef CUDA
   void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,event_t *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
 #else
-  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  void exec_slice(char *in,char *out, int dim_deriv,int slice,int nslices,int *event_hold,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0, bool is_test=false,double *timer_tot=NULL);
 #endif
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3]);
   //  void reorder_in(Type1 *in,int mo1[3],int mo2[3],int dims1[3],char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
   //void reorder_out(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int pack_dim=-1,int pack_procs=0);
   //void reorder_out_slice(Type2 *in,Type2 *out,int mo1[3],int mo2[3],int dims1[3],int slice,int nslices,int pack_dim=-1,int pack_procs=0);
   // void reorder_trans(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW, char *tmpbuf=NULL);
-  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0);
+  int reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice=0,int nslices=1,event_t *event_hold=NULL,bool OW=false, char *tmpbuf=NULL,int pack_dim=-1,int pack_procs=0,double *timer_tot=NULL,double *timer_exec=NULL);
   //  void reorder_deriv(Type1 *in,Type2 *out,int *mo1,int *mo2,int *dims1, bool OW);
   void find_plan(trans_type1D<Type1,Type2> *type);
   //void exec_deriv(char *in,char *out, bool OW=false);
@@ -869,7 +869,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   int **SndCnts,**SndStrt,**RcvCnts,**RcvStrt;   
   int *offset_snd,*offset_rcv;
   
-  void pack_sendbuf_trans_slice(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int iv=0, int nv=1,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
+  void pack_sendbuf_trans_slice(Type2 *sendbuf,Type1 *in,int dim_deriv,event_t *event_hold,int iv=0, int nv=1,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL,double *timer_tot=NULL);
   void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,event_t *event_hold,int iv=0,int nv=1,int slice=0,int nslices=1,char *devbuf=NULL,bool OW=false,char *tmpbuf=NULL);
   void pack_sendbuf_trans(Type2 *sendbuf,char *in,int dim_deriv,bool OW);
   //  void pack_sendbuf_deriv(Type2 *sendbuf,char *in, bool OW);
@@ -918,6 +918,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,int nv=1,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
   //  void exec_nb(char *in,char *out,  int dim_deriv,event_t *event_hold,bool OW=false,char *tmpbuf=NULL,char *devbuf=NULL,double *tmpi=NULL);
   void unpack_recvbuf_slice(Type2 *out,Type2 * recvbuf,int iv=0,int nv=1,int slice=0,int nslices=1);
+
 #ifdef P2P
   void unpack_recvbuf_slice_p2p(Type2 *out,Type2 * recvbuf,int rank,int iv=0,int nv=1,int slice=0,int nslices=1,int **rcvstrt=NULL);
 #endif
@@ -928,7 +929,13 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
 
   };
 
+#ifdef TEST_TRANSFER
+  template <class Type> void init_test(Type *Ar,int iv,int dims[3], int mo[3],int grid_id[3]);
+  template <class Type> void test_transfer(Type *out,int dims2[3],int mo[3],int mc[3],int grid_id[3],int np, int d1,int nv,int taskid);
+#endif
+
   template <class Type>  void write_buf(Type *buf,char *label,int sz[3],int mo[3],int nv);
+  template <class Type>  void write_sendbuf(Type *buf,char *label,int sz[3],int mo[3],int nv,int,int,int*,int*);
 
  class ProcGrid {
 
@@ -956,7 +963,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
     if(this->taskid != P.taskid || this->numtasks != P.numtasks)
       return(false);
     int res;
-    MPI_Comm_compare(this->mpi_comm_glob,P.mpi_comm_glob,&res);
+    //    MPI_Comm_compare(this->mpi_comm_glob,P.mpi_comm_glob,&res);
     if(res != MPI_IDENT && res != MPI_CONGRUENT)
 	return(false);
     MPI_Comm_compare(this->mpi_comm_cart,P.mpi_comm_cart,&res);
@@ -1110,6 +1117,7 @@ protected:
   //template <class _TypeIn,class _TypeOut> 
   friend void transplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type); 
  //  template <class Type1,class Type2> friend  long trans_MPIplan<Type1,Type2>::find_plan(trans_type1D<Type1,Type2> *type);
+  friend transplan<Type1,Type2>; //::exec_slice(char *,char *,bool);
   friend void cleanup();
 };
 
@@ -1177,6 +1185,7 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 
  public:
 
+  //  static char *work_host;
   size_t WorkSpaceHost=0,WorkSpaceDev=0;
   void exec(Type1 *in,Type2 *out, int nv=1,bool OW=false, char *work_host=NULL, char *work_dev=NULL);
   void exec_deriv(Type1 *in,Type2 *out,int idir, int nv=1, bool OW=false, char *work_host=NULL, char *work_dev=NULL);
@@ -1200,8 +1209,8 @@ template<class Type1,class Type2> class transform3D : public gen_transform3D
 extern int padd;
 const int gblock=1;
 
-//template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],int dims1[3]);
-//template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
+template <class Type> void reorder_out(Type *in,Type *out,int mo1[3],int mo2[3],int dims1[3]);
+template <class Type> void reorder_in(Type *in,int mo1[3],int mo2[3],int dims1[3]);
 
 //template <class Type> void compute_deriv_loc(Type *in,Type *out,int dims[3],bool r2c); 
 template <class Type> void compute_deriv(Type *in,Type *out,DataGrid *gr,int idir); 
@@ -1215,6 +1224,7 @@ extern vector<stage *> stored_trans1D;
 extern vector<trans_type3D> types3D;
 extern vector<ProcGrid *> stored_proc_grids;
 extern vector<DataGrid *> stored_data_grids;
+
 
 template<class Type> gen_trans_type *empty_type();
 template<class Type> gen_trans_type *empty_type()
@@ -1247,22 +1257,145 @@ template class trans_type1D<complex_double,complex_double>;
 
 #ifdef TIMERS
   class timer {
+  private:
+
+    class timer_struct {
+    public:
+      string prefix;
+      string suffix;
+      double val;
+
+      timer_struct(string prefix_,string suffix_=NULL) {
+	prefix = prefix_;
+	suffix=suffix_;
+	val=0;
+      }
+    };
+
+    class timer_head {
+    public:
+      string s;
+      double val;
+
+      timer_head(string s_,double val_) {
+	s = s_;
+	val = val_;
+      }
+
+    };
+    //    vector<timer_struct> timer_list;
+    std::unordered_map<string,timer_struct> timer_list;
+    vector<timer_head> timer_headings;
+    
   protected:
-    double reorder_deriv;
-    double reorder_trans;
-    double reorder_out;
-    double reorder_in;
-    double trans_exec;
-    double trans_deriv;
-    double packsend;
-    double packsend_trans;
-    double packsend_deriv;
-    double unpackrecv;
-    double alltoall;
-    double gpu_transfer;
+    
   public:
-    void init();
-    void print(MPI_Comm);
+double *newtimer(string s) {
+  timer_struct *t=new timer_struct(s);
+  pair<string,timer_struct> newpair (s,*t);
+  pair<unordered_map<string,timer_struct>::iterator,bool> p =  timer_list.insert(newpair);
+  //  timer_list.push_back(*t);
+  //return(&timer_list.back().val);
+  return(&p.first->second.val);
+}
+
+double *newtimer(string s1,int d1,int d2) {
+  char str[5];
+  sprintf(str,".%d.%d",d1,d2);
+  string s2(str);
+  string s = s1+s2;
+  timer_struct *t=new timer_struct(s1,s2);
+  pair<string,timer_struct> newpair (s,*t);
+  pair<unordered_map<string,timer_struct>::iterator,bool> p =  timer_list.insert(newpair);
+  return(&p.first->second.val);
+
+}
+double *newtimer(string s1,int mo1[3],int mo2[3]) {
+  char str[10];
+  sprintf(str,".%d%d%d.%d%d%d",mo1[0],mo1[1],mo1[2],mo2[0],mo2[1],mo2[2]);
+  string s2(str);
+  string s = s1+s2;
+  timer_struct *t=new timer_struct(s1,s2);
+  pair<string,timer_struct> newpair (s,*t);
+  pair<unordered_map<string,timer_struct>::iterator,bool> p =  timer_list.insert(newpair);
+  return(&p.first->second.val);
+}
+double *newtimer(string s1,int dt1,int dt2,int N,int isign) { // Exec
+  char str[50];
+  sprintf(str,".%d.%d.%d.%d",dt1,dt2,N,isign);
+  string s2(str);
+  string s = s1+s2;
+  timer_struct *t=new timer_struct(s1,s2);
+  pair<string,timer_struct> newpair (s,*t);
+  pair<unordered_map<string,timer_struct>::iterator,bool> p =  timer_list.insert(newpair);
+  return(&p.first->second.val);
+}
+    /*
+    double *newtimer(string s); //Vanilla
+    double *newtimer(string s,int d1,int d2); //MPIplan
+    double *newtimer(string s,int mo1[3],int mo2[3]); //reorder_trans
+    double *newtimer(string s,int dt1,int dt2,int N,int m,int isign); // Exec
+    */
+    void start() {
+      for(auto it=timer_list.begin();it != timer_list.end();++it) 
+	it->second.val = 0.0;
+      timer_headings.clear();
+    }
+
+    void print_all(MPI_Comm comm) {
+      int np,myid;
+      double gtt_sum,gtt_min,gtt_max;
+      MPI_Comm_size(comm,&np);
+      MPI_Comm_rank(comm,&myid);
+      if(myid == 0)
+	printf("%30s:   Average   Minimum     Maximum\n","Timer");
+      for(auto it=timer_list.begin();it != timer_list.end();++it) {
+	double gt_sum=0.;
+	double gt_min=0.;
+	double gt_max=0.;
+	MPI_Reduce(&it->second.val,&gt_sum,1,MPI_DOUBLE,MPI_SUM,0,comm);
+	MPI_Reduce(&it->second.val,&gt_min,1,MPI_DOUBLE,MPI_MIN,0,comm);
+	MPI_Reduce(&it->second.val,&gt_max,1,MPI_DOUBLE,MPI_MAX,0,comm);
+	if(myid == 0)
+	  printf("%30s: %10lg %10lg %10lg\n",it->first.c_str(),gt_sum/np,gt_min,gt_max);
+	bool match=false;
+	string *s = &it->second.prefix;
+	for(auto it1=timer_headings.begin();it1 != timer_headings.end();++it1)
+	  if(it1->s == *s) {
+	    it1->val += it->second.val;
+	    match = true;
+	    break;
+	  }
+	if(!match) {
+	  auto th = new timer_head(*s,it->second.val);
+	  timer_headings.push_back(*th);
+	}
+      }
+      
+      if(myid == 0) {
+	printf("Summaries:\n");
+	gtt_sum = 0.;
+	gtt_min = 0.;
+	gtt_max = 0.;
+      }
+      for(auto it1=timer_headings.begin();it1 != timer_headings.end();++it1) {
+	double gt_sum=0.;
+	double gt_min=0.;
+	double gt_max=0.;
+	MPI_Reduce(&it1->val,&gt_sum,1,MPI_DOUBLE,MPI_SUM,0,comm);
+	MPI_Reduce(&it1->val,&gt_min,1,MPI_DOUBLE,MPI_MIN,0,comm);
+	MPI_Reduce(&it1->val,&gt_max,1,MPI_DOUBLE,MPI_MAX,0,comm);
+	if(myid == 0) {
+	  printf("%30s: %10lg %10lg %10lg\n",it1->s.c_str(),gt_sum/np,gt_min,gt_max);
+	  gtt_sum += gt_sum;
+	  gtt_min += gt_min;
+	  gtt_max += gt_max;
+	}
+      }
+      if(myid == 0) 
+	printf("Sum total: %10lg %10lg %10lg\n",gtt_sum/np,gtt_min,gtt_max);
+      
+    }
 
     template<class Type1,class Type2> friend  class transform3D;
     template<class Type1,class Type2> friend  class transplan;

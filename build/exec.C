@@ -760,7 +760,7 @@ int arcmp(int *A,int *B,int N)
 // Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
 // Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
 //#ifdef CUDA
-  template <class Type1,class Type2> int transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW, char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> int transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,void (*exec)(...),int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW, char *tmpbuf,int pack_dim,int pack_procs,double *ttot,double *texec)
    //#else
  // template <class Type1,class Type2> int transplan<Type1,Type2>::reorder_trans_slice(Type1 *in,Type2 *out,int *mo1,int *mo2,int dim_deriv,int slice, int nslices,event_t *event_hold, bool OW)
  //#endif
@@ -833,11 +833,11 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         if(OW && dt2 <= dt1)
 	  inplace=true;
 	if((void *) in == (void *) out) {
-	  rot102in_slice(in,(Type2 *) tmpbuf,inplace,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf+MULT3(d2)*sizeof(Type2),pack_dim,pack_procs);
+	  rot102in_slice(in,(Type2 *) tmpbuf,inplace,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf+MULT3(d2)*sizeof(Type2),pack_dim,pack_procs,ttot,texec);
 	  memcpy(out+offset2[slice],tmpbuf+offset2[slice]*sizeof(Type2),mysize2[slice]*sizeof(Type2));
 	}
 	else
-	  rot102in_slice(in,out,inplace,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+	  rot102in_slice(in,out,inplace,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
         cmpl = SLICE;
   
         break;
@@ -850,7 +850,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         //if(event_hold != NULL)
         //  checkCudaErrors(cudaEventSynchronize(*event_hold));
 	//#endif
-        rot120in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+        rot120in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
         cmpl = FULL;
 	
 	break;
@@ -867,7 +867,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         //if(event_hold != NULL)
         //  checkCudaErrors(cudaEventSynchronize(*event_hold));
 	//#endif
-        rot210in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+        rot210in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
 
         break;
 
@@ -882,7 +882,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         //if(event_hold != NULL)
         //  checkCudaErrors(cudaEventSynchronize(*event_hold));
 	//#endif
-        rot201in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+        rot201in_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
 
 	break;
       }
@@ -897,11 +897,11 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         if(event_hold != NULL)
           checkCudaErrors(cudaEventSynchronize(*event_hold));	
 #endif
-        rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf);
+        rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,ttot,texec);
       }
       else {
 	cmpl =SLICE;
-        rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs);
+        rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs,ttot,texec);
       }
       break;
     }
@@ -913,12 +913,12 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
     if(cmpmo(mc,102)) {
   
       if((void *) in == (void *) out) {
-	rot102out_slice(in,(Type2 *) tmpbuf,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf+MULT3(d2)*sizeof(Type2),pack_dim,pack_procs);
+	rot102out_slice(in,(Type2 *) tmpbuf,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf+MULT3(d2)*sizeof(Type2),pack_dim,pack_procs,ttot,texec);
 	memcpy(out+offset2[slice]*sizeof(Type2),tmpbuf+offset2[slice]*sizeof(Type2),mysize2[slice]*sizeof(Type2));
       }
       else
 
-	rot102out_slice(in,out,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+	rot102out_slice(in,out,d1,d2,exec,plan,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
 
       cmpl = SLICE;
       /*
@@ -948,7 +948,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
       for(i=0;i<nslices;i++)
-	rot120out_slice(in,out,d1,d2,exec,plan,CACHE_BL,i,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+	rot120out_slice(in,out,d1,d2,exec,plan,CACHE_BL,i,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
       
     }
     else if(cmpmo(mc,210)) {
@@ -960,7 +960,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
       for(i=0;i<nslices;i++)
-	rot210out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+	rot210out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
     }
     else if(cmpmo(mc,201)) {
       //      if(slice < nslices-1)
@@ -971,7 +971,7 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
 	checkCudaErrors(cudaEventSynchronize(*event_hold));
 #endif
       for(i=0;i<nslices;i++)
-	rot201out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs);
+	rot201out_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,tmpbuf,pack_dim,pack_procs,ttot,texec);
     }
     else if(cmpmo(mc,21)) {
       if((void *) in == (void *) out) {
@@ -981,12 +981,12 @@ int mc[3],i,j,k,ii,jj,kk,i2,j2,k2,cmpl;
         if(event_hold != NULL)
           checkCudaErrors(cudaEventSynchronize(*event_hold));	
 #endif
-        rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv);
+        rot021_ip(in,d1,d2,exec,plan,CACHE_BL,deriv,tmpbuf,ttot,texec);
 	cmpl = FULL;
       }
       else {
 	for(i=0;i<nslices;i++)
-	  rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs);
+	  rot021_op_slice(in,out,d1,d2,exec,plan,CACHE_BL,slice,nslices,deriv,pack_dim,pack_procs,ttot,texec);
 	cmpl = SLICE;
       }
 
@@ -1079,11 +1079,12 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_, int nv,char
   //  void MPI_Alltoallv4(char *sendbuf,int *sndcnts,int *sndstrt,char *recvbuf,int *rcvcnts,int *rcvstar,MPI_Comm mpicomm,int n);
 
 #ifdef TIMERS
-  double t1=MPI_Wtime();
+  double *tval = timers.newtimer("Pack",d1,d2);
+  *tval -= MPI_Wtime();
 #endif
   pack_sendbuf(sendbuf,(Type *) in,nv);
 #ifdef TIMERS
-  timers.packsend += MPI_Wtime() -t1;
+  *tval += MPI_Wtime();
 #endif
       //  Type *recvbuf = new Type[dims2[0]*dims2[1]*dims2[2]*4];
   bool unpack = true;
@@ -1108,12 +1109,13 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_, int nv,char
   }
   
 #ifdef TIMERS
-  t1=MPI_Wtime();
+  tval = timers.newtimer("Alltoallv",d1,d2);
+  *tval -= MPI_Wtime();
 #endif
   MPI_Alltoallv(sendbuf,sndcnts,sndstrt,MPI_BYTE,recvbuf,rcvcnts,rcvstrt,MPI_BYTE,Pgrid->mpicomm[comm_id]);
   //  MPI_Alltoallv4((float *)sendbuf,SndCnts,SndStrt,(float *) recvbuf,RcvCnts,RcvStrt,grid1.mpicomm[mpicomm_ind],numtasks);
 #ifdef TIMERS
-  timers.alltoall += MPI_Wtime() -t1;
+  *tval += MPI_Wtime();
 #endif
   delete [] sndstrt,sndcnts,rcvstrt,rcvcnts;
   
@@ -1121,11 +1123,12 @@ template <class Type> void MPIplan<Type>::exec(char *in_,char *out_, int nv,char
   if(unpack) {
 
 #ifdef TIMERS
-    t1=MPI_Wtime();
+  tval = timers.newtimer("Unpack");
+  *tval -= MPI_Wtime();
 #endif
-    unpack_recvbuf((Type *) out,recvbuf,nv);
+  unpack_recvbuf((Type *) out,recvbuf,nv);
 #ifdef TIMERS
-    timers.unpackrecv += MPI_Wtime() -t1;
+  *tval += MPI_Wtime();
 #endif
   }
 
@@ -1516,18 +1519,19 @@ template <class Type> void MPIplan<Type>::unpack_recvbuf(Type *dest,Type *recvbu
 
 
 // Perform transform followed by transpose (MPI exchange)
-template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *in,char *out, int dim_deriv,event_t *event_hold,int nv,bool OW,char *tmpbuf,char *devbuf,double *tmpi) {
-  //  Type1 *in;
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *in_,char *out, int dim_deriv,event_t *event_hold,int nv,bool OW,char *tmpbuf,char *devbuf,double *tmpi) {
+   Type1 *in;
   //Type2 *out;
-  //in = (Type1 *) in_;
+  in = (Type1 *) in_;
   //out = (Type2 *) out_;
 
    if(trplan->trans_type->is_empty) {
-     mpiplan->exec(in,out);
+     mpiplan->exec(in_,out);
      return;
    }
    
   int *tmpdims;
+  double *tval = NULL;
   
   MPI_Comm mycomm=mpiplan->Pgrid->mpicomm[mpiplan->comm_id];
 
@@ -1559,12 +1563,12 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   int np = mpiplan->numtasks;
 
 #ifdef NB
+  int self = mpiplan->Pgrid->grid_id_cart[mpiplan->grid2->Dmap[mpiplan->d2]];
 
 #ifdef P2P 
   static int a2a_cnt = 0;
   MPI_Request *sendreq = new MPI_Request[nslices*np*nv];
   MPI_Request *recvreq = new MPI_Request[nslices*np*nv];
-  int self = mpiplan->Pgrid->grid_id_cart[mpiplan->grid2->Dmap[mpiplan->d2]];
 #elif defined A2A
   MPI_Request req[nslices*nv];
 #endif
@@ -1581,78 +1585,43 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   int *mo1 = trplan->mo1;
   int imo1[3];
   inv_mo(mo1,imo1);
-  write_buf<Type1>((Type1 *) in + send_sz*iv ,str,dims1,imo1,1);
+  write_buf<Type1>(in + send_sz*iv ,str,dims1,imo1,1);
     }
 #endif
 
     for(slice=0;slice<nslices;slice++) {
 
 #ifdef TIMERS
-    t1=MPI_Wtime();
+      tval = timers.newtimer("Pack_trans",mpiplan->d1,mpiplan->d2);
+      *tval -= MPI_Wtime();
 #endif
-    pack_sendbuf_trans_slice(sendbuf+SndStrt[slice][0]/sizeof(Type2),in,dim_deriv,event_hold,iv,nv,slice,nslices,devbuf,OW,tmpbuf);
+      pack_sendbuf_trans_slice(sendbuf+SndStrt[slice][0]/sizeof(Type2),in,dim_deriv,event_hold,iv,nv,slice,nslices,devbuf,OW,tmpbuf,tval);
 
 #ifdef TIMERS
-    timers.packsend_trans += MPI_Wtime() -t1;
+      *tval += MPI_Wtime();
 #endif
   //  else
   //  tmpbuf += MULT3(tmpdims)*sizeof(Type2);
+
 
 #ifdef A2A    
     
   //  printf("%d: Calling mpi_alltoallv; tmpdims= %d %d %d, SndCnts=%d %d, RcvCnts=%d %d\n",mpiplan->taskid,tmpdims[0],tmpdims[1],tmpdims[2],mpiplan->SndCnts[0],mpiplan->SndCnts[1],mpiplan->RcvCnts[0],mpiplan->RcvCnts[1]);
     //    char *pin = ((char *) sendbuf)+SndStrt[slice][0];
     //char *pout = ((char *) recvbuf)+RcvStrt[slice][0];
-    MPI_Ialltoallv(sendbuf+send_sz*iv,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf+recv_sz*iv,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mycomm,&req[cnt++]);
+#ifdef TIMERS
+      tval = timers.newtimer("MPI_Ialltoallv",mpiplan->d1,mpiplan->d2);
+      *tval -= MPI_Wtime();
+#endif
+
+      MPI_Ialltoallv(sendbuf+send_sz*iv,SndCnts[slice],SndStrt[slice],MPI_BYTE,recvbuf+recv_sz*iv,RcvCnts[slice],RcvStrt[slice],MPI_BYTE,mycomm,&req[cnt++]);
+
+#ifdef TIMERS
+      *tval += MPI_Wtime();
+#endif
 
   }
   
-#ifdef DEBUG
-{
-    char str[80];
-  tmpdims = trplan->grid2->Ldims;
-  int *mo2 = trplan->mo2;
-  int imo2[3];
-  inv_mo(mo2,imo2);
-  sprintf(str,"pack_send_trans.out%d.%d.%d",cnt_pack++,iv,mpiplan->Pgrid->taskid);
-  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,1);
-}
-#endif
-
-  } // nv loop
-  
- for(i=0;i < nslices*nv; i++) {
-    MPI_Waitany(nslices*nv,req,&slice,MPI_STATUS_IGNORE);
-#ifdef TIMERS
-    // Only meaningful if nslices=1
-    timers.alltoall += MPI_Wtime() -t1;
-    *tmpi += MPI_Wtime() - t1;
-#endif
-
-    if(unpack) {
-      //  delete [] sendbuf;
-#ifdef TIMERS
-      t1=MPI_Wtime();
-#endif
-      int iv = slice/nslices;
-      slice = slice%nslices;
-      unpack_recvbuf_slice((Type2 *) out,recvbuf,iv,nv,slice,nslices);
-#ifdef TIMERS
-     timers.unpackrecv += MPI_Wtime() -t1;
-#endif
-    }
-  }
-
-      
-#elif defined P2P
-    for(i=0;i<np;i++)
-      if(i != self)
-      {
-	int irecv = slice*(np-1)+(i-self-1+np)%np + nslices*(np-1)*iv;
-	MPI_Irecv(recvbuf + recv_sz*iv+ RcvStrt[slice][i]/sizeof(Type2),RcvCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&recvreq[irecv]);
-	MPI_Isend(sendbuf + send_sz*iv+ SndStrt[slice][i]/sizeof(Type2),SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[irecv]);
-      }
-  } // nslices loop
 #ifdef DEBUG
 {
     char str[80];
@@ -1661,17 +1630,77 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::exec(char *i
   int imo2[3];
   inv_mo(mo2,imo2);
   sprintf(str,"pack_send_trans.out%d.%d.%d",cnt_pack,iv,mpiplan->Pgrid->taskid);
-  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,1);
+  write_buf<Type2>(sendbuf + iv*send_sz,str,tmpdims,imo2,1);
+}
+#endif
+
+  } // nv loop
+  
+ for(i=0;i < nslices*nv; i++) {
+#ifdef TIMERS
+   tval = timers.newtimer("MPI_Waitany",mpiplan->d1,mpiplan->d2);
+   *tval -= MPI_Wtime();
+#endif
+   
+   MPI_Waitany(nslices*nv,req,&slice,MPI_STATUS_IGNORE);
+
+#ifdef TIMERS
+   *tval += MPI_Wtime();
+#endif
+
+    if(unpack) {
+      //  delete [] sendbuf;
+      int iv = slice/nslices;
+      slice = slice%nslices;
+#ifdef TIMERS
+   tval = timers.newtimer("Unpack",mpiplan->d1,mpiplan->d2);
+   *tval -= MPI_Wtime();
+#endif
+      unpack_recvbuf_slice((Type2 *) out,recvbuf,iv,nv,slice,nslices);
+#ifdef TIMERS
+   *tval += MPI_Wtime();
+#endif
+    }
+  }
+ #ifdef DEBUG
+ cnt_pack++;
+#endif
+ 
+#elif defined P2P
+#ifdef TIMERS
+      tval = timers.newtimer("iSendRecv",mpiplan->d1,mpiplan->d2);
+      *tval -= MPI_Wtime();
+#endif
+    for(i=0;i<np;i++)
+      if(i != self)
+      {
+	int irecv = slice*(np-1)+(i-self-1+np)%np + nslices*(np-1)*iv;
+	MPI_Irecv(recvbuf + recv_sz*iv+ RcvStrt[slice][i]/sizeof(Type2),RcvCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&recvreq[irecv]);
+	MPI_Isend(sendbuf + send_sz*iv+ SndStrt[slice][i]/sizeof(Type2),SndCnts[slice][i],MPI_BYTE,i,slice+ 1000*a2a_cnt,mycomm,&sendreq[irecv]);
+      }
+#ifdef TIMERS
+      *tval += MPI_Wtime();
+#endif
+  } // nslices loop
+  a2a_cnt++;
+
+#ifdef DEBUG
+{
+    char str[80];
+  tmpdims = trplan->grid2->Ldims;
+  int *mo2 = trplan->mo2;
+  int imo2[3];
+  inv_mo(mo2,imo2);
+  sprintf(str,"pack_send_trans.out%d.%d.%d",cnt_pack,iv,mpiplan->Pgrid->taskid);
+  write_buf<Type2>(sendbuf + iv*send_sz,str,tmpdims,imo2,1);
 }
 #endif
   }// nv loop
+
 #ifdef DEBUG
 cnt_pack++;
 #endif
 // Self
-#ifdef TIMERS
-  t1=MPI_Wtime();
-#endif
  
   for(int iv=0;iv<nv;iv++)
   for(slice=0;slice<nslices;slice++) {
@@ -1679,34 +1708,54 @@ cnt_pack++;
       unpack_recvbuf_slice_p2p((Type2 *) out,sendbuf,self,iv,nv,slice,nslices,SndStrt);
     else
       memcpy(out + recv_sz*iv,sendbuf + send_sz*iv,SndCnts[self][slice]); 
-#ifdef TIMERS
-   timers.unpackrecv += MPI_Wtime() -t1;
-#endif
   }
 //  MPI_Waitall(nslices*(np-1),recvreq,MPI_STATUSES_IGNORE);
 
 // Wait, unpack non-self
-   for(i=0;i < nv*nslices*(np-1);i++) {
+
+for(i=0;i < nv*nslices*(np-1);i++) {
      int n,j,iv;
+#ifdef TIMERS
+      tval = timers.newtimer("Waitany",mpiplan->d1,mpiplan->d2);
+      *tval -= MPI_Wtime();
+#endif
      MPI_Waitany(nv*nslices*(np-1),recvreq,&n,MPI_STATUS_IGNORE);
+#ifdef TIMERS
+      *tval += MPI_Wtime();
+#endif
      iv = n/(nslices*(np-1));
      j = n%(nslices*(np-1));
      slice = j/(np-1);
      int rank = (j%(np-1)+self+1)%np;
+     if(unpack) {
 #ifdef TIMERS
-     t1=MPI_Wtime();
+      tval = timers.newtimer("Unpack",mpiplan->d1,mpiplan->d2);
+      *tval -= MPI_Wtime();
 #endif
-     if(unpack)
        unpack_recvbuf_slice_p2p((Type2 *) out,recvbuf,rank,iv,nv,slice,nslices);
 #ifdef TIMERS
-     timers.unpackrecv += MPI_Wtime() -t1;
+      *tval += MPI_Wtime();
 #endif
-  }
-  a2a_cnt++;
+     }
+   
+ }
+
   MPI_Waitall(nv*nslices*(np-1),sendreq,MPI_STATUSES_IGNORE);
   delete [] sendreq,recvreq;
 //MPI_Barrier(mycomm);
 //  MPI_Barrier(mycomm);
+
+#ifdef TEST_TRANSFER
+int imo1[3],imo2[3];
+inv_mo(trplan->mo1,imo1);
+inv_mo(trplan->mo2,imo2);
+int mc[3];
+rel_change(imo1,imo2,mc);
+int taskid;
+MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
+test_transfer<Type2>((Type2 *) recvbuf,dims2,trplan->mo2,mc,mpiplan->grid2->grid_id,np,mpiplan->d1,nv,taskid);
+#endif
+
 #endif
 
 #else // Blocking
@@ -1719,7 +1768,7 @@ cnt_pack++;
   int *mo1 = trplan->mo1;
   int imo1[3];
   inv_mo(mo1,imo1);
-write_buf<Type1>((Type1 *) in,str,dims1,imo1,nv);
+  write_buf<Type1>(in,str,dims1,imo1,nv);
 #endif
   
   for(int iv=0;iv<nv;iv++) 
@@ -1741,7 +1790,7 @@ write_buf<Type1>((Type1 *) in,str,dims1,imo1,nv);
   int imo2[3];
   inv_mo(mo2,imo2);
   sprintf(str,"pack_send_trans.out%d.%d",cnt_pack++,mpiplan->Pgrid->taskid);
-  write_buf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,nv);
+  write_sendbuf<Type2>((Type2 *) sendbuf,str,tmpdims,imo2,nv,mo2[mpiplan->d2],np,SndStrt[0],SndCnts[0]);
 }
 #endif
 
@@ -1810,6 +1859,73 @@ write_buf<Type2>((Type2 *) out,str1,tmpdims,imo2,nv);
 #endif
 }
 
+template <class Type> void write_sendbuf(Type *buf,char *filename,int sz[3],int mo[3],int nv,int id2,int np,int *SndStrt,int *SndCnts) {
+  int i,j,k,ip,id,jd,kd;
+  FILE *fp;
+  Type *p=buf;
+  complex_double *p1;
+
+  fp=fopen(filename,"w");
+  fprintf(fp,"Size %d %d %d %d %d\n",nv,np,sz[mo[0]],sz[mo[1]],sz[mo[2]]);
+  for(int iv=0;iv<nv;iv++) {
+    fprintf(fp,"Variable %d\n",iv);
+    kd = sz[mo[2]];
+    jd = sz[mo[1]];
+    id = sz[mo[0]];
+    for(ip=0;ip<np;ip++) {
+      fprintf(fp,"P=%d\n",ip);
+      switch(id2) {
+      case 0:
+	//	i0 = SndStrt[p]/(sizeof(Type)*jd*kd);
+	id = SndCnts[ip]/(sizeof(Type)*jd*kd);
+	break;
+      case 1:
+	jd = SndCnts[ip]/(sizeof(Type)*id*kd);
+	break;
+      case 2:
+	kd = SndCnts[ip]/(sizeof(Type)*jd*id);
+	break;
+      };
+      printf("id,jd,kd=%d %d %d\n",id,jd,kd);
+      fflush(stdout);
+      fflush(fp);
+    for(k=0;k<kd;k++)
+      for(j=0;j<jd;j++)
+	for(i=0;i<id;i++) {
+	  if(typeid(Type) == type_float) {
+	    if(abs(*p) > 1.e-4) {
+	      float *p1 = (float *) p;
+	      fprintf(fp,"(%d %d %d) %g\n",i,j,k,*p1);
+	    }
+	  }
+	  else 
+	    if(typeid(Type) == type_double) {
+	      if(abs(*p) > 1.e-7) {
+		double *p1 = (double *) p;
+		fprintf(fp,"(%d %d %d) %lg\n",i,j,k,*p1);
+	      }
+	    }
+	    else
+	      if(typeid(Type) == type_complex){
+		if(abs(*p) > 1.e-4) {
+		  complex<float> *p1 = (complex<float> *) p;
+		  fprintf(fp,"(%d %d %d) %g %g\n",i,j,k,p1->real(),p1->imag());
+		}
+	      }
+	      else
+		if(typeid(Type) == type_complex_double)  {
+		  if(abs(*p) > 1.e-7) {
+		    complex<double> *p1 = (complex<double> *) p;
+		    fprintf(fp,"(%d %d %d) %lg %lg\n",i,j,k,p1->real(),p1->imag());
+		  }
+		}
+	  p++;
+	}
+    }
+  }
+  fclose(fp); 
+}
+
 template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3],int nv) {
   int i,j,k;
   FILE *fp;
@@ -1857,7 +1973,7 @@ template <class Type> void write_buf(Type *buf,char *filename,int sz[3],int mo[3
 }
 
 
-template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf_trans_slice(Type2 *sendbuf,char *src,  int dim_deriv,event_t *event_hold,int iv,int nv,int slice,int nslices,char *devbuf,bool OW,char *tmpbuf)
+template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf_trans_slice(Type2 *sendbuf,Type1 *src,  int dim_deriv,event_t *event_hold,int iv,int nv,int slice,int nslices,char *devbuf,bool OW,char *tmpbuf, double *ttot)
 {
   int i,nt,x,y,z,l;
 
@@ -1934,7 +2050,7 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 	// printf("pack_sendbuf_trans: offset = %d,slice=%d\n",trplan->offset1[i],i);
       //#endif
       //checkCudaErrors(cudaMemcpy(trplan->DevBuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice));
-      checkCudaErrors(cudaMemcpyAsync(devbuf+trplan->offset1[i]*sizeof(Type1),src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
+      checkCudaErrors(cudaMemcpyAsync(devbuf+trplan->offset1[i]*sizeof(Type1),(char *) src + trplan->offset1[i]*sizeof(Type1),trplan->mysize1[i]*sizeof(Type1),cudaMemcpyHostToDevice,*stream));
       checkCudaErrors(cudaEventRecord(trplan->EVENT_H2D,*stream));
     }
     event_hold = &(trplan->EVENT_H2D);
@@ -1959,8 +2075,13 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 #endif
   */
 
-  size_t size1 = MULT3(trplan->dims1)*sizeof(Type1);
+  size_t size1 = MULT3(trplan->dims1);
   size_t size2 = MULT3(trplan->dims2)*sizeof(Type2);
+
+#ifdef TEST_TRANSFER
+  int self = mpiplan->Pgrid->grid_id_cart[mpiplan->grid2->Dmap[mpiplan->d2]];
+  init_test<Type1>(src+size1*iv,iv,trplan->dims1,trplan->mo1,mpiplan->grid1->grid_id);
+#endif
   
 #ifdef CUDA
   for(i=0;i<nslices;i++)
@@ -1974,7 +2095,12 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   //  checkCudaErrors(cudaFree(trplan->DevBuf));
 #else
   //  for(i=0;i<nslices;i++)
-  trplan->exec_slice(src+size1*iv,((char *) sendbuf) + size2*iv,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks);
+#ifdef TEST_TRANSFER
+  trplan->exec_slice((char *) (src+size1*iv),((char *) sendbuf) + size2*iv,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks,true,ttot);
+#else
+  trplan->exec_slice((char *) (src+size1*iv),((char *) sendbuf) + size2*iv,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,trplan->mo2[d2],mpiplan->numtasks,false,ttot);
+  #endif
+
 #endif
 
   /*
@@ -2030,13 +2156,80 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   */
 }
 
+#ifdef TEST_TRANSFER
+template <class Type> void init_test(Type *Ar,int iv,int dims[3], int mo[3], int grid_id[3])
+{
+  int imo[3];
+  
+  inv_mo(mo,imo);
+  int kd = dims[imo[2]];
+  int k0 = grid_id[imo[2]] * kd;
+  int jd = dims[imo[1]];
+  int j0 = grid_id[imo[1]] * jd;
+  int id = dims[imo[0]];
+  int i0 = grid_id[imo[0]] * id;
+  for(int k=0;k<kd;k++)
+  for(int j=0;j<jd;j++)
+    for(int i=0;i<id;i++) 
+      *Ar++ = iv*0.1 + i+i0 + 100*(j+j0) + 10000*(k+k0);
+
+}
+template <class Type> void test_transfer(Type *Ar,int dims[3],int mo[3],int mc[3],int grid_id[3],int np, int d1,int nv, int taskid) {
+
+  int imo[3];
+  int iv,i,j,k,p,k0,kd,kdi,j0,jd,jdi,i0,id,idi,ist,jst,kst;
+  Type val;
+  
+  inv_mo(mo,imo);
+  for( iv=0;iv<nv;iv++)
+      kdi = dims[imo[2]];
+      k0 = grid_id[imo[2]] * kd;
+      kst = 0;
+      jdi = dims[imo[1]];
+      j0 = grid_id[imo[1]] * jd;
+      jst = 0;
+      idi = dims[imo[0]];
+      i0 = grid_id[imo[0]] * id;
+      ist = 0;
+      for(p=0;p<np;p++) {
+      if(mo[d1] == 2) {
+	kd = kdi/np + (kdi%np<p);
+	k0 += kd;
+	kst += kd;
+      }
+      else kst = 0;
+      if(mo[d1] == 1) {
+	jd = jdi/np + (jdi%np<p);
+	j0 += jd;
+	jst += jd;
+      }
+      else jst = 0;
+      if(mo[d1] == 0) {
+	id = idi/np + (idi%np<p);
+	i0 += id;
+	ist += id;
+      }
+      else ist = 0;
+      
+      for( k=kst;k<kd;k++)
+	for( j=jst;j<jd;j++)
+	  for( i=ist;i<id;i++) { 
+	    val = iv*0.1 + (i+i0)*pow(100,mc[0]) + (j+j0)*pow(100,mc[1]) + (k+k0)*pow(100,mc[2]);
+      if(*Ar++ != val)
+	printf("%d: Error in transfer; ijk= (%d,%d,%d), p=%d\n",taskid,i,j,k,p);//,abs(*(Ar-1),val));
+    }
+    }  
+}
+
+#endif
+
   // Execute 1D transform, combined with local transpose as needed
 // Input: in[dims1[imo1[0]]][dims1[imo1[1]]][dims1[imo1[2]]]
 // Output: out[dims2[imo2[0]]][dims2[imo2[1]]][dims2[imo2[2]]]
 
 // Execute transform (combined with local transpose if needed), on a slice of data asynchronously via streams
 // Expect the calling function to set up and initilize device buffer (asynchronously)
-  template <class Type1,class Type2> void transplan<Type1,Type2>::exec_slice(char *in_,char *out_, int dim_deriv,int slice,int nslices,event_t *event_hold, bool OW,char *tmpbuf,int pack_dim,int pack_procs)
+template <class Type1,class Type2> void transplan<Type1,Type2>::exec_slice(char *in_,char *out_, int dim_deriv,int slice,int nslices,event_t *event_hold, bool OW,char *tmpbuf,int pack_dim,int pack_procs,bool is_test,double *ttot)
 {
   int L,N,m,mocurr[3],mc[3],cmpl;
   Type1 *in;
@@ -2047,8 +2240,10 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   out = (Type2 *) out_;
   size_t size1 = MULT3(dims1)*sizeof(Type1);
   size_t size2 = MULT3(dims2)*sizeof(Type2);
-    
-  if(trans_type->is_empty) {
+  double *tval=NULL;  
+  double *tval2=NULL;  
+
+  if(trans_type->is_empty || is_test) {
 #ifdef CUDA
     if(InLoc == LocDevice && OutLoc == LocDevice) {
       int d1[3];
@@ -2067,10 +2262,22 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
     }
     else if(InLoc == LocHost && OutLoc == LocHost) 
 #endif
+      
     if(!arcmp(mo1,mo2,3))
       memcpy(out,in,mysize1[slice]);
-    else
-      cmpl = reorder_trans_slice(in,out,mo1,mo2,NULL,-1,slice,nslices,event_hold,OW,tmpbuf,pack_dim,pack_procs);
+    else {
+      #ifdef TIMERS
+      tval = timers.newtimer("Reorder_trans",mo1,mo2);
+      tval2 = timers.newtimer("Exec",plan->dt1,plan->dt2,plan->N,plan->isign);
+      double t1 = MPI_Wtime();
+#endif	
+      cmpl = reorder_trans_slice(in,out,mo1,mo2,NULL,-1,slice,nslices,event_hold,OW,tmpbuf,pack_dim,pack_procs,tval,tval2);
+#ifdef TIMERS
+      t1 = MPI_Wtime() - t1;
+      *tval += t1;
+      if(ttot) *ttot -= t1;
+#endif
+    }
     /*
       if((void *) in == (void *) out)
 	reorder_in(in,mo1,mo2,dims1,tmpbuf,pack_dim,pack_procs);
@@ -2151,10 +2358,10 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
   if(mo1[L] == 0 || mo2[L] == 0) {
 
     if(!arcmp(mo1,mo2,3)) { // If there is no change in memrory mapping, there is no need to do transpose. Just call 1D transform.
+      if(pack_dim != 0 && pack_dim != 1)  {
 #ifdef TIMERS
       double t1=MPI_Wtime();
 #endif
-      if(pack_dim != 0 && pack_dim != 1)  {
 	if((void *) in != (void *) out)
 	  (*(trans_type->exec))(plan->libplan_out[slice],in+offset1[slice],out+offset2[slice]);
 	else if(dt2 > dt1) {
@@ -2179,6 +2386,13 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 	  compute_deriv_loc(out+offset2[slice],out+offset2[slice],sdims);
 #endif
 	}
+#ifdef TIMERS
+	t1 = MPI_Wtime() - t1;
+	double *texec = timers.newtimer("Exec",dt1,dt2,N,isign);
+	*texec += t1;
+	if(ttot) *ttot -= t1;
+#endif
+
       }
       else  { // Need to pack
 	int d1[3],d2[3],sdims[3];
@@ -2192,7 +2406,16 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 	//	for(int k=kst;k<ken;k++) {
 	Type1 *pin = in + kst*d1[0]*d1[1];  
 	Type2 *pout = (Type2 *) tmpbuf +kst*d2[0]*d2[1];  
+#ifdef TIMERS
+      double t1=MPI_Wtime();
+#endif
 	(*(trans_type->exec))(plan->libplan_out[slice],pin,pout);
+#ifdef TIMERS
+	t1 = MPI_Wtime() - t1;
+	double *texec = timers.newtimer("Exec",dt1,dt2,N,isign);
+	*texec += t1;
+	if(ttot) *ttot -= t1;
+#endif
 	if(dim_deriv == L)
 #ifdef CUDA
 	  //      compute_deriv_loc_cu<<<>>>(out+offset2[slice],out+offset2[slice],sdims);
@@ -2210,17 +2433,18 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
 #endif
       cmpl = SLICE;
 
-#ifdef TIMERS
-      timers.trans_exec += MPI_Wtime() -t1;
-#endif
     }
     else { // Otherwise, combine transpose with transform
 #ifdef TIMERS
-      double t1=MPI_Wtime();
-#endif
-      cmpl = reorder_trans_slice(in,out,mo1,mo2,trans_type->exec,dim_deriv,slice,nslices,event_hold ,OW,tmpbuf,pack_dim,pack_procs);
+      tval = timers.newtimer("Reorder_trans",mo1,mo2);
+      tval2 = timers.newtimer("Exec",plan->dt1,plan->dt2,plan->N,plan->isign);
+      double t1 = MPI_Wtime();
+#endif	
+      cmpl = reorder_trans_slice(in,out,mo1,mo2,trans_type->exec,dim_deriv,slice,nslices,event_hold ,OW,tmpbuf,pack_dim,pack_procs,tval,tval2);
 #ifdef TIMERS
-      timers.reorder_trans += MPI_Wtime() -t1;
+      t1 = MPI_Wtime() - t1;
+      *tval += t1;
+      if(ttot) *ttot -= t1;
 #endif
     }	
   }
@@ -2236,14 +2460,17 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
     //    else
 
 #ifdef TIMERS
-    double t1=MPI_Wtime();
-#endif
+      tval = timers.newtimer("Reorder_trans",mo1,mocurr);
+      tval2 = timers.newtimer("Exec",plan->dt1,plan->dt2,plan->N,plan->isign);
+      double t1 = MPI_Wtime();
+#endif	
 
-    cmpl = reorder_trans_slice(in,buf,mo1,mocurr,trans_type->exec,dim_deriv,slice,nslices,event_hold,OW,tmpbuf);
+      cmpl = reorder_trans_slice(in,buf,mo1,mocurr,trans_type->exec,dim_deriv,slice,nslices,event_hold,OW,tmpbuf,-1,0,tval,tval2);
 
 #ifdef TIMERS
-    timers.reorder_trans += MPI_Wtime() -t1;
-    t1=MPI_Wtime();
+      t1 = MPI_Wtime() - t1;
+      *tval += t1;
+      if(ttot) *ttot -= t1;
 #endif
 
     if(cmpl == FULL) {
@@ -2251,14 +2478,20 @@ template <class Type1,class Type2> void trans_MPIplan<Type1,Type2>::pack_sendbuf
       slice = 0;
     }
     //cmpl =
+#ifdef TIMERS
+    tval = timers.newtimer("Reorder_out",mocurr,mo2);
+    t1 = MPI_Wtime();
+#endif	
     reorder_trans_slice((Type1 *) buf,out,mocurr,mo2,NULL,-1,slice,nslices,event_hold,true,tmpbuf,pack_dim,pack_procs);
+#ifdef TIMERS
+      t1 = MPI_Wtime() - t1;
+      *tval += t1;
+      if(ttot) *ttot -= t1;
+#endif
     /*
     if(cmpl == SLICE) reorder_out_slice(buf,out,mocurr,mo2,dims2,slice,nslices,pack_dim,pack_procs);
     else if(cmpl == FULL) reorder_out(buf,out,mocurr,mo2,dims2,pack_dim,pack_procs);
     */
-#ifdef TIMERS
-    timers.reorder_out += MPI_Wtime() -t1;
-#endif
 
     /*
 #ifdef CUDA
